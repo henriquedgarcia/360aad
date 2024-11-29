@@ -1,0 +1,9 @@
+*.mp4
+*.json
+*.png
+*.svg
+*.csv#
+*.csv
+.idea/
+*.xml
+*.iml
