@@ -251,9 +251,9 @@ class ByQuality(GeneralAnalysis):
     def make_hist(self):
         fig, ax = plt.subplots(5, 1, figsize=(8, 8))
         for n, quality in enumerate(config.quality_list):
-            ax[n].hist(self.bucket['dash_init'], bins=30)
+            ax[n].hist(self.bucket['dash_init'][quality], bins=30)
             ax[n].set_title('Init')
-            ax[n].hist(self.bucket['dash_m4s'], bins=30)
+            ax[n].hist(self.bucket['dash_m4s'][quality], bins=30)
             ax[n].set_title('chunk')
 
         fig.tight_layout()
