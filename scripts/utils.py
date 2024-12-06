@@ -42,11 +42,24 @@ class Bucket:
         self.config = config
         self.bucket = AutoDict()
         self.metric = None
-        self.video_dict = None
+        self.database = None
 
-    def set_bucket(self, video_dict, /, **kwargs):
+    def set_database(self, database_path: Path):
+        self.database = load_json(database_path)
+
+    def set_bucket(self, bucket_path: Path):
+        self.bucket = load_json(bucket_path)
+
+    def get_bucket(self, keys=None):
+        if keys is None:
+            return self.bucket
+        if isinstance(keys, list):
+            return get_nested_value(self.bucket, keys)
+        else:
+            return self.bucket[keys]
+
+    def set_value(self, /, **kwargs):
         self.metric = kwargs['metric']
-        self.video_dict = video_dict
         value = self.get_video_dict_value()
         values = list(kwargs.values())
         keys = list(values)
@@ -58,20 +71,25 @@ class Bucket:
 
     def get_video_dict_value(self):
         keys = self.get_bitrate_keys()
-        value = get_nested_value(self.video_dict, keys)
+        value = get_nested_value(self.database, keys)
         return value
 
     def get_bitrate_keys(self):
-        keys = []
+        keys = [self.config.name, self.config.projection, self.config.tiling, self.config.tile]
         if self.metric == 'dash_mpd':
-            keys = [self.config.name, self.config.projection, self.config.tiling, self.config.tile, 'dash_mpd']
-        elif self.metric == 'dash_init':
-            keys = [self.config.name, self.config.projection, self.config.tiling, self.config.tile, self.config.quality,
-                    'dash_init']
-        elif self.metric == 'dash_m4s':
-            keys = [self.config.name, self.config.projection, self.config.tiling, self.config.tile, self.config.quality,
-                    self.config.chunk, 'dash_m4s']
-        return keys
+            keys.append('dash_mpd')
+            return keys
+
+        keys.append(self.config.quality)
+        if self.metric == 'dash_init':
+            keys.append('dash_init')
+            return keys
+
+        keys.append(self.config.chunk)
+        if self.metric == 'dash_m4s':
+            keys.append('dash_m4s')
+            return keys
+        raise ValueError('metric not supported')
 
     def keys(self):
         return list(self.bucket.keys())
