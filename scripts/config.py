@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from math import prod
+
+from scripts.utils import load_json, splitx
 
 
 @dataclass
@@ -144,7 +147,208 @@ class Config:
             "group": "MS"
             }
         }
-    name = projection = tiling = tile = quality = chunk = user = None
+
+    name = projection = tiling = tile = quality = chunk = user = metric = group = frame = None
 
     def get_tile_list(self, tiling):
         return self.tiling_list[tiling]
+
+    @property
+    def tile_list(self):
+        return self.tiling_list[self.tiling]
+
+    _hmd_dataset = None
+
+    @property
+    def hmd_dataset(self):
+        if self._hmd_dataset is None:
+            self._hmd_dataset = load_json(self.dataset_file)
+        return self._hmd_dataset
+
+    @property
+    def users_list(self):
+        users_str = self.hmd_dataset[self.name + '_nas'].keys()
+        sorted_users_int = sorted(map(int, users_str))
+        sorted_users_str = list(map(str, sorted_users_int))
+        return sorted_users_str
+
+    @property
+    def groups_list(self):
+        groups_set = {self.name_list[name]["group"]
+                      for name in self.name_list}
+        return list(groups_set)
+
+
+class Factors:
+    config: Config
+
+    @property
+    def name(self):
+        return self.config.name
+
+    @name.setter
+    def name(self, value):
+        self.config.name = value
+
+    @property
+    def projection(self):
+        return self.config.projection
+
+    @projection.setter
+    def projection(self, value):
+        self.config.projection = value
+
+    @property
+    def quality(self):
+        return self.config.quality
+
+    @quality.setter
+    def quality(self, value):
+        self.config.quality = value
+
+    @property
+    def tiling(self) -> str:
+        return self.config.tiling
+
+    @tiling.setter
+    def tiling(self, value: str):
+        self.config.tiling = value
+
+    @property
+    def tile(self) -> str:
+        return self.config.tile
+
+    @tile.setter
+    def tile(self, value: str):
+        self.config.tile = value
+
+    @property
+    def chunk(self):
+        return self.config.chunk
+
+    @chunk.setter
+    def chunk(self, value):
+        self.config.chunk = value
+
+    @property
+    def metric(self):
+        return self.config.metric
+
+    @metric.setter
+    def metric(self, value):
+        self.config.metric = value
+
+    @property
+    def user(self):
+        return self.config.user
+
+    @user.setter
+    def user(self, value):
+        self.config.user = value
+
+    @property
+    def group(self):
+        return self.config.group
+
+    @group.setter
+    def group(self, value):
+        self.config.group = value
+
+    @property
+    def frame(self):
+        return self.config.frame
+
+    @frame.setter
+    def frame(self, value):
+        self.config.frame = value
+
+
+class Lists:
+    config: Config
+
+    @property
+    def name_list(self):
+        return self.config.name_list
+
+    @property
+    def projection_list(self):
+        return self.config.projection_list
+
+    @property
+    def quality_list(self):
+        return self.config.quality_list
+
+    @property
+    def tiling_list(self):
+        return self.config.tiling_list
+
+    @property
+    def tile_list(self):
+        return self.config.tile_list
+
+    @property
+    def chunk_list(self):
+        return self.config.chunk_list
+
+    @property
+    def users_list(self):
+        return self.config.users_list
+
+    @property
+    def groups_list(self):
+        return self.config.groups_list
+
+
+class ConfigIf(Factors, Lists):
+    config: Config
+
+    @property
+    def video_shape(self):
+        return splitx(self.scale)[::-1]
+
+    @property
+    def scale(self):
+        return self.config.scale
+
+    @property
+    def fov(self):
+        return self.config.fov
+
+    @property
+    def n_tiles(self):
+        return prod(splitx(self.tiling))
+
+    @property
+    def n_frames(self):
+        return 1800
+
+    @property
+    def fps(self):
+        return self.config.fps
+
+    @property
+    def gop(self):
+        return self.config.gop
+
+    @property
+    def rate_control(self):
+        return self.config.rate_control
+
+    @property
+    def decoding_num(self):
+        return self.config.decoding_num
+
+    @property
+    def dataset_name(self):
+        return self.config.dataset_file
+
+    @property
+    def video_list_by_group(self):
+        """
+
+        :return: a dict like {group: video_list}
+        """
+        b = {group: [name for name in self.name_list
+                     if self.config.name_list[name]['group'] == group]
+             for group in self.groups_list}
+        return b
