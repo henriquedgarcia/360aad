@@ -52,6 +52,15 @@ class BitrateAnalysis:
 
 
 class BasePaths(ConfigIf):
+    @property
+    def class_name(self):
+        return self.__class__.__name__
+
+    @property
+    def stats_workfolder(self):
+        folder = Path(f'stats/{self.metric}/{self.class_name}/')
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
 
     @property
     def bucket_workfolder(self):
@@ -65,6 +74,35 @@ class BasePaths(ConfigIf):
     def database_json(self):
         database_path = Path(f'dataset/{self.metric}')
         return database_path / f'{self.metric}_{self.name}.json'
+
+    @property
+    def graphs_workfolder(self):
+        folder = Path(f'graphs/{self.metric}/{self.class_name}/')
+        return folder
+
+    @property
+    def boxplot_folder(self):
+        folder = self.graphs_workfolder / 'boxplot'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def heatmap_folder(self):
+        folder = self.graphs_workfolder / 'heatmap'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def plot_name_quality_tiling_folder(self):
+        folder = self.graphs_workfolder / 'plot_name_quality_tiling'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def histogram_folder(self):
+        folder = self.graphs_workfolder / 'histogram'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
 
 
 class BaseAnalysis(BasePaths):
@@ -187,49 +225,10 @@ class GeneralAnalysis(BaseAnalysis):
         fig.clf()
 
     @property
-    def graphs_workfolder(self):
-        folder = Path(f'graphs/{self.metric}/{self.class_name}/')
-        return folder
-
-    @property
-    def boxplot_folder(self):
-        folder = self.graphs_workfolder / 'boxplot'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def histogram_folder(self):
-        folder = self.graphs_workfolder / 'histogram'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
     def plot_name_quality_folder(self):
         folder = self.graphs_workfolder / 'plot_name_quality'
         folder.mkdir(exist_ok=True, parents=True)
         return folder
-
-    @property
-    def plot_name_quality_tiling_folder(self):
-        folder = self.graphs_workfolder / 'plot_name_quality_tiling'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def heatmap_folder(self):
-        folder = self.graphs_workfolder / 'heatmap'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def stats_workfolder(self):
-        folder = Path(f'stats/{self.metric}/{self.class_name}/')
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def class_name(self):
-        return self.__class__.__name__
 
     @property
     def boxplot_path(self):
