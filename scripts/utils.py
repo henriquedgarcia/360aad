@@ -39,81 +39,42 @@ class AutoDict(dict):
         return self[key]
 
 
+class GetDatabaseKeys:
+    def get_database_keys(self):
+        ...
+
+
 class Bucket:
-    database: dict[str, dict]
-
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
         self.bucket = AutoDict()
-        self.category = None
-        self.metric = self.config.metric
 
-    def set_database(self, database_path: Path):
-        self.database = load_json(database_path)
+    def __getitem__(self, item):
+        return self.bucket[item]
 
     def load_bucket(self, bucket_path: Path):
         self.bucket = load_json(bucket_path)
 
-    def get_bucket(self, keys=None):
+    def get_bucket_values(self, keys=None):
         if keys is None:
             return self.bucket
+
         if isinstance(keys, list):
             return get_nested_value(self.bucket, keys)
-        else:
-            return self.bucket[keys]
 
-    def set_value(self, /, **kwargs):
-        self.category = kwargs['category']
-        value = self.get_video_dict_value()
-        values = list(kwargs.values())
-        keys = list(values)
+        return self.bucket[keys]
 
+    def set_bucket_value(self, value, keys):
         try:
             get_nested_value(self.bucket, keys).append(value)
         except AttributeError:
             set_nested_value(self.bucket, keys, [value])
 
-    def get_video_dict_value(self):
-        keys = self.get_keys()
-        value = get_nested_value(self.database, keys)
-        return value
-
-    def get_keys(self):
-        if self.config.metric == 'bitrate':
-            return self.get_bitrate_keys()
-        elif self.config.metric == 'time':
-            return self.get_time_keys()
-
-    def get_time_keys(self):
-        if self.category not in ['dectime', 'dectime_avg', 'dectime_med', 'dectime_std']:
-            return
-
-        keys = [self.config.name, self.config.projection, self.config.tiling,
-                self.config.tile, self.config.quality, self.config.chunk, self.category]
-        return keys
-
-    def get_bitrate_keys(self):
-        keys = [self.config.name, self.config.projection, self.config.tiling, self.config.tile]
-        if self.category == 'dash_mpd':
-            keys.append('dash_mpd')
-            return keys
-
-        keys.append(self.config.quality)
-        if self.category == 'dash_init':
-            keys.append('dash_init')
-            return keys
-
-        keys.append(self.config.chunk)
-        if self.category == 'dash_m4s':
-            keys.append('dash_m4s')
-            return keys
-        raise ValueError('metric not supported')
-
     def keys(self):
+        deep_search_keys(self.bucket)
         return list(self.bucket.keys())
 
-    def __getitem__(self, item):
-        return self.bucket[item]
+    def save_bucket(self, filename):
+        save_json(self.bucket, filename)
 
 
 def save_json(data: Union[dict, list], filename: Union[str, Path], separators=(',', ':'), indent=None):
@@ -183,7 +144,7 @@ def deep_search_keys(dictionary: dict) -> dict:
     if not isinstance(dictionary, dict):  # Se a árvore não é um dicionário, não há níveis a percorrer
         return {}
 
-    results = defaultdict(set)
+    results = []
     stack = [(dictionary, 0)]
     while stack:
         current, level = stack.pop()
@@ -197,3 +158,31 @@ def deep_search_keys(dictionary: dict) -> dict:
                 stack.append((value, level + 1))
 
     return dict(results)
+
+
+def collect_keys_by_level(tree, level=0, result=None):
+    result = result or defaultdict(list)
+
+    if isinstance(tree, dict):
+        for key, value in tree.items():
+            result[level].append(key)
+            collect_keys_by_level(value, level + 1, result)
+
+    if level == 0: return list(result.values())
+
+
+def iterate_over_key_tree(tree, level=0, keys=None):
+    keys = keys or []
+
+    if isinstance(tree, dict):
+        for key, value in tree.items():
+            keys.append(key)
+            collect_keys_by_level(value, level + 1, keys)
+            keys.pop()
+    else:
+        value = tree
+        yield keys, value
+
+    if level == 0: return list(keys.values())
+
+
