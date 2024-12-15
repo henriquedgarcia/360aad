@@ -360,3 +360,33 @@ class ConfigIf(Factors, Lists):
                      if self.config.name_list[name]['group'] == group]
              for group in self.groups_list}
         return b
+
+    def __str__(self):
+        factors_list = ['category', 'name', 'projection', 'tiling', 'tile', 'user', 'quality', 'chunk',
+                        'frame', 'metric', 'group']
+
+        txt = []
+        for factor in factors_list:
+            value = getattr(self, factor)
+            if value is None:
+                continue
+
+            if factor in ['name', 'projection', 'tiling']:
+                value = value
+            elif factor == 'quality':
+                value = f'{self.config.rate_control}{value}'
+            elif factor == 'tile':
+                value = f'tile{int(value):02d}'
+            elif factor == 'chunk':
+                value = f'chunk{int(value):02d}'
+            elif factor == 'frame':
+                value = f'frame{int(value):03d}'
+            elif factor == 'user':
+                value = f'user{int(value):02d}'
+            elif factor == 'attempt':
+                value = f'attempt{value}'
+            else:
+                continue
+            txt.append(f'[{value}]')
+
+        return ''.join(txt)
