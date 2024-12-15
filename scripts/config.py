@@ -148,7 +148,7 @@ class Config:
             }
         }
 
-    name = projection = tiling = tile = quality = chunk = user = metric = group = frame = None
+    name = projection = tiling = tile = quality = chunk = user = metric = group = frame = category = None
 
     def get_tile_list(self, tiling):
         return self.tiling_list[tiling]
@@ -167,7 +167,7 @@ class Config:
 
     @property
     def users_list(self):
-        users_str = self.hmd_dataset[self.name + '_nas'].keys()
+        users_str = self.hmd_dataset[self.name + '_nas'].bucket_keys_name()
         sorted_users_int = sorted(map(int, users_str))
         sorted_users_str = list(map(str, sorted_users_int))
         return sorted_users_str
@@ -181,6 +181,14 @@ class Config:
 
 class Factors:
     config: Config
+
+    @property
+    def category(self):
+        return self.config.category
+
+    @category.setter
+    def category(self, value):
+        self.config.category = value
 
     @property
     def name(self):
