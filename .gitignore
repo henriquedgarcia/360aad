@@ -1,10 +1,7 @@
-*.mp4
-*.json
-*.png
-*.svg
-*.csv#
-*.csv
-.idea/
-*.xml
-*.iml
-*.pyc
+
+/.imagens artigo gdoc
+/.idea
+/dataset
+/graphs
+/scripts/__pycache__
+/stats
