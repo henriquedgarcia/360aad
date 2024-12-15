@@ -19,19 +19,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from scripts.bucket import Bucket
 from scripts.config import Config, ConfigIf
+from scripts.database import database_factory, Database
 from scripts.make_bucket import MakeBuket
-from scripts.utils import Bucket, ProgressBar, load_json, splitx, get_nested_value
+from scripts.progressbar import ProgressBar
+from scripts.utils import load_json, splitx, get_nested_value
 
 
 class BitrateAnalysis:
     def __init__(self):
         """
-        metric = 'bitrate' | 'time' | 'chunk_quality'
+        metric = 'bitrate' | 'time' | 'chunk_quality' | 'get_tiles
         """
         config = Config()
         print('GeneralAnalysis')
-        ChunkGeneralAnalysis(config, 'bitrate')
+        BitrateChunkGeneralAnalysis(config)
+        TimeChunkGeneralAnalysis(config)
+        QualityChunkGeneralAnalysis(config)
+        GetTilesChunkGeneralAnalysis(config)
         # print('ByQuality')
         # ByQuality(config, 'bitrate')
         # print('ByTiling')
@@ -47,7 +53,7 @@ class DectimeAnalysis:
         """
         config = Config()
         print('GeneralAnalysis')
-        ChunkGeneralAnalysis(config, 'time')
+        BitrateChunkGeneralAnalysis(config)
         # print('ByQuality')
         # ByQuality(config, 'time')
         # print('ByTiling')
@@ -56,109 +62,10 @@ class DectimeAnalysis:
         # ByTilingByQuality(config, 'time')
 
 
-class ChunkGeneralAnalysis(ConfigIf):
-    bucket: Bucket
-    stats_df: pd.DataFrame
-    ui: ProgressBar
-    categories = {'time': ['dectime', 'dectime_avg', 'dectime_med', 'dectime_std'],
-                  'bitrate': ['dash_mpd', 'dash_init', 'dash_m4s'],
-                  'chunk_quality': ['ssim', 'mse', 's-mse', 'ws-mse'], 'get_tiles': ['frame', 'chunk']}
-
-    def __init__(self, config, metric):
-        self.config = config
-        self.metric = metric
-
-        self.fill_bucket()
-        self.make_table()
-        self.make_plots()
-
-    def __str__(self):
-        return f'{self.config.name} - {self.config.tiling} - tile{self.config.tile} - QP{self.config.quality}'
-
-    def fill_bucket(self):
-        """
-        metric, categories, keys_orders
-        """
-
-        if self.bucket_json.exists():
-            self.bucket = Bucket()
-            self.bucket.load_bucket(self.bucket_json)
-            return
-
-        make_bucket = MakeBuket(self.config, self.metric,
-                                bucket_keys_name=[],
-                                categories=self.categories[self.metric])
-
-        self.bucket = make_bucket.make_bucket()
-        self.bucket.save_bucket(self.bucket_json)
-
-    def make_table(self):
-        if self.stats_csv.exists(): return
-        stats_defaultdict = defaultdict(list)
-
-        stats_defaultdict['Nome'].append('MPD')
-        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_mpd']))
-        stats_defaultdict['Média'].append(np.average(self.bucket['dash_mpd']))
-        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_mpd']))
-        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_mpd'], 0))
-        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.25))
-        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_mpd'], 0.5))
-        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.75))
-        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_mpd'], 1))
-
-        stats_defaultdict['Nome'].append('Init')
-        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_init']))
-        stats_defaultdict['Média'].append(np.average(self.bucket['dash_init']))
-        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_init']))
-        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_init'], 0))
-        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.25))
-        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_init'], 0.5))
-        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.75))
-        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_init'], 1))
-
-        stats_defaultdict['Nome'].append('m4s')
-        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_m4s']))
-        stats_defaultdict['Média'].append(np.average(self.bucket['dash_m4s']))
-        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_m4s']))
-        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_m4s'], 0))
-        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.25))
-        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_m4s'], 0.5))
-        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.75))
-        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_m4s'], 1))
-
-        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
-        self.stats_df.to_csv(self.stats_csv, index=False)
-
-    def make_plots(self):
-        self.make_boxplot()
-        self.make_hist()
-
-    def make_boxplot(self):
-        if self.boxplot_path.exists(): return
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
-        ax1.boxplot(self.bucket['dash_mpd'], whis=(0, 100))
-        ax1.title.set_text('Arquivo mpd')
-        ax2.boxplot(self.bucket['dash_init'], whis=(0, 100))
-        ax2.title.set_text('Arquivo init')
-        ax3.boxplot(self.bucket['dash_m4s'], whis=(0, 100))
-        ax3.title.set_text('Arquivo m4s')
-        fig.tight_layout()
-        fig: plt.Figure
-        fig.savefig(self.boxplot_path)
-        fig.clf()
-
-    def make_hist(self):
-        if self.hist_path.exists(): return
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 5))
-        ax1.hist(self.bucket['dash_mpd'], bins=30)
-        ax1.set_title('MPD')
-        ax2.hist(self.bucket['dash_init'], bins=30)
-        ax2.set_title('Init')
-        ax3.hist(self.bucket['dash_m4s'], bins=30)
-        ax3.set_title('chunk')
-        fig.tight_layout()
-        fig.savefig(self.hist_path)
-        fig.clf()
+class AnalysisPaths(ConfigIf):
+    @property
+    def class_name(self):
+        return self.__class__.__name__
 
     @property
     def graphs_workfolder(self):
@@ -203,13 +110,9 @@ class ChunkGeneralAnalysis(ConfigIf):
 
     @property
     def bucket_workfolder(self):
-        folder = Path(f'bucket/{self.metric}/{self.class_name}/')
+        folder = Path(f'bucket/')
         folder.mkdir(exist_ok=True, parents=True)
         return folder
-
-    @property
-    def class_name(self):
-        return self.__class__.__name__
 
     @property
     def boxplot_path(self):
@@ -223,17 +126,479 @@ class ChunkGeneralAnalysis(ConfigIf):
     def stats_csv(self):
         return self.stats_workfolder / 'stats.csv'
 
-    @property
-    def bucket_json(self):
-        return self.bucket_workfolder / 'bucket.json'
+    bucket: Bucket
+    bucket_keys_name: list[str]
+    categories: list[str]
 
     @property
-    def video_json(self):
+    def bucket_json(self):
+        cat = '-'.join(self.categories)
+        keys = '_'.join(self.bucket_keys_name)
+        return self.bucket_workfolder / f'{self.metric}_[{cat}]_{keys}.json'
+
+    @property
+    def database_json(self):
         database_path = Path(f'dataset/{self.metric}')
         return database_path / f'{self.metric}_{self.config.name}.json'
 
 
-class ByQuality(ChunkGeneralAnalysis):
+class AnalysisBase(AnalysisPaths):
+    bucket: Bucket
+    stats_df: pd.DataFrame
+    ui: ProgressBar
+    database: Database
+    bucket_keys_name: list[str]
+
+    def __init__(self, config):
+        self.config = config
+        self.main()
+
+    def main(self):
+        ...
+
+    def fill_bucket(self):
+        """
+        metric, categories, keys_orders
+        """
+        if self.bucket_json.exists():
+            self.bucket = Bucket()
+            self.bucket.load_bucket(self.bucket_json)
+            return
+
+        self.make_bucket()
+        self.bucket.save_bucket(self.bucket_json)
+
+    def get_bucket_keys(self):
+        bucket_keys = [getattr(self, keys_name) for keys_name in self.bucket_keys_name]
+        return [self.category] + bucket_keys
+
+    def make_bucket(self) -> Bucket:
+        ...
+
+
+class BitrateChunkGeneralAnalysis(AnalysisBase):
+    metric = 'bitrate'
+    categories = ['dash_mpd', 'dash_init', 'dash_m4s']
+
+    def main(self):
+        self.bucket_keys_name = []
+
+        self.fill_bucket()
+        self.make_table()
+        self.make_boxplot()
+        self.make_hist()
+
+    def make_time_bucket(self):
+        self.bucket = Bucket()
+        self.database = database_factory(self.config.metric, self.config)
+
+        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        for self.quality in self.quality_list:
+                            for self.chunk in self.chunk_list:
+                                for self.category in self.categories:
+                                    self.bucket.set_bucket_value(self.database.get_value(),
+                                                                 self.get_bucket_keys())
+                        self.quality = self.chunk = None
+
+    def make_bucket(self):
+        self.bucket = Bucket()
+        self.database = database_factory(self.config.metric, self.config)
+
+        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        self.category = 'dash_mpd'
+                        self.bucket.set_bucket_value(self.database.get_value(),
+                                                     self.get_bucket_keys())
+                        for self.quality in self.quality_list:
+                            self.category = 'dash_init'
+                            self.bucket.set_bucket_value(self.database.get_value(),
+                                                         self.get_bucket_keys())
+                            for self.chunk in self.chunk_list:
+                                self.category = 'dash_m4s'
+                                self.bucket.set_bucket_value(self.database.get_value(),
+                                                             self.get_bucket_keys())
+                        self.quality = self.chunk = None
+
+    def make_table(self):
+        if self.stats_csv.exists(): return
+        stats_defaultdict = defaultdict(list)
+
+        stats_defaultdict['Nome'].append('MPD')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_mpd']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_mpd']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_mpd']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_mpd'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_mpd'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_mpd'], 1))
+
+        stats_defaultdict['Nome'].append('Init')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_init']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_init']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_init']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_init'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_init'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_init'], 1))
+
+        stats_defaultdict['Nome'].append('m4s')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_m4s']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_m4s']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_m4s']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_m4s'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_m4s'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_m4s'], 1))
+
+        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
+        self.stats_df.to_csv(self.stats_csv, index=False)
+
+    def make_boxplot(self):
+        if self.boxplot_path.exists(): return
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+        ax1.boxplot(self.bucket['dash_mpd'], whis=(0, 100))
+        ax1.title.set_text('Arquivo mpd')
+        ax2.boxplot(self.bucket['dash_init'], whis=(0, 100))
+        ax2.title.set_text('Arquivo init')
+        ax3.boxplot(self.bucket['dash_m4s'], whis=(0, 100))
+        ax3.title.set_text('Arquivo m4s')
+        fig.tight_layout()
+        fig: plt.Figure
+        fig.savefig(self.boxplot_path)
+        fig.clf()
+
+    def make_hist(self):
+        if self.hist_path.exists(): return
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 5))
+        ax1.hist(self.bucket['dash_mpd'], bins=30)
+        ax1.set_title('MPD')
+        ax2.hist(self.bucket['dash_init'], bins=30)
+        ax2.set_title('Init')
+        ax3.hist(self.bucket['dash_m4s'], bins=30)
+        ax3.set_title('chunk')
+        fig.tight_layout()
+        fig.savefig(self.hist_path)
+        fig.clf()
+
+
+class TimeChunkGeneralAnalysis(BitrateChunkGeneralAnalysis):
+    metric = 'time'
+    categories = ['dectime', 'dectime_avg', 'dectime_med', 'dectime_std']
+
+    def make_bucket(self):
+        self.bucket = Bucket()
+        self.database = database_factory(self.config.metric, self.config)
+
+        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        for self.quality in self.quality_list:
+                            for self.chunk in self.chunk_list:
+                                for self.category in self.categories:
+                                    self.bucket.set_bucket_value(self.database.get_value(),
+                                                                 self.get_bucket_keys())
+                        self.quality = self.chunk = self.category = None
+
+    def make_table(self):
+        if self.stats_csv.exists(): return
+
+        stats_defaultdict = defaultdict(list)
+        for cat in self.categories:
+            stats_defaultdict['Nome'].append(cat)
+            stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
+            stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
+            stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
+            stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
+            stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
+            stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
+            stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
+            stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
+
+        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
+        self.stats_df.to_csv(self.stats_csv, index=False)
+
+    def make_boxplot(self):
+        if self.boxplot_path.exists(): return
+        fig = plt.Figure((10, 3))
+        for n, cat in enumerate(self.categories):
+            ax = fig.add_subplot(1, len(self.categories), n+1)
+            ax.boxplot(self.bucket[cat], whis=(0, 100))
+            ax.title.set_text(f'{cat}')
+        fig.tight_layout()
+        fig.savefig(self.boxplot_path)
+        fig.clf()
+
+    def make_hist(self):
+        if self.hist_path.exists(): return
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 5))
+        ax1.hist(self.bucket['dash_mpd'], bins=30)
+        ax1.set_title('MPD')
+        ax2.hist(self.bucket['dash_init'], bins=30)
+        ax2.set_title('Init')
+        ax3.hist(self.bucket['dash_m4s'], bins=30)
+        ax3.set_title('chunk')
+        fig.tight_layout()
+        fig.savefig(self.hist_path)
+        fig.clf()
+
+
+class QualityChunkGeneralAnalysis(BitrateChunkGeneralAnalysis):
+    metric = 'chunk_quality'
+    categories = ['ssim', 'mse', 's-mse', 'ws-mse']
+
+    def main(self):
+        self.bucket_keys_name = []
+
+        self.fill_bucket()
+        self.make_table()
+        self.make_boxplot()
+        self.make_hist()
+
+    def make_time_bucket(self):
+        self.bucket = Bucket()
+        self.database = database_factory(self.config.metric, self.config)
+
+        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        for self.quality in self.quality_list:
+                            for self.chunk in self.chunk_list:
+                                for self.category in self.categories:
+                                    self.bucket.set_bucket_value(self.database.get_value(),
+                                                                 self.get_bucket_keys())
+                        self.quality = self.chunk = None
+
+    def make_bucket(self):
+        self.bucket = Bucket()
+        self.database = database_factory(self.config.metric, self.config)
+
+        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        self.category = 'dash_mpd'
+                        self.bucket.set_bucket_value(self.database.get_value(),
+                                                     self.get_bucket_keys())
+                        for self.quality in self.quality_list:
+                            self.category = 'dash_init'
+                            self.bucket.set_bucket_value(self.database.get_value(),
+                                                         self.get_bucket_keys())
+                            for self.chunk in self.chunk_list:
+                                self.category = 'dash_m4s'
+                                self.bucket.set_bucket_value(self.database.get_value(),
+                                                             self.get_bucket_keys())
+                        self.quality = self.chunk = None
+
+    def make_table(self):
+        if self.stats_csv.exists(): return
+        stats_defaultdict = defaultdict(list)
+
+        stats_defaultdict['Nome'].append('MPD')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_mpd']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_mpd']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_mpd']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_mpd'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_mpd'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_mpd'], 1))
+
+        stats_defaultdict['Nome'].append('Init')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_init']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_init']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_init']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_init'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_init'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_init'], 1))
+
+        stats_defaultdict['Nome'].append('m4s')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_m4s']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_m4s']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_m4s']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_m4s'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_m4s'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_m4s'], 1))
+
+        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
+        self.stats_df.to_csv(self.stats_csv, index=False)
+
+    def make_boxplot(self):
+        if self.boxplot_path.exists(): return
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+        ax1.boxplot(self.bucket['dash_mpd'], whis=(0, 100))
+        ax1.title.set_text('Arquivo mpd')
+        ax2.boxplot(self.bucket['dash_init'], whis=(0, 100))
+        ax2.title.set_text('Arquivo init')
+        ax3.boxplot(self.bucket['dash_m4s'], whis=(0, 100))
+        ax3.title.set_text('Arquivo m4s')
+        fig.tight_layout()
+        fig: plt.Figure
+        fig.savefig(self.boxplot_path)
+        fig.clf()
+
+    def make_hist(self):
+        if self.hist_path.exists(): return
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 5))
+        ax1.hist(self.bucket['dash_mpd'], bins=30)
+        ax1.set_title('MPD')
+        ax2.hist(self.bucket['dash_init'], bins=30)
+        ax2.set_title('Init')
+        ax3.hist(self.bucket['dash_m4s'], bins=30)
+        ax3.set_title('chunk')
+        fig.tight_layout()
+        fig.savefig(self.hist_path)
+        fig.clf()
+
+
+class GetTilesChunkGeneralAnalysis(BitrateChunkGeneralAnalysis):
+    metric = 'get_tiles'
+    categories = ['frame', 'chunk']
+
+    def main(self):
+        self.bucket_keys_name = []
+
+        self.fill_bucket()
+        self.make_table()
+        self.make_boxplot()
+        self.make_hist()
+
+    def make_time_bucket(self):
+        self.bucket = Bucket()
+        self.database = database_factory(self.config.metric, self.config)
+
+        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        for self.quality in self.quality_list:
+                            for self.chunk in self.chunk_list:
+                                for self.category in self.categories:
+                                    self.bucket.set_bucket_value(self.database.get_value(),
+                                                                 self.get_bucket_keys())
+                        self.quality = self.chunk = None
+
+    def make_bucket(self):
+        self.bucket = Bucket()
+        self.database = database_factory(self.config.metric, self.config)
+
+        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        self.category = 'dash_mpd'
+                        self.bucket.set_bucket_value(self.database.get_value(),
+                                                     self.get_bucket_keys())
+                        for self.quality in self.quality_list:
+                            self.category = 'dash_init'
+                            self.bucket.set_bucket_value(self.database.get_value(),
+                                                         self.get_bucket_keys())
+                            for self.chunk in self.chunk_list:
+                                self.category = 'dash_m4s'
+                                self.bucket.set_bucket_value(self.database.get_value(),
+                                                             self.get_bucket_keys())
+                        self.quality = self.chunk = None
+
+    def make_table(self):
+        if self.stats_csv.exists(): return
+        stats_defaultdict = defaultdict(list)
+
+        stats_defaultdict['Nome'].append('MPD')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_mpd']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_mpd']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_mpd']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_mpd'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_mpd'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_mpd'], 1))
+
+        stats_defaultdict['Nome'].append('Init')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_init']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_init']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_init']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_init'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_init'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_init'], 1))
+
+        stats_defaultdict['Nome'].append('m4s')
+        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_m4s']))
+        stats_defaultdict['Média'].append(np.average(self.bucket['dash_m4s']))
+        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_m4s']))
+        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_m4s'], 0))
+        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.25))
+        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_m4s'], 0.5))
+        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.75))
+        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_m4s'], 1))
+
+        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
+        self.stats_df.to_csv(self.stats_csv, index=False)
+
+    def make_boxplot(self):
+        if self.boxplot_path.exists(): return
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+        ax1.boxplot(self.bucket['dash_mpd'], whis=(0, 100))
+        ax1.title.set_text('Arquivo mpd')
+        ax2.boxplot(self.bucket['dash_init'], whis=(0, 100))
+        ax2.title.set_text('Arquivo init')
+        ax3.boxplot(self.bucket['dash_m4s'], whis=(0, 100))
+        ax3.title.set_text('Arquivo m4s')
+        fig.tight_layout()
+        fig: plt.Figure
+        fig.savefig(self.boxplot_path)
+        fig.clf()
+
+    def make_hist(self):
+        if self.hist_path.exists(): return
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 5))
+        ax1.hist(self.bucket['dash_mpd'], bins=30)
+        ax1.set_title('MPD')
+        ax2.hist(self.bucket['dash_init'], bins=30)
+        ax2.set_title('Init')
+        ax3.hist(self.bucket['dash_m4s'], bins=30)
+        ax3.set_title('chunk')
+        fig.tight_layout()
+        fig.savefig(self.hist_path)
+        fig.clf()
+
+
+class ByQuality(BitrateChunkGeneralAnalysis):
     def fill_bucket(self):
         if self.bucket_json.exists():
             self.bucket = Bucket()
@@ -358,7 +723,7 @@ class ByQuality(ChunkGeneralAnalysis):
         return self.histogram_folder / f'histogram_qp{self.config.quality}.pdf'
 
 
-class ByTiling(ChunkGeneralAnalysis):
+class ByTiling(BitrateChunkGeneralAnalysis):
     def fill_bucket(self):
         if self.bucket_json.exists():
             self.bucket = Bucket()
@@ -484,7 +849,7 @@ class ByTiling(ChunkGeneralAnalysis):
         return self.histogram_folder / f'histogram_qp{self.config.tiling}.pdf'
 
 
-class ByTilingByQuality(ChunkGeneralAnalysis):
+class ByTilingByQuality(BitrateChunkGeneralAnalysis):
     database: dict
 
     def make_plots(self):
@@ -627,7 +992,7 @@ class ByTilingByQuality(ChunkGeneralAnalysis):
     def make_plot(self):
         for self.config.name in self.config.name_list:
             if self.plot_by_name_by_quality_path.exists(): continue
-            self.database = load_json(self.video_json)
+            self.database = load_json(self.database_json)
             fig = plt.figure(figsize=(8, 8), dpi=600, tight_layout=True)
             for self.config.projection in self.config.projection_list:
                 for n, self.config.tiling in enumerate(self.config.tiling_list):
@@ -651,7 +1016,7 @@ class ByTilingByQuality(ChunkGeneralAnalysis):
     def make_plot2(self):
         for self.config.name in self.config.name_list:
             if self.plot_by_name_by_tiling_path.exists(): continue
-            self.database = load_json(self.video_json)
+            self.database = load_json(self.database_json)
             fig = plt.figure(figsize=(8, 8), dpi=600, tight_layout=True)
             for self.config.projection in self.config.projection_list:
                 for n, self.config.quality in enumerate(self.config.quality_list):
@@ -682,7 +1047,7 @@ class ByTilingByQuality(ChunkGeneralAnalysis):
         """
         self.config.projection = 'cmp'
         for self.config.name in self.config.name_list:
-            self.database = load_json(self.video_json)
+            self.database = load_json(self.database_json)
             for self.config.quality in self.config.quality_list:
                 if self.plot_name_quality_tiling_path.exists(): continue
                 fig = plt.figure(figsize=(8, 8), dpi=600, tight_layout=True)
@@ -712,7 +1077,7 @@ class ByTilingByQuality(ChunkGeneralAnalysis):
         """
         self.config.projection = 'cmp'
         for self.config.name in self.config.name_list:
-            self.database = load_json(self.video_json)
+            self.database = load_json(self.database_json)
             for self.config.quality in self.config.quality_list:
                 def main():
                     if self.bitrate_heatmap_path1.exists(): return
