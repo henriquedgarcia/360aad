@@ -11,26 +11,17 @@ or
 
 `bitrate[name][projection][tiling][tile]['dash_mpd']: int`
 """
+
 from collections import defaultdict
 from pathlib import Path
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib import figure
 
 from scripts.config import Config, ConfigIf
-from scripts.utils import Bucket, save_json, ProgressBar, load_json, splitx, get_nested_value
-
-mpl.rcParams['lines.linewidth'] = 0.5
-mpl.rcParams['figure.figsize'] = [6.4, 4.8]
-mpl.rcParams['figure.dpi'] = 300.0
-mpl.rcParams['figure.autolayout'] = True
-mpl.rcParams['image.cmap'] = 'Jet'
-mpl.rcParams['hist.bins'] = 30
-mpl.rcParams['savefig.transparent'] = True
-mpl.rcParams['axes.formatter.limits'] = [-3, 3]
+from scripts.make_bucket import MakeBuket
+from scripts.utils import Bucket, ProgressBar, load_json, splitx, get_nested_value
 
 
 class BitrateAnalysis:
@@ -39,126 +30,69 @@ class BitrateAnalysis:
         metric = 'bitrate' | 'time' | 'chunk_quality'
         """
         config = Config()
-        # config.metric = 'bitrate'
-        config.metric = 'time'
         print('GeneralAnalysis')
-        GeneralAnalysis(config)
+        ChunkGeneralAnalysis(config, 'bitrate')
         # print('ByQuality')
-        # ByQuality(config)
+        # ByQuality(config, 'bitrate')
         # print('ByTiling')
-        # ByTiling(config)
+        # ByTiling(config, 'bitrate')
         # print('ByTilingByQuality')
-        # ByTilingByQuality(config)
+        # ByTilingByQuality(config, 'bitrate')
 
 
-class BasePaths(ConfigIf):
-    @property
-    def class_name(self):
-        return self.__class__.__name__
-
-    @property
-    def stats_workfolder(self):
-        folder = Path(f'stats/{self.metric}/{self.class_name}/')
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def bucket_workfolder(self):
-        return self.stats_workfolder
-
-    @property
-    def bucket_json(self):
-        return self.bucket_workfolder / 'bucket.json'
-
-    @property
-    def database_json(self):
-        database_path = Path(f'dataset/{self.metric}')
-        return database_path / f'{self.metric}_{self.name}.json'
-
-    @property
-    def graphs_workfolder(self):
-        folder = Path(f'graphs/{self.metric}/{self.class_name}/')
-        return folder
-
-    @property
-    def boxplot_folder(self):
-        folder = self.graphs_workfolder / 'boxplot'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def heatmap_folder(self):
-        folder = self.graphs_workfolder / 'heatmap'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def plot_name_quality_tiling_folder(self):
-        folder = self.graphs_workfolder / 'plot_name_quality_tiling'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def histogram_folder(self):
-        folder = self.graphs_workfolder / 'histogram'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
+class DectimeAnalysis:
+    def __init__(self):
+        """
+        metric = 'bitrate' | 'time' | 'chunk_quality'
+        """
+        config = Config()
+        print('GeneralAnalysis')
+        ChunkGeneralAnalysis(config, 'time')
+        # print('ByQuality')
+        # ByQuality(config, 'time')
+        # print('ByTiling')
+        # ByTiling(config, 'time')
+        # print('ByTilingByQuality')
+        # ByTilingByQuality(config, 'time')
 
 
-class BaseAnalysis(BasePaths):
+class ChunkGeneralAnalysis(ConfigIf):
     bucket: Bucket
+    stats_df: pd.DataFrame
+    ui: ProgressBar
+    categories = {'time': ['dectime', 'dectime_avg', 'dectime_med', 'dectime_std'],
+                  'bitrate': ['dash_mpd', 'dash_init', 'dash_m4s'],
+                  'chunk_quality': ['ssim', 'mse', 's-mse', 'ws-mse'], 'get_tiles': ['frame', 'chunk']}
 
-    def __init__(self, config):
+    def __init__(self, config, metric):
         self.config = config
-        self.main()
+        self.metric = metric
 
-    def main(self):
-        ...
-
-    def save_bucket(self):
-        bucket_dict = self.bucket.get_bucket()
-        save_json(bucket_dict, self.bucket_json)
+        self.fill_bucket()
+        self.make_table()
+        self.make_plots()
 
     def __str__(self):
         return f'{self.config.name} - {self.config.tiling} - tile{self.config.tile} - QP{self.config.quality}'
 
-
-class GeneralAnalysis(BaseAnalysis):
-    stats_df: pd.DataFrame
-    ui: ProgressBar
-
-    def main(self):
-        self.fill_bucket()
-        self.make_table()
-        self.make_boxplot()
-        self.make_hist()
-
     def fill_bucket(self):
-        print('Filling bucket')
-        self.bucket = Bucket(self.config)
+        """
+        metric, categories, keys_orders
+        """
 
-        try:
+        if self.bucket_json.exists():
+            self.bucket = Bucket()
             self.bucket.load_bucket(self.bucket_json)
             return
-        except FileNotFoundError:
-            pass
 
-        self.ui = ProgressBar(28 * 181 * 6, self.class_name)
-        for self.name in self.name_list:
-            self.bucket.set_database(self.database_json)
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.tile in self.tile_list:
-                        self.bucket.set_value(category='dash_mpd')
-                        for self.quality in self.quality_list:
-                            self.ui.update(f'{self}')
-                            self.bucket.set_value(category='dash_init')
-                            for self.config.chunk in self.config.chunk_list:
-                                self.bucket.set_value(category='dash_m4s')
-        self.save_bucket()
+        make_bucket = MakeBuket(self.config, self.metric,
+                                bucket_keys_name=[],
+                                categories=self.categories[self.metric])
+
+        self.bucket = make_bucket.make_bucket()
+        self.bucket.save_bucket(self.bucket_json)
 
     def make_table(self):
-        print('Generating table')
         if self.stats_csv.exists(): return
         stats_defaultdict = defaultdict(list)
 
@@ -195,8 +129,11 @@ class GeneralAnalysis(BaseAnalysis):
         self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
         self.stats_df.to_csv(self.stats_csv, index=False)
 
+    def make_plots(self):
+        self.make_boxplot()
+        self.make_hist()
+
     def make_boxplot(self):
-        print('Generating boxplot')
         if self.boxplot_path.exists(): return
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
         ax1.boxplot(self.bucket['dash_mpd'], whis=(0, 100))
@@ -211,7 +148,6 @@ class GeneralAnalysis(BaseAnalysis):
         fig.clf()
 
     def make_hist(self):
-        print('Generating histogram')
         if self.hist_path.exists(): return
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 5))
         ax1.hist(self.bucket['dash_mpd'], bins=30)
@@ -225,10 +161,55 @@ class GeneralAnalysis(BaseAnalysis):
         fig.clf()
 
     @property
+    def graphs_workfolder(self):
+        folder = Path(f'graphs/{self.metric}/{self.class_name}/')
+        return folder
+
+    @property
+    def boxplot_folder(self):
+        folder = self.graphs_workfolder / 'boxplot'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def histogram_folder(self):
+        folder = self.graphs_workfolder / 'histogram'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
     def plot_name_quality_folder(self):
         folder = self.graphs_workfolder / 'plot_name_quality'
         folder.mkdir(exist_ok=True, parents=True)
         return folder
+
+    @property
+    def plot_name_quality_tiling_folder(self):
+        folder = self.graphs_workfolder / 'plot_name_quality_tiling'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def heatmap_folder(self):
+        folder = self.graphs_workfolder / 'heatmap'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def stats_workfolder(self):
+        folder = Path(f'stats/{self.metric}/{self.class_name}/')
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def bucket_workfolder(self):
+        folder = Path(f'bucket/{self.metric}/{self.class_name}/')
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
+    def class_name(self):
+        return self.__class__.__name__
 
     @property
     def boxplot_path(self):
@@ -242,28 +223,28 @@ class GeneralAnalysis(BaseAnalysis):
     def stats_csv(self):
         return self.stats_workfolder / 'stats.csv'
 
+    @property
+    def bucket_json(self):
+        return self.bucket_workfolder / 'bucket.json'
 
-class ByQuality(GeneralAnalysis):
+    @property
+    def video_json(self):
+        database_path = Path(f'dataset/{self.metric}')
+        return database_path / f'{self.metric}_{self.config.name}.json'
+
+
+class ByQuality(ChunkGeneralAnalysis):
     def fill_bucket(self):
-        self.bucket = Bucket(self.config)
-
         if self.bucket_json.exists():
+            self.bucket = Bucket()
             self.bucket.load_bucket(self.bucket_json)
             return
 
-        self.ui = ProgressBar(28 * 181 * 6, self.class_name)
-        for self.config.name in self.config.name_list:
-            self.bucket.set_database(self.database_json)
-
-            for self.config.projection in self.config.projection_list:
-                for self.config.tiling in self.config.tiling_list:
-                    for self.config.tile in self.config.get_tile_list(self.config.tiling):
-                        for self.config.quality in self.config.quality_list:
-                            self.ui.update(f'{self}')
-                            for self.config.chunk in self.config.chunk_list:
-                                self.bucket.set_value(category='dash_m4s', quality=self.config.quality)
-
-        self.save_bucket()
+        make_bucket = MakeBuket(self.config, self.metric,
+                                bucket_keys_name=['quality'],
+                                categories=['dash_m4s'])
+        self.bucket = make_bucket.make_bucket()
+        self.bucket.save_bucket(self.bucket_json)
 
     def make_table(self):
         if self.stats_csv.exists():
@@ -273,7 +254,7 @@ class ByQuality(GeneralAnalysis):
         for self.config.quality in self.config.quality_list:
             metrics = ['dash_init', 'dash_m4s']
             for metric in metrics:
-                samples = self.bucket.get_bucket([metric, self.config.quality])
+                samples = self.bucket.get_bucket_values([metric, self.config.quality])
                 stats_defaultdict['Nome'].append(metric)
                 stats_defaultdict['Quality'].append(self.config.quality)
                 stats_defaultdict['n_arquivos'].append(len(samples))
@@ -289,21 +270,42 @@ class ByQuality(GeneralAnalysis):
         self.stats_df.to_csv(self.stats_csv, index=False)
 
     def make_boxplot(self):
-        if not self.boxplot_join_path.exists():
-            fig = plt.Figure(figsize=(10, 5))
-            ax = fig.add_subplot()
-            for quality in self.config.quality_list:
-                ax.boxplot(x=self.bucket['dash_m4s'][quality],
-                           whis=(0, 100),
-                           positions=[int(quality)])
-            ax.title.set_text('Arquivo m4s')
-            ax.set_xticklabels(self.config.quality_list)
-            ax.ticklabel_format(axis='y', style='scientific', scilimits=(6, 6))
-            ax.set_xlabel('QP')
-            ax.set_ylabel('Bitrate (Mbps)')
+        if not self.boxplot_path.exists():
+            fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+            fig: plt.Figure
+            ax: list[plt.Axes]
+            legends = []
+            for n, quality in enumerate(self.config.quality_list):
+                ax[0].boxplot(self.bucket['dash_init'][quality], whis=(0, 100), positions=[n])
+                ax[1].boxplot(self.bucket['dash_m4s'][quality], whis=(0, 100), positions=[n])
+            ax[0].title.set_text('Arquivo ini')
+            ax[1].title.set_text('Arquivo m4s')
+            ax[1].legend(legends)
+            ax[0].set_xticklabels(self.config.quality_list)
+            ax[1].set_xticklabels(self.config.quality_list)
+            ax[0].ticklabel_format(axis='y', style='scientific')
+            ax[1].ticklabel_format(axis='y', style='scientific', scilimits=(6, 6))
+            ax[0].set_xlabel('QP')
+            ax[1].set_xlabel('QP')
+            ax[0].set_ylabel('Bitrate (bps)')
+            ax[1].set_ylabel('Bitrate (Mbps)')
             fig.tight_layout()
-            fig.savefig(self.boxplot_join_path)
+            fig.savefig(self.boxplot_path)
             fig.clf()
+
+        if not self.bitrate_boxplot_path1.exists():
+            fig1 = plt.figure(figsize=(11, 3), dpi=600, linewidth=0.5, tight_layout=True)
+
+            for n, quality in enumerate(self.config.quality_list):
+                ax1 = fig1.add_subplot(1, 6, n + 1)
+                ax1.boxplot(self.bucket['dash_init'][quality], whis=(0, 100), positions=[n])
+                ax1.title.set_text('Arquivo ini')
+                ax1.set_xticklabels([quality])
+                ax1.ticklabel_format(axis='y', style='scientific')
+                ax1.set_xlabel('QP')
+                ax1.set_ylabel('Bitrate (bps)')
+
+            fig1.savefig(self.bitrate_boxplot_path1)
 
         if not self.bitrate_boxplot_path2.exists():
             fig2 = plt.figure(figsize=(11, 3), dpi=600, linewidth=0.5, tight_layout=True)
@@ -326,7 +328,7 @@ class ByQuality(GeneralAnalysis):
             if self.hist_path.exists():
                 continue
             fig = plt.figure(dpi=600, linewidth=0.5, tight_layout=True)
-            ax = fig.add_subplot()
+            ax = fig.add_subplot(1, 1, 1)
 
             ax.hist(self.bucket['dash_m4s'][self.config.quality], bins=30)
 
@@ -340,8 +342,8 @@ class ByQuality(GeneralAnalysis):
             fig.clf()
 
     @property
-    def boxplot_join_path(self):
-        return self.boxplot_folder / 'boxplot_join.pdf'
+    def boxplot_path(self):
+        return self.boxplot_folder / 'boxplot.pdf'
 
     @property
     def bitrate_boxplot_path1(self):
@@ -356,28 +358,19 @@ class ByQuality(GeneralAnalysis):
         return self.histogram_folder / f'histogram_qp{self.config.quality}.pdf'
 
 
-class ByTiling(GeneralAnalysis):
+class ByTiling(ChunkGeneralAnalysis):
     def fill_bucket(self):
-        self.bucket = Bucket(self.config, )
-
         if self.bucket_json.exists():
+            self.bucket = Bucket()
             self.bucket.load_bucket(self.bucket_json)
             return
 
-        self.ui = ProgressBar(28 * 181 * len(self.config.tiling_list), self.class_name)
-        for self.config.name in self.config.name_list:
-            self.bucket.set_database(self.database_json)
+        make_bucket = MakeBuket(self.config, self.metric,
+                                bucket_keys_name=['tiling'],
+                                categories=['dash_m4s'])
 
-            for self.config.projection in self.config.projection_list:
-                for self.config.tiling in self.config.tiling_list:
-                    for self.config.tile in self.config.get_tile_list(self.config.tiling):
-                        for self.config.quality in self.config.quality_list:
-                            self.ui.update(f'{self}')
-                            self.bucket.set_value(category='dash_init', tiling=self.config.tiling)
-                            for self.config.chunk in self.config.chunk_list:
-                                self.bucket.set_value(category='dash_m4s', tiling=self.config.tiling)
-
-        self.save_bucket()
+        self.bucket = make_bucket.make_bucket()
+        self.bucket.save_bucket(self.bucket_json)
 
     def make_table(self):
         if self.stats_csv.exists():
@@ -387,7 +380,7 @@ class ByTiling(GeneralAnalysis):
         for self.config.tiling in self.config.tiling_list:
             metrics = ['dash_init', 'dash_m4s']
             for metric in metrics:
-                samples = self.bucket.get_bucket([metric, self.config.tiling])
+                samples = self.bucket.get_bucket_values([metric, self.config.tiling])
                 stats_defaultdict['Nome'].append(metric)
                 stats_defaultdict['Tiling'].append(self.config.tiling)
                 stats_defaultdict['n_arquivos'].append(len(samples))
@@ -427,7 +420,7 @@ class ByTiling(GeneralAnalysis):
             fig.clf()
 
         if not self.bitrate_boxplot_path1.exists():
-            fig1 = plt.figure(figsize=(11, 3))
+            fig1 = plt.figure(figsize=(11, 3), dpi=600, linewidth=0.5, tight_layout=True)
 
             for n, tiling in enumerate(self.config.tiling_list):
                 ax1 = fig1.add_subplot(1, 6, n + 1)
@@ -441,7 +434,7 @@ class ByTiling(GeneralAnalysis):
             fig1.savefig(self.bitrate_boxplot_path1)
 
         if not self.bitrate_boxplot_path2.exists():
-            fig2 = plt.figure(figsize=(11, 3))
+            fig2 = plt.figure(figsize=(11, 3), dpi=600, linewidth=0.5, tight_layout=True)
 
             for n, tiling in enumerate(self.config.tiling_list):
                 ax2 = fig2.add_subplot(1, 6, n + 1)
@@ -460,7 +453,7 @@ class ByTiling(GeneralAnalysis):
         fig: plt.Figure
         ax: plt.Axes
         for n, tiling in enumerate(self.config.tiling_list):
-            fig = figure.Figure()
+            fig = plt.figure(dpi=600, linewidth=0.5, tight_layout=True)
             ax = fig.add_subplot(1, 1, 1)
 
             ax.hist(self.bucket['dash_m4s'][tiling], bins=30)
@@ -472,6 +465,7 @@ class ByTiling(GeneralAnalysis):
 
             fig.suptitle('dash_m4s')
             fig.savefig(self.hist_path)
+            fig.clf()
 
     @property
     def boxplot_path(self):
@@ -490,7 +484,7 @@ class ByTiling(GeneralAnalysis):
         return self.histogram_folder / f'histogram_qp{self.config.tiling}.pdf'
 
 
-class ByTilingByQuality(GeneralAnalysis):
+class ByTilingByQuality(ChunkGeneralAnalysis):
     database: dict
 
     def make_plots(self):
@@ -502,26 +496,17 @@ class ByTilingByQuality(GeneralAnalysis):
         self.make_heatmap1()
 
     def fill_bucket(self):
-        self.bucket = Bucket(self.config, )
-
         if self.bucket_json.exists():
+            self.bucket = Bucket()
             self.bucket.load_bucket(self.bucket_json)
             return
 
-        self.ui = ProgressBar(28 * 181 * len(self.config.tiling_list), self.class_name)
-        for self.config.name in self.config.name_list:
-            self.bucket.set_database(self.database_json)
+        make_bucket = MakeBuket(self.config, self.metric,
+                                bucket_keys_name=['tiling', 'quality'],
+                                categories=['dash_m4s'])
 
-            for self.config.projection in self.config.projection_list:
-                for self.config.tiling in self.config.tiling_list:
-                    for self.config.tile in self.config.get_tile_list(self.config.tiling):
-                        for self.config.quality in self.config.quality_list:
-                            self.ui.update(f'{self}')
-                            self.bucket.set_value(category='dash_init', tiling=self.config.tiling, quality=self.config.quality)
-                            for self.config.chunk in self.config.chunk_list:
-                                self.bucket.set_value(category='dash_m4s', tiling=self.config.tiling, quality=self.config.quality)
-
-        self.save_bucket()
+        self.bucket = make_bucket.make_bucket()
+        self.bucket.save_bucket(self.bucket_json)
 
     def make_table(self):
         if self.stats_csv.exists():
@@ -624,7 +609,7 @@ class ByTilingByQuality(GeneralAnalysis):
             if not self.hist_path.exists():
                 fig: plt.Figure
                 ax: plt.Axes
-                fig = plt.figure(figsize=(10, 3), dpi=600, linewidth=0.5, tight_layout=True)
+                fig = plt.figure(figsize=(3, 10), dpi=600, linewidth=0.5, tight_layout=True)
                 for n, self.config.quality in enumerate(self.config.quality_list):
                     ax = fig.add_subplot(1, len(self.config.quality_list), n + 1)
 
@@ -642,7 +627,7 @@ class ByTilingByQuality(GeneralAnalysis):
     def make_plot(self):
         for self.config.name in self.config.name_list:
             if self.plot_by_name_by_quality_path.exists(): continue
-            self.database = load_json(self.database_json)
+            self.database = load_json(self.video_json)
             fig = plt.figure(figsize=(8, 8), dpi=600, tight_layout=True)
             for self.config.projection in self.config.projection_list:
                 for n, self.config.tiling in enumerate(self.config.tiling_list):
@@ -666,7 +651,7 @@ class ByTilingByQuality(GeneralAnalysis):
     def make_plot2(self):
         for self.config.name in self.config.name_list:
             if self.plot_by_name_by_tiling_path.exists(): continue
-            self.database = load_json(self.database_json)
+            self.database = load_json(self.video_json)
             fig = plt.figure(figsize=(8, 8), dpi=600, tight_layout=True)
             for self.config.projection in self.config.projection_list:
                 for n, self.config.quality in enumerate(self.config.quality_list):
@@ -697,9 +682,9 @@ class ByTilingByQuality(GeneralAnalysis):
         """
         self.config.projection = 'cmp'
         for self.config.name in self.config.name_list:
-            self.database = load_json(self.database_json)
+            self.database = load_json(self.video_json)
             for self.config.quality in self.config.quality_list:
-                if self.plot_by_name_by_tiling_by_quality_path.exists(): continue
+                if self.plot_name_quality_tiling_path.exists(): continue
                 fig = plt.figure(figsize=(8, 8), dpi=600, tight_layout=True)
                 for n, self.config.tiling in enumerate(self.config.tiling_list):
                     ax = fig.add_subplot(3, 2, n + 1)
@@ -714,7 +699,7 @@ class ByTilingByQuality(GeneralAnalysis):
                         ax.set_xlabel('Chunk')
                         ax.set_ylabel('Bitrate (bps)')
                         ax.set_title(f'QP {self.config.quality} - {self.config.tiling}')
-                fig.savefig(self.plot_by_name_by_tiling_by_quality_path)
+                fig.savefig(self.plot_name_quality_tiling_path)
                 fig.clf()
                 plt.close()
 
@@ -727,7 +712,7 @@ class ByTilingByQuality(GeneralAnalysis):
         """
         self.config.projection = 'cmp'
         for self.config.name in self.config.name_list:
-            self.database = load_json(self.database_json)
+            self.database = load_json(self.video_json)
             for self.config.quality in self.config.quality_list:
                 def main():
                     if self.bitrate_heatmap_path1.exists(): return
@@ -778,7 +763,6 @@ class ByTilingByQuality(GeneralAnalysis):
                         ax.text(tiling_x / 2 - 0.5, tiling_y / 2 - 0.5,
                                 f'{tiling_x * tiling_y * np.round(np.average(heatmap_lst[self.config.tiling]))} ',
                                 ha="center", va="center", color="w")
-
                     return fig
 
                 def show(fig):
@@ -817,7 +801,7 @@ class ByTilingByQuality(GeneralAnalysis):
         return self.plot_name_quality_folder / f'plot_{self.config.name}_tiling.pdf'
 
     @property
-    def plot_by_name_by_tiling_by_quality_path(self):
+    def plot_name_quality_tiling_path(self):
         return self.plot_name_quality_tiling_folder / f'plot_{self.config.name}_QP{self.config.quality}.pdf'
 
     @property
