@@ -4,10 +4,8 @@ from functools import reduce
 from pathlib import Path
 from typing import Any, Union
 
-from tqdm import tqdm
 
-
-def get_nested_value(data, keys) -> Any:
+def get_nested_value_(data, keys) -> Any:
     """
     Fetch value from nested dict using a list of keys.
     :param data:
@@ -27,6 +25,26 @@ def get_nested_value(data, keys) -> Any:
     except TypeError as e:
         raise TypeError(f"Invalid structure: {e}")
 
+def get_nested_value(data, keys) -> Any:
+    results = data
+    for key in keys:
+        results = results[key]
+    return results
+
+def get_nested_value__(data, keys) -> Any:
+    """
+    Fetch value from nested dict using a list of keys.
+    :param data:
+    :type data: dict
+    :param keys:
+    :type keys: list
+    :return: Any
+    """
+
+    if not keys:
+        return data
+    return get_nested_value(data.get(keys[0], {}), keys[1:])
+
 
 def set_nested_value(data, keys, value):
     subtree = get_nested_value(data, keys[:-1])
@@ -37,44 +55,6 @@ class AutoDict(dict):
     def __missing__(self, key):
         self[key] = type(self)()
         return self[key]
-
-
-class GetDatabaseKeys:
-    def get_database_keys(self):
-        ...
-
-
-class Bucket:
-    def __init__(self):
-        self.bucket = AutoDict()
-
-    def __getitem__(self, item):
-        return self.bucket[item]
-
-    def load_bucket(self, bucket_path: Path):
-        self.bucket = load_json(bucket_path)
-
-    def get_bucket_values(self, keys=None):
-        if keys is None:
-            return self.bucket
-
-        if isinstance(keys, list):
-            return get_nested_value(self.bucket, keys)
-
-        return self.bucket[keys]
-
-    def set_bucket_value(self, value, keys):
-        try:
-            get_nested_value(self.bucket, keys).append(value)
-        except AttributeError:
-            set_nested_value(self.bucket, keys, [value])
-
-    def keys(self):
-        deep_search_keys(self.bucket)
-        return list(self.bucket.keys())
-
-    def save_bucket(self, filename):
-        save_json(self.bucket, filename)
 
 
 def save_json(data: Union[dict, list], filename: Union[str, Path], separators=(',', ':'), indent=None):
@@ -100,26 +80,6 @@ def load_json(filename: Union[str, Path], object_hook: type[dict] = None):
     filename = Path(filename)
     results = json.loads(filename.read_text(encoding='utf-8'), object_hook=object_hook)
     return results
-
-
-class ProgressBar:
-    t: tqdm
-
-    def __init__(self, total, desc):
-        self.t = tqdm(total=total, desc=desc)
-
-    def new(self, total, desc):
-        self.t = tqdm(total=total, desc=desc)
-
-    def update(self, postfix_str):
-        self.set_postfix_str(postfix_str)
-        self.t.update()
-
-    def set_postfix_str(self, postfix_str):
-        self.t.set_postfix_str(postfix_str)
-
-    def __del__(self):
-        self.t.close()
 
 
 def id2xy(idx: Union[int, str], shape: tuple):
