@@ -3,7 +3,9 @@ from typing import Optional
 
 from scripts.config import ConfigIf, Config
 from scripts.database import database_factory, Database
-from scripts.utils import Bucket, get_nested_value, save_json
+from scripts.utils import get_nested_value, save_json
+from scripts.progressbar import ProgressBar
+from scripts.bucket import Bucket
 
 
 class MakeBuket(ConfigIf):
@@ -19,7 +21,7 @@ class MakeBuket(ConfigIf):
         :param bucket_keys_name:
         """
         self.database = None
-        assert metric in self.metric_list
+        # assert metric in self.metric_list
 
         self.config = config
         self.config.metric = metric
@@ -34,24 +36,34 @@ class MakeBuket(ConfigIf):
         self.bucket = Bucket()
         self.database = database_factory(self.config.metric, self.config)
 
-        for self.category in self.categories:
-            for _ in self.iterator():
-                self.set_bucket()
+        self.iterator()
         return self.bucket
+
+    ui: ProgressBar
 
     def iterator1(self):
         """
         bitrate, chunk_quality, time iterator
         :return:
         """
+        self.ui = ProgressBar(28 * 181, str([self.category] + self.bucket_keys_name))
         for self.name in self.name_list:
-            for self.config.v in self.categories:
-                for self.projection in self.projection_list:
-                    for self.tiling in self.tiling_list:
-                        for self.tile in self.tile_list:
-                            for self.quality in self.quality_list:
-                                for self.chunk in self.chunk_list:
-                                    yield
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        self.ui.update(f'{self}')
+                        self.category = 'dash_mpd'
+                        self.bucket.set_bucket_value(self.database.get_value(),
+                                                     self.get_bucket_keys())
+                        for self.quality in self.quality_list:
+                            self.category = 'dash_init'
+                            self.bucket.set_bucket_value(self.database.get_value(),
+                                                         self.get_bucket_keys())
+                            for self.chunk in self.chunk_list:
+                                self.category = 'dash_m4s'
+                                self.bucket.set_bucket_value(self.database.get_value(),
+                                                             self.get_bucket_keys())
+                        self.quality = self.chunk = None
 
     def iterator2(self):
         """
@@ -86,17 +98,13 @@ class MakeBuket(ConfigIf):
                             for self.chunk in self.chunk_list:
                                 yield
 
-    def set_bucket(self):
-        self.bucket.set_bucket_value(self.database.get_value(),
-                                     self.get_bucket_keys())
-
     def get_database_value(self, keys):
         value = get_nested_value(self.database.database, keys)
         return value
 
     def get_bucket_keys(self):
         bucket_keys = [getattr(self.config, keys_name) for keys_name in self.bucket_keys_name]
-        return [self.category] + bucket_keys
+        return [self.config.category] + bucket_keys
 
     @property
     def database_json_path(self):
