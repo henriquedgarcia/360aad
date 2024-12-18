@@ -76,16 +76,17 @@ class GetTilesDatabase(Database):
 
         if self.config.category == 'chunk':
             keys.append(self.config.chunk)
-            return keys
+        return keys
 
 
 def database_factory(metric, config):
+    config.metric = metric
     if metric == 'time':
         return TimeDatabase(config)
     elif metric == 'bitrate':
         return BitrateDatabase(config)
     elif metric == 'chunk_quality':
-        return GetTilesDatabase(config)
+        return QualityDatabase(config)
     elif metric == 'get_tiles':
         return GetTilesDatabase(config)
     else:
