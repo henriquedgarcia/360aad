@@ -98,7 +98,6 @@ class AnalysisBase(AnalysisPaths):
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
-        config.metric = self.metric
         self.main()
 
     def main(self):
