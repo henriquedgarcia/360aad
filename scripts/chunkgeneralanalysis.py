@@ -11,10 +11,9 @@ from scripts.progressbar import ProgressBar
 
 
 class BitrateChunkGeneralAnalysis(AnalysisBase):
-    metric = 'bitrate'
-    categories = ['dash_mpd', 'dash_init', 'dash_m4s']
-
     def main(self):
+        self.metric = 'bitrate'
+        self.categories = ['dash_mpd', 'dash_init', 'dash_m4s']
         self.bucket_keys_name = []
 
         self.fill_bucket()
@@ -22,17 +21,25 @@ class BitrateChunkGeneralAnalysis(AnalysisBase):
         self.make_boxplot()
         self.make_hist()
 
-    def make_bucket(self):
+    def fill_bucket(self):
+        """
+        metric, categories, keys_orders
+        """
+        if self.bucket_json.exists():
+            self.bucket = Bucket()
+            self.bucket.load_bucket(self.bucket_json)
+            return
+
         self.bucket = Bucket()
         self.database = database_factory(self.metric, self.config)
 
         print(f'Collecting Data.')
         self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
         for self.name in self.name_list:
-            self.database.load(self.database_json)
             for self.projection in self.projection_list:
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
+                        self.chunk = self.quality = None
                         self.ui.update(f'{self}')
                         self.category = 'dash_mpd'
                         self.bucket.set_bucket_value(self.database.get_value(),
@@ -45,7 +52,17 @@ class BitrateChunkGeneralAnalysis(AnalysisBase):
                                 self.category = 'dash_m4s'
                                 self.bucket.set_bucket_value(self.database.get_value(),
                                                              self.get_bucket_keys())
-                        self.quality = self.chunk = None
+
+        self.bucket.save_bucket(self.bucket_json)
+
+    @property
+    def name(self):
+        return self.config.name
+
+    @name.setter
+    def name(self, value):
+        self.config.name = value
+        self.database.load(self.database_json)
 
     def make_table(self):
         if self.stats_csv.exists(): return
@@ -112,12 +129,13 @@ class TimeChunkGeneralAnalysis(AnalysisBase):
     categories = ['dectime', 'dectime_avg', 'dectime_med', 'dectime_std']
 
     def main(self):
-        self.categories = ['dectime_avg']
+        self.categories = ['dectime_avg', 'dectime_std']
         self.bucket_keys_name = []
 
         self.fill_bucket()
         self.make_table()
-        self.make_boxplot()
+        # self.make_boxplot()
+        self.categories = ['dectime_avg']
         self.make_hist()
 
     def make_bucket(self):
@@ -125,7 +143,7 @@ class TimeChunkGeneralAnalysis(AnalysisBase):
         self.database = database_factory(self.metric, self.config)
 
         print(f'Collecting Data.')
-        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        self.ui = ProgressBar(28 * 181, str([f'make_bucket-{self.metric}'] + self.bucket_keys_name))
         for self.name in self.name_list:
             self.database.load(self.database_json)
             for self.projection in self.projection_list:
@@ -193,8 +211,8 @@ class QualityChunkGeneralAnalysis(AnalysisBase):
 
         self.fill_bucket()
         self.make_table()
-        self.make_boxplot()
-        self.make_hist()
+        # self.make_boxplot()
+        # self.make_hist()
 
     def make_bucket(self):
         self.bucket = Bucket()
@@ -269,8 +287,8 @@ class GetTilesChunkGeneralAnalysis(AnalysisBase):
 
         self.fill_bucket()
         self.make_table()
-        self.make_boxplot()
-        self.make_hist()
+        # self.make_boxplot()
+        # self.make_hist()
 
     def make_bucket(self):
         self.bucket = Bucket()
