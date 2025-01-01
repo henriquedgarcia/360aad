@@ -1,5 +1,6 @@
-from scripts.chunkgeneralanalysis import BitrateChunkGeneralAnalysis, TimeChunkGeneralAnalysis, QualityChunkGeneralAnalysis, GetTilesChunkGeneralAnalysis
+from scripts.chunkgeneralanalysis import QualityChunkGeneralAnalysis, BitrateChunkGeneralAnalysis
 from scripts.config import Config
+from scripts.fix_database import FixDatabase
 
 
 class App:
@@ -9,9 +10,9 @@ class App:
         """
         config = Config()
         # ChunkGeneralAnalysis
-        # BitrateChunkGeneralAnalysis(config)
+        BitrateChunkGeneralAnalysis(config)
         # TimeChunkGeneralAnalysis(config)
-        QualityChunkGeneralAnalysis(config)
+        # QualityChunkGeneralAnalysis(config)
         # GetTilesChunkGeneralAnalysis(config)
 
         # print('ByQuality')
@@ -20,6 +21,9 @@ class App:
         # ByTiling(config, 'bitrate')
         # print('ByTilingByQuality')
         # ByTilingByQuality(config, 'bitrate')
+
+        # config = Config()
+        # FixDatabase(config)
 
 
 App()
