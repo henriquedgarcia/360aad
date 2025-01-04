@@ -74,7 +74,7 @@ class GetTilesDatabase(Database):
         keys = [self.config.name, self.config.projection, self.config.tiling,
                 self.config.user, self.config.category]
 
-        if self.config.category == 'chunk':
+        if self.config.category == 'chunks':
             keys.append(self.config.chunk)
         return keys
 
