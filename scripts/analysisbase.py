@@ -85,7 +85,11 @@ class AnalysisPaths(ConfigIf):
     @property
     def database_json(self):
         database_path = Path(f'dataset/{self.metric}')
-        return database_path / f'{self.metric}_{self.config.name}.json'
+        database_json_path = database_path / f'{self.metric}_{self.config.name}.json'
+        if self.metric == 'get_tiles':
+            database_json_path_stem = database_json_path.stem + '_fov110x90'
+            database_json_path = database_json_path.with_stem(database_json_path_stem)
+        return database_json_path
 
 
 class AnalysisBase(AnalysisPaths):
@@ -98,6 +102,7 @@ class AnalysisBase(AnalysisPaths):
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
+        self.projection = 'cmp'
         self.main()
 
     def main(self):
