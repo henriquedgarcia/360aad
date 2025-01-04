@@ -167,7 +167,7 @@ class Config:
 
     @property
     def users_list(self):
-        users_str = self.hmd_dataset[self.name + '_nas'].bucket_keys_name()
+        users_str = self.hmd_dataset[self.name + '_nas'].keys()
         sorted_users_int = sorted(map(int, users_str))
         sorted_users_str = list(map(str, sorted_users_int))
         return sorted_users_str
