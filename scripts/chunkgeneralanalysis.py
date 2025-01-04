@@ -1,4 +1,5 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,7 @@ from scripts.analysisbase import AnalysisBase
 from scripts.bucket import Bucket
 from scripts.database import database_factory
 from scripts.progressbar import ProgressBar
+from scripts.utils import AutoDict, LazyProperty
 
 
 class BitrateChunkGeneralAnalysis(AnalysisBase):
@@ -278,34 +280,162 @@ class QualityChunkGeneralAnalysis(AnalysisBase):
 
 
 class GetTilesChunkGeneralAnalysis(AnalysisBase):
-    metric = 'get_tiles'
-    categories = ['frame', 'chunk']
-
     def main(self):
-        self.categories = ['chunk']
-        self.bucket_keys_name = []
+        self.metric = 'get_tiles'
+        self.categories = ['frame', 'chunk']
+        self.category = 'chunks'
 
-        self.fill_bucket()
-        self.make_table()
+        self.database = database_factory(self.metric, self.config)
+
+        # self.plot_n_tiles_by_name_tiling_user_chunk()
+        self.stats_n_tiles_by_name_tiling_user_chunk()
+        # self.make_table()
         # self.make_boxplot()
         # self.make_hist()
 
+    def plot_n_tiles_by_name_tiling_user_chunk(self):
+        """
+        Compare users
+        name_tiling = filename
+        user = plot
+        chunk = x axis
+        n_tiles = len(seen_tiles by chunk)
+        """
+        file_name = lambda: Path(f'graphs/GetTiles/n_tiles_by_name_tiling_user_chunk/'
+                                 f'{self.name}_{self.tiling}.png')
+
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.tiling in self.tiling_list:
+                file = file_name()
+                if file.exists(): continue
+
+                fig = plt.figure()
+                ax = fig.add_subplot(1, 1, 1)
+                get_tiles_values_array = np.zeros((len(self.users_list), len(self.chunk_list)))
+                for n, self.user in enumerate(self.users_list):
+                    get_tiles_values = []
+                    for self.chunk in self.chunk_list:
+                        value = self.database.get_value()
+                        size = len(value)
+                        get_tiles_values.append(size)
+                    ax.plot(get_tiles_values)
+                    get_tiles_values_array[n] = get_tiles_values
+                ax.plot(np.average(get_tiles_values_array, axis=0), label=f'user{self.user}')
+                ax.set_title(f'Users by {self.tiling}')
+                ax.set_xlabel(f'Chunks')
+                ax.set_ylabel(f'n. tiles')
+                fig.suptitle(f'{self.name}')
+                fig.tight_layout()
+                # fig.show()
+                file.parent.mkdir(parents=True, exist_ok=True)
+                fig.savefig(file)
+                plt.close(fig)
+
+    def stats_n_tiles_by_name_tiling_user_chunk(self):
+        """
+        Compare users
+        name_tiling = filename
+        user = plot
+        chunk = x axis
+        n_tiles = len(seen_tiles by chunk)
+        """
+        file = Path(f'stats/GetTiles/n_tiles_by_name_tiling_user_chunk/stats.csv')
+        if file.exists(): return
+
+        table = defaultdict(list)
+        for self.name in self.name_list:
+            self.database.load(self.database_json)
+            for self.tiling in self.tiling_list:
+                for n, self.user in enumerate(self.users_list):
+                    n_tiles_seen_list = []
+                    for self.chunk in self.chunk_list:
+                        n_tiles_seen = len(self.database.get_value())
+                        n_tiles_seen_list.append(n_tiles_seen)
+
+                    table['name'].append(self.name)
+                    table['tiling'].append(self.tiling)
+                    table['user'].append(self.user)
+                    table['avg'].append(np.average(n_tiles_seen_list))
+                    table['std'].append(np.std(n_tiles_seen_list))
+                    table['min'].append(np.min(n_tiles_seen_list))
+                    table['med'].append(np.median(n_tiles_seen_list))
+                    table['max'].append(np.max(n_tiles_seen_list))
+
+        file.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(table).to_csv(file)
+
+        table1 = defaultdict(list)
+        for user in set(table['user']):
+            df_filtrado = table[table['user'] == user]
+            table1['user'].append(user)
+            table1['avg'].append(df_filtrado["avg"].mean())
+            table1['std'].append(df_filtrado["avg"].std())
+        file = Path(f'stats/GetTiles/n_tiles_by_name_tiling_user_chunk/stats_user.csv')
+        pd.DataFrame(table1).to_csv(file)
+
+    @LazyProperty
+    def n_tiles_for_plot_by_tiling_user_chunk(self):
+        """ Compara usuários por tiling """
+        my_dict = AutoDict()
+        for self.tiling in self.tiling_list:
+            for self.user in self.users_list:
+                my_dict[self.tiling][self.user] = defaultdict(list)
+
+    @LazyProperty
+    def n_tiles_for_plot_by_name_tiling_chunk(self):
+        """ Compara vídeos """
+        my_dict = AutoDict()
+        for self.name in self.name_list:
+            for self.tiling in self.tiling_list:
+                my_dict[self.name][self.tiling] = defaultdict(list)
+
+    @LazyProperty
+    def n_tiles_for_plot_by_tiling(self):
+        """ Compara tiling """
+        my_dict = AutoDict()
+        for self.tiling in self.tiling_list:
+            my_dict[self.tiling] = defaultdict(list)
+
     def make_bucket(self):
-        self.bucket = Bucket()
-        self.database = database_factory(self.metric, self.config)
+        data_heatmap_by_tiling = AutoDict()
+        for self.tiling in self.tiling_list:
+            for self.tile in self.tile_list:
+                data_heatmap_by_tiling[self.tiling][self.tile] = 0
+
+        data_heatmap_by_name_tiling = AutoDict()
+        for self.name in self.name_list:
+            for self.tiling in self.tiling_list:
+                for self.tile in self.tile_list:
+                    data_heatmap_by_name_tiling[self.name][self.tiling][self.tile] = 0
 
         self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
         for self.name in self.name_list:
-            self.database.load(self.database_json)
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.user in self.users_list:
-                        self.ui.update(f'{self}')
-                        for self.chunk in self.chunk_list:
-                            for self.category in self.categories:
-                                self.bucket.set_bucket_value(self.database.get_value(),
-                                                             self.get_bucket_keys())
-                        self.chunk = self.category = None
+            for self.tiling in self.tiling_list:
+                count_tiles_seen_by_name_tiling = Counter()
+
+                for self.user in self.users_list:
+                    self.ui.update(f'{self}')
+
+                    count_tiles_seen_by_name_tiling_user = \
+                        {tile: 0 for tile in self.tile_list}
+
+                    for self.chunk in self.chunk_list:
+                        # get value
+                        get_tiles_value = self.database.get_value()
+
+                        # add in bucket
+                        keys = ['tiles_seen']
+                        self.bucket.set_bucket_value(get_tiles_value, keys)
+
+                        # count tiles seen
+                        for tile in get_tiles_value:
+                            count_tiles_seen_by_name_tiling_user[tile] += 1
+                    else:
+                        self.chunk = None
+
+                    keys = ['c_por_tiling']
+                    self.bucket.set_bucket_value(self.database.get_value(), keys)
 
     def make_table(self):
         if self.stats_csv.exists(): return
