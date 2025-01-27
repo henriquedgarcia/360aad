@@ -308,7 +308,7 @@ class Lists:
 
 
 class ConfigIf(Factors, Lists):
-    config: Config
+    config = Config()
 
     @property
     def video_shape(self):
