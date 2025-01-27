@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict, Counter
 from pathlib import Path
 
@@ -11,51 +12,76 @@ from scripts.database import database_factory
 from scripts.progressbar import ProgressBar
 from scripts.utils import AutoDict, LazyProperty
 
+lock = asyncio.Lock()
+
 
 class BitrateChunkGeneralAnalysis(AnalysisBase):
     def main(self):
-        self.metric = 'bitrate'
-        self.categories = ['dash_mpd', 'dash_init', 'dash_m4s']
-        self.bucket_keys_name = []
-
         self.fill_bucket()
         self.make_table()
         self.make_boxplot()
         self.make_hist()
 
-    def fill_bucket(self):
+    def setup(self):
+        self.metric = 'bitrate'
+        self.categories = ('dash_mpd', 'dash_init', 'dash_m4s')
+        self.bucket_keys_name = ()
+
+    def make_bucket(self):
         """
         metric, categories, keys_orders
         """
-        if self.bucket_json.exists():
-            self.bucket = Bucket()
-            self.bucket.load_bucket(self.bucket_json)
-            return
-
-        self.bucket = Bucket()
         self.database = database_factory(self.metric, self.config)
 
-        print(f'Collecting Data.')
-        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        print(f'make_bucket')
+        asyncio.run(self.async_make_bucket())
+
+        self.save_bucket()
+
+    async def async_make_bucket(self):
+        print(f'async_make_bucket')
+        t1 = asyncio.create_task(self.make_dash_mpd_bucket())
+        t2 = asyncio.create_task(self.make_dash_init_bucket())
+        t3 = asyncio.create_task(self.make_dash_m4s_bucket())
+        await asyncio.gather(t1, t2, t3)
+
+    async def make_dash_mpd_bucket(self):
+        print(f'make_dash_mpd_bucket')
+        self.chunk = self.quality = None
         for self.name in self.name_list:
             for self.projection in self.projection_list:
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
-                        self.chunk = self.quality = None
-                        self.ui.update(f'{self}')
                         self.category = 'dash_mpd'
-                        self.bucket.set_bucket_value(self.database.get_value(),
-                                                     self.get_bucket_keys())
+                        value = self.database.get_value()
+                        bucket_keys = self.get_bucket_keys()
+                        self.bucket.set_bucket_value(value, bucket_keys)
+
+    async def make_dash_init_bucket(self):
+        print(f'make_dash_init_bucket')
+        self.chunk = None
+        for self.name in self.name_list:
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
                         for self.quality in self.quality_list:
                             self.category = 'dash_init'
-                            self.bucket.set_bucket_value(self.database.get_value(),
-                                                         self.get_bucket_keys())
+                            value = self.database.get_value()
+                            bucket_keys = self.get_bucket_keys()
+                            self.bucket.set_bucket_value(value, bucket_keys)
+
+    async def make_dash_m4s_bucket(self):
+        print(f'make_dash_m4s_bucket')
+        for self.name in self.name_list:
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.tile in self.tile_list:
+                        for self.quality in self.quality_list:
                             for self.chunk in self.chunk_list:
                                 self.category = 'dash_m4s'
-                                self.bucket.set_bucket_value(self.database.get_value(),
-                                                             self.get_bucket_keys())
-
-        self.bucket.save_bucket(self.bucket_json)
+                                value = self.database.get_value()
+                                bucket_keys = self.get_bucket_keys()
+                                self.bucket.set_bucket_value(value, bucket_keys)
 
     @property
     def name(self):
