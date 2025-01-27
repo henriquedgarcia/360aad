@@ -11,13 +11,13 @@ class App:
         """
         config = Config()
         # ChunkGeneralAnalysis
-        # BitrateChunkGeneralAnalysis(config)
+        BitrateChunkGeneralAnalysis(config)
         # TimeChunkGeneralAnalysis(config)
         # QualityChunkGeneralAnalysis(config)
         # GetTilesChunkGeneralAnalysis(config)
 
         # print('ByTilingByQuality')
-        BitrateTilingQualityGeneralAnalysis(config)
+        # BitrateTilingQualityGeneralAnalysis(config)
 
 
         # ByQuality(config, 'bitrate')
