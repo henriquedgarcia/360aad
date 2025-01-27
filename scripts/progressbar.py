@@ -5,10 +5,10 @@ class ProgressBar:
     t: tqdm
 
     def __init__(self, total, desc):
-        self.t = tqdm(total=total, desc=desc)
+        self.new(total, desc)
 
     def new(self, total, desc):
-        self.t = tqdm(total=total, desc=desc)
+        self.t = tqdm(total=total, desc=desc, ncols=0)
 
     def update(self, postfix_str):
         self.set_postfix_str(postfix_str)
