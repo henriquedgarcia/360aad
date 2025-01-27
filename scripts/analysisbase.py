@@ -6,6 +6,7 @@ from scripts.bucket import Bucket
 from scripts.config import ConfigIf
 from scripts.database import Database
 from scripts.progressbar import ProgressBar
+from scripts.utils import save_json, load_json
 
 
 class AnalysisPaths(ConfigIf):
@@ -93,36 +94,67 @@ class AnalysisPaths(ConfigIf):
 
 
 class AnalysisBase(AnalysisPaths):
-    bucket: Bucket
+    metric: str
+    categories: tuple
+    bucket_keys_name: tuple
+
     stats_df: pd.DataFrame
     ui: ProgressBar
     database: Database
-    bucket_keys_name: list[str]
 
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
         self.projection = 'cmp'
+        self.bucket = Bucket()
+
+        self.setup()
         self.main()
+        self.end()
+
+    def setup(self):
+        ...
 
     def main(self):
-        ...
+        self.fill_bucket()
+        self.make_stats()
+        self.plots()
 
     def fill_bucket(self):
         """
         metric, categories, keys_orders
         """
-        if self.bucket_json.exists():
-            self.bucket = Bucket()
-            self.bucket.load_bucket(self.bucket_json)
-            return
 
-        self.make_bucket()
-        self.bucket.save_bucket(self.bucket_json)
+        try:
+            self.load_bucket()
+        except FileNotFoundError:
+            self.make_bucket()
+            self.save_bucket()
+
+    def make_stats(self):
+        ...
+
+    def plots(self):
+        ...
+
+    def end(self):
+        ...
+
+    def make_bucket(self) -> Bucket:
+        ...
+
+    def load_bucket(self):
+        self.bucket.bucket = load_json(self.bucket_json)
+
+    def save_bucket(self):
+        save_json(self.bucket.bucket, self.bucket_json)
 
     def get_bucket_keys(self):
         bucket_keys = [getattr(self, keys_name) for keys_name in self.bucket_keys_name]
         return [self.category] + bucket_keys
 
-    def make_bucket(self) -> Bucket:
-        ...
+    def start_ui(self, total, desc):
+        self.ui = ProgressBar(total=total, desc=desc)
+
+    def update_ui(self, desc):
+        self.ui.update(desc)
