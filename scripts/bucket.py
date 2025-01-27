@@ -1,6 +1,4 @@
-from pathlib import Path
-
-from scripts.utils import AutoDict, load_json, get_nested_value, set_nested_value, save_json
+from scripts.utils import AutoDict, get_nested_value, set_nested_value
 
 
 class Bucket:
@@ -9,9 +7,6 @@ class Bucket:
 
     def __getitem__(self, item):
         return self.bucket[item]
-
-    def load_bucket(self, bucket_path: Path):
-        self.bucket = load_json(bucket_path)
 
     def get_bucket_values(self, keys=None):
         if keys is None:
@@ -31,6 +26,3 @@ class Bucket:
     def categories(self):
         # deep_search_keys(self.bucket)
         return list(self.bucket.keys())
-
-    def save_bucket(self, filename):
-        save_json(self.bucket, filename)
