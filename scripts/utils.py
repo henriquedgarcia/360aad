@@ -68,6 +68,12 @@ def save_json(data: Union[dict, list], filename: Union[str, Path], separators=('
         filename.write_text(json.dumps(data, separators=separators, indent=indent), encoding='utf-8')
 
 
+def load_json(filename: Union[str, Path], object_hook: type[dict] = None):
+    filename = Path(filename)
+    results = json.loads(filename.read_text(encoding='utf-8'), object_hook=object_hook)
+    return results
+
+
 def splitx(string: str) -> tuple[int, ...]:
     """
     Receive a string like "5x6x7" (no spaces) and return a tuple of ints, in
@@ -76,12 +82,6 @@ def splitx(string: str) -> tuple[int, ...]:
     :return: Return a list of int
     """
     return tuple(map(int, string.split('x')))
-
-
-def load_json(filename: Union[str, Path], object_hook: type[dict] = None):
-    filename = Path(filename)
-    results = json.loads(filename.read_text(encoding='utf-8'), object_hook=object_hook)
-    return results
 
 
 def id2xy(idx: Union[int, str], shape: tuple):
