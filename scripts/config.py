@@ -183,14 +183,6 @@ class Factors:
     config: Config
 
     @property
-    def category(self):
-        return self.config.category
-
-    @category.setter
-    def category(self, value):
-        self.config.category = value
-
-    @property
     def name(self):
         return self.config.name
 
