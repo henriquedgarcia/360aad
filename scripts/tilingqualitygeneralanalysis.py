@@ -18,12 +18,12 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
         self.categories = ['dash_m4s']
         self.bucket_keys_name = ['tiling', 'quality']
 
-        self.fill_bucket()
+        self._make_bucket()
         self.make_table()
         self.make_boxplot()
         self.make_hist()
 
-    def fill_bucket(self):
+    def _make_bucket(self):
         """
         metric, categories, keys_orders
         """
@@ -106,7 +106,7 @@ class TimeChunkGeneralAnalysis(AnalysisBase):
         self.categories = ['dectime_avg', 'dectime_std']
         self.bucket_keys_name = []
 
-        self.fill_bucket()
+        self._make_bucket()
         self.make_table()
         # self.make_boxplot()
         self.categories = ['dectime_avg']
@@ -183,7 +183,7 @@ class QualityChunkGeneralAnalysis(AnalysisBase):
     def main(self):
         self.bucket_keys_name = []
 
-        self.fill_bucket()
+        self._make_bucket()
         self.make_table()
         # self.make_boxplot()
         # self.make_hist()
