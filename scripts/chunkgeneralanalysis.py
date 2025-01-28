@@ -7,7 +7,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.bucket import Bucket
 from scripts.database import database_factory
 from scripts.progressbar import ProgressBar
 from scripts.utils import AutoDict, LazyProperty
@@ -16,120 +15,114 @@ lock = asyncio.Lock()
 
 
 class BitrateChunkGeneralAnalysis(AnalysisBase):
-    def main(self):
-        self.fill_bucket()
-        self.make_table()
-        self.make_boxplot()
-        self.make_hist()
-
     def setup(self):
         self.metric = 'bitrate'
         self.categories = ('dash_mpd', 'dash_init', 'dash_m4s')
         self.bucket_keys_name = ()
+        self.database_keys = {'dash_mpd': ['name', 'projection', 'tiling', 'tile'],
+                              'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality'],
+                              'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
+        self.bucket = AutoDict()
+        self.stats_defaultdict = defaultdict(list)
+        self.projection = 'cmp'
 
     def make_bucket(self):
         """
         metric, categories, keys_orders
         """
-        self.database = database_factory(self.metric, self.config)
-
         print(f'make_bucket')
-        asyncio.run(self.async_make_bucket())
+        self.make_dash_mpd_bucket()
+        self.make_dash_init_bucket()
+        self.make_dash_m4s_bucket()
 
-        self.save_bucket()
-
-    async def async_make_bucket(self):
-        print(f'async_make_bucket')
-        t1 = asyncio.create_task(self.make_dash_mpd_bucket())
-        t2 = asyncio.create_task(self.make_dash_init_bucket())
-        t3 = asyncio.create_task(self.make_dash_m4s_bucket())
-        await asyncio.gather(t1, t2, t3)
-
-    async def make_dash_mpd_bucket(self):
+    def make_dash_mpd_bucket(self):
         print(f'make_dash_mpd_bucket')
         self.chunk = self.quality = None
         for self.name in self.name_list:
+            self.load_database()
+            total = 181
+            self.start_ui(total, '\t' + self.name)
             for self.projection in self.projection_list:
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
-                        self.category = 'dash_mpd'
-                        value = self.database.get_value()
-                        bucket_keys = self.get_bucket_keys()
-                        self.bucket.set_bucket_value(value, bucket_keys)
+                        self.update_ui(f'{self.tiling}')
+                        value = self.get_dataset_value('dash_mpd')
+                        self.set_bucket_value(value, ['dash_mpd'])
+            self.close_ui()
 
-    async def make_dash_init_bucket(self):
+    def make_dash_init_bucket(self):
         print(f'make_dash_init_bucket')
         self.chunk = None
         for self.name in self.name_list:
+            self.load_database()
+            total = 181 * len(self.quality_list)
+            self.start_ui(total, '\t' + self.name)
             for self.projection in self.projection_list:
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
                         for self.quality in self.quality_list:
-                            self.category = 'dash_init'
-                            value = self.database.get_value()
-                            bucket_keys = self.get_bucket_keys()
-                            self.bucket.set_bucket_value(value, bucket_keys)
+                            self.update_ui(f'{self.tiling}_qp{self.quality}')
+                            value = self.get_dataset_value('dash_init')
+                            self.set_bucket_value(value, ['dash_init'])
+            self.close_ui()
 
-    async def make_dash_m4s_bucket(self):
+    def make_dash_m4s_bucket(self):
         print(f'make_dash_m4s_bucket')
+        total = 181 * len(self.quality_list) * len(self.chunk_list)
         for self.name in self.name_list:
+            self.load_database()
+            self.start_ui(total, '\t' + self.name)
             for self.projection in self.projection_list:
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
                         for self.quality in self.quality_list:
                             for self.chunk in self.chunk_list:
-                                self.category = 'dash_m4s'
-                                value = self.database.get_value()
-                                bucket_keys = self.get_bucket_keys()
-                                self.bucket.set_bucket_value(value, bucket_keys)
+                                self.update_ui(f'{self.tiling}_qp{self.quality}')
 
-    @property
-    def name(self):
-        return self.config.name
+                                value = self.get_dataset_value('dash_m4s')
+                                self.set_bucket_value(value, ['dash_m4s'])
+            self.close_ui()
 
-    @name.setter
-    def name(self, value):
-        self.config.name = value
-        self.database.load(self.database_json)
+    def make_stats(self):
+        self.stats_defaultdict['Nome'].append('MPD')
+        self.stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_mpd']))
+        self.stats_defaultdict['Média'].append(np.average(self.bucket['dash_mpd']))
+        self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_mpd']))
+        self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_mpd'], 0))
+        self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.25))
+        self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_mpd'], 0.5))
+        self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.75))
+        self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_mpd'], 1))
 
-    def make_table(self):
-        if self.stats_csv.exists(): return
-        stats_defaultdict = defaultdict(list)
+        self.stats_defaultdict['Nome'].append('Init')
+        self.stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_init']))
+        self.stats_defaultdict['Média'].append(np.average(self.bucket['dash_init']))
+        self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_init']))
+        self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_init'], 0))
+        self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.25))
+        self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_init'], 0.5))
+        self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.75))
+        self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_init'], 1))
 
-        stats_defaultdict['Nome'].append('MPD')
-        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_mpd']))
-        stats_defaultdict['Média'].append(np.average(self.bucket['dash_mpd']))
-        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_mpd']))
-        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_mpd'], 0))
-        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.25))
-        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_mpd'], 0.5))
-        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_mpd'], 0.75))
-        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_mpd'], 1))
-
-        stats_defaultdict['Nome'].append('Init')
-        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_init']))
-        stats_defaultdict['Média'].append(np.average(self.bucket['dash_init']))
-        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_init']))
-        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_init'], 0))
-        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.25))
-        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_init'], 0.5))
-        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_init'], 0.75))
-        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_init'], 1))
-
-        stats_defaultdict['Nome'].append('m4s')
-        stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_m4s']))
-        stats_defaultdict['Média'].append(np.average(self.bucket['dash_m4s']))
-        stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_m4s']))
-        stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_m4s'], 0))
-        stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.25))
-        stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_m4s'], 0.5))
-        stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.75))
-        stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_m4s'], 1))
-
-        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
-        self.stats_df.to_csv(self.stats_csv, index=False)
+        self.stats_defaultdict['Nome'].append('m4s')
+        self.stats_defaultdict['n_arquivos'].append(len(self.bucket['dash_m4s']))
+        self.stats_defaultdict['Média'].append(np.average(self.bucket['dash_m4s']))
+        self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket['dash_m4s']))
+        self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket['dash_m4s'], 0))
+        self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.25))
+        self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket['dash_m4s'], 0.5))
+        self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket['dash_m4s'], 0.75))
+        self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket['dash_m4s'], 1))
 
     def make_boxplot(self):
+        """
+        O box plot nao vai fazer sentido aqui.
+        O desvio padrão é tao grande que não faz sentido mostrar a distribuição.
+        Os outliers fazem a distribuição nem ser desenhada direito.
+        Returns
+        -------
+
+        """
         if self.boxplot_path.exists(): return
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
         ax1.boxplot(self.bucket['dash_mpd'], whis=(0, 100))
@@ -143,6 +136,14 @@ class BitrateChunkGeneralAnalysis(AnalysisBase):
         fig.savefig(self.boxplot_path)
 
     def make_hist(self):
+        """
+        O box plot nao vai fazer sentido aqui.
+        O desvio padrão é tao grande que não faz sentido mostrar a distribuição.
+        Os outliers fazem a distribuição nem ser desenhada direito.
+        Returns
+        -------
+
+        """
         # if self.hist_path.exists(): return
         fig, ax3 = plt.subplots(1, 1, figsize=(10, 5))
         ax3.hist(self.bucket['dash_m4s'], bins=30)
@@ -153,59 +154,66 @@ class BitrateChunkGeneralAnalysis(AnalysisBase):
 
 
 class TimeChunkGeneralAnalysis(AnalysisBase):
-    metric = 'time'
-    categories = ['dectime', 'dectime_avg', 'dectime_med', 'dectime_std']
+    def setup(self):
+        self.metric = 'time'
+        # self.categories = ('dectime', 'dectime_avg', 'dectime_med', 'dectime_std')
+        self.categories = ('dectime_avg', 'dectime_std')
+        self.bucket_keys_name = ()
+        self.database_keys = {'dectime': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              'dectime_std': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              }
+        self.bucket = AutoDict()
+        self.stats_defaultdict = defaultdict(list)
 
-    def main(self):
-        self.categories = ['dectime_avg', 'dectime_std']
-        self.bucket_keys_name = []
-
-        self.fill_bucket()
-        self.make_table()
-        # self.make_boxplot()
-        self.categories = ['dectime_avg']
-        self.make_hist()
+        self.projection = 'cmp'
 
     def make_bucket(self):
-        self.bucket = Bucket()
-        self.database = database_factory(self.metric, self.config)
-
-        print(f'Collecting Data.')
-        self.ui = ProgressBar(28 * 181, str([f'make_bucket-{self.metric}'] + self.bucket_keys_name))
+        print(f'make_dectime_bucket')
+        total = (181 * len(self.quality_list) * len(self.chunk_list))
         for self.name in self.name_list:
-            self.database.load(self.database_json)
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.tile in self.tile_list:
-                        self.ui.update(f'{self}')
-                        for self.quality in self.quality_list:
-                            for self.chunk in self.chunk_list:
-                                for self.category in self.categories:
-                                    self.bucket.set_bucket_value(self.database.get_value(),
-                                                                 self.get_bucket_keys())
-                        self.quality = self.chunk = self.category = None
+            self.load_database()
+            self.start_ui(total, '\t' + self.name)
+            for self.tiling in self.tiling_list:
+                for self.tile in self.tile_list:
+                    for self.quality in self.quality_list:
+                        for self.chunk in self.chunk_list:
+                            self.update_ui(f'{self.tiling}-{self.tile}_qp{self.quality}')
+
+                            value = self.get_dataset_value('dectime_avg')
+                            self.set_bucket_value(value, ['dectime_avg'])
+
+                            value = self.get_dataset_value('dectime_std')
+                            self.set_bucket_value(value, ['dectime_std'])
+            self.close_ui()
 
     def make_table(self):
-        if self.stats_csv.exists(): return
-
         print(f'Calculating stats.')
-        stats_defaultdict = defaultdict(list)
-        for cat in self.categories:
-            stats_defaultdict['Nome'].append(cat)
-            stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
-            stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
-            stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
-            stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
-            stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
-            stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
-            stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
-            stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
+        for cat in ('dectime_avg', 'dectime_std'):
+            self.stats_defaultdict['Nome'].append(cat)
+            self.stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
+            self.stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
+            self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
+            self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
+            self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
+            self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
+            self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
+            self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
 
-        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
-        self.stats_df.to_csv(self.stats_csv, index=False)
+    def plots(self):
+        """
+        não faz sentido aqui. o desvio padrão é muito grande por
+        misturar diferentes qualidades e tiling.
+        Returns
+        -------
+
+        """
+        if not self.boxplot_path.exists():
+            self.make_boxplot()
+        if not self.boxplot_path.exists():
+            self.make_hist()
 
     def make_boxplot(self):
-        if self.boxplot_path.exists(): return
         print(f'Boxplot 1.')
 
         fig = plt.Figure((3, 9))
@@ -214,7 +222,7 @@ class TimeChunkGeneralAnalysis(AnalysisBase):
             ax.boxplot(self.bucket[cat], whis=(0, 100))
             ax.set_title(cat)
         fig.tight_layout()
-        fig.savefig(self.boxplot_path)
+        fig.savefig(self.boxplot_folder / 'boxplot.png')
         fig.clf()
 
     def make_hist(self):
@@ -231,53 +239,63 @@ class TimeChunkGeneralAnalysis(AnalysisBase):
 
 
 class QualityChunkGeneralAnalysis(AnalysisBase):
-    metric = 'chunk_quality'
-    categories = ['ssim', 'mse', 's-mse', 'ws-mse']
+    def setup(self):
+        self.metric = 'chunk_quality'
+        self.categories = ('ssim', 'mse', 's-mse', 'ws-mse')
+        self.bucket_keys_name = ()
+        self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              }
+        self.bucket = AutoDict()
+        self.stats_defaultdict = defaultdict(list)
 
-    def main(self):
-        self.bucket_keys_name = []
-
-        self.fill_bucket()
-        self.make_table()
-        # self.make_boxplot()
-        # self.make_hist()
+        self.projection = 'cmp'
 
     def make_bucket(self):
-        self.bucket = Bucket()
-        self.database = database_factory(self.metric, self.config)
+        print(f'make_quality_bucket')
 
-        print(f'Collecting Data.')
-        self.ui = ProgressBar(28 * 181, str(['make_bucket'] + self.bucket_keys_name))
+        total = (181 * len(self.quality_list) * len(self.chunk_list))
         for self.name in self.name_list:
-            self.database.load(self.database_json)
+            self.load_database()
+            self.start_ui(total, '\t' + self.name)
             for self.projection in self.projection_list:
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
-                        self.ui.update(f'{self}')
                         for self.quality in self.quality_list:
                             for self.chunk in self.chunk_list:
-                                for self.category in self.categories:
-                                    self.bucket.set_bucket_value(self.database.get_value(),
-                                                                 self.get_bucket_keys())
-                        self.quality = self.category = self.chunk = None
+                                self.update_ui(f'{self.tiling}-{self.tile}_qp{self.quality}')
+
+                                for cat in self.categories:
+                                    value = self.get_dataset_value(cat)
+                                    self.set_bucket_value(value, [cat])
+            self.close_ui()
 
     def make_table(self):
-        if self.stats_csv.exists(): return
         print(f'Calculating stats.')
-        stats_defaultdict = defaultdict(list)
-        for self.category in self.categories:
-            stats_defaultdict['Nome'].append(self.category)
-            stats_defaultdict['n_arquivos'].append(len(self.bucket[self.category]))
-            stats_defaultdict['Média'].append(np.average(self.bucket[self.category]))
-            stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[self.category]))
-            stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[self.category], 0))
-            stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[self.category], 0.25))
-            stats_defaultdict['Mediana'].append(np.quantile(self.bucket[self.category], 0.5))
-            stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[self.category], 0.75))
-            stats_defaultdict['Máximo'].append(np.quantile(self.bucket[self.category], 1))
+        for cat in self.categories:
+            self.stats_defaultdict['Nome'].append(cat)
+            self.stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
+            self.stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
+            self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
+            self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
+            self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
+            self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
+            self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
+            self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
 
-        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
-        self.stats_df.to_csv(self.stats_csv, index=False)
+    def plots(self):
+        """
+        não faz sentido aqui. o desvio padrão é muito grande por
+        misturar diferentes qualidades e tiling.
+        Returns
+        -------
+
+        """
+        ...
+        # if not self.boxplot_path.exists():
+        #     self.make_boxplot()
 
     def make_boxplot(self):
         if self.boxplot_path.exists(): return
@@ -467,19 +485,19 @@ class GetTilesChunkGeneralAnalysis(AnalysisBase):
         if self.stats_csv.exists(): return
 
         print(f'Calculating stats.')
-        stats_defaultdict = defaultdict(list)
+        self.stats_defaultdict = defaultdict(list)
         for cat in self.categories:
-            stats_defaultdict['Nome'].append(cat)
-            stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
-            stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
-            stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
-            stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
-            stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
-            stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
-            stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
-            stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
+            self.stats_defaultdict['Nome'].append(cat)
+            self.stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
+            self.stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
+            self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
+            self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
+            self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
+            self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
+            self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
+            self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
 
-        self.stats_df: pd.DataFrame = pd.DataFrame(stats_defaultdict)
+        self.stats_df: pd.DataFrame = pd.DataFrame(self.stats_defaultdict)
         self.stats_df.to_csv(self.stats_csv, index=False)
 
     def make_boxplot(self):
