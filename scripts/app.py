@@ -25,7 +25,7 @@ from scripts.utils import load_json, splitx, get_nested_value
 
 
 class ByQuality(BitrateChunkGeneralAnalysis):
-    def fill_bucket(self):
+    def _make_bucket(self):
         if self.bucket_json.exists():
             self.bucket = Bucket()
             self.bucket.load_bucket(self.bucket_json)
@@ -150,7 +150,7 @@ class ByQuality(BitrateChunkGeneralAnalysis):
 
 
 class ByTiling(BitrateChunkGeneralAnalysis):
-    def fill_bucket(self):
+    def _make_bucket(self):
         if self.bucket_json.exists():
             self.bucket = Bucket()
             self.bucket.load_bucket(self.bucket_json)
@@ -286,7 +286,7 @@ class ByTilingByQuality(BitrateChunkGeneralAnalysis):
         # self.make_plot3()
         self.make_heatmap1()
 
-    def fill_bucket(self):
+    def _make_bucket(self):
         if self.bucket_json.exists():
             self.bucket = Bucket()
             self.bucket.load_bucket(self.bucket_json)
