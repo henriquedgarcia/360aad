@@ -26,16 +26,16 @@ from scripts.utils import load_json, splitx, get_nested_value
 
 class ByQuality(BitrateChunkGeneralAnalysis):
     def _make_bucket(self):
-        if self.bucket_json.exists():
+        if self.bucket_pickle.exists():
             self.bucket = Bucket()
-            self.bucket.load_bucket(self.bucket_json)
+            self.bucket.load_bucket(self.bucket_pickle)
             return
 
         make_bucket = MakeBuket(self.config, self.metric,
                                 bucket_keys_name=['quality'],
                                 categories=['dash_m4s'])
         self.bucket = make_bucket.make_bucket()
-        self.bucket.save_bucket(self.bucket_json)
+        self.bucket.save_bucket(self.bucket_pickle)
 
     def make_table(self):
         if self.stats_csv.exists():
@@ -151,9 +151,9 @@ class ByQuality(BitrateChunkGeneralAnalysis):
 
 class ByTiling(BitrateChunkGeneralAnalysis):
     def _make_bucket(self):
-        if self.bucket_json.exists():
+        if self.bucket_pickle.exists():
             self.bucket = Bucket()
-            self.bucket.load_bucket(self.bucket_json)
+            self.bucket.load_bucket(self.bucket_pickle)
             return
 
         make_bucket = MakeBuket(self.config, self.metric,
@@ -161,7 +161,7 @@ class ByTiling(BitrateChunkGeneralAnalysis):
                                 categories=['dash_m4s'])
 
         self.bucket = make_bucket.make_bucket()
-        self.bucket.save_bucket(self.bucket_json)
+        self.bucket.save_bucket(self.bucket_pickle)
 
     def make_table(self):
         if self.stats_csv.exists():
@@ -287,9 +287,9 @@ class ByTilingByQuality(BitrateChunkGeneralAnalysis):
         self.make_heatmap1()
 
     def _make_bucket(self):
-        if self.bucket_json.exists():
+        if self.bucket_pickle.exists():
             self.bucket = Bucket()
-            self.bucket.load_bucket(self.bucket_json)
+            self.bucket.load_bucket(self.bucket_pickle)
             return
 
         make_bucket = MakeBuket(self.config, self.metric,
@@ -297,7 +297,7 @@ class ByTilingByQuality(BitrateChunkGeneralAnalysis):
                                 categories=['dash_m4s'])
 
         self.bucket = make_bucket.make_bucket()
-        self.bucket.save_bucket(self.bucket_json)
+        self.bucket.save_bucket(self.bucket_pickle)
 
     def make_table(self):
         if self.stats_csv.exists():
