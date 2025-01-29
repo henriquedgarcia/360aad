@@ -1,13 +1,12 @@
 import argparse
 import json
 
-from scripts.config import Config
-
 from scripts.app import ByTilingByQuality, ByTiling, ByQuality
 from scripts.chunkgeneralanalysis import (QualityChunkGeneralAnalysis,
                                           BitrateChunkGeneralAnalysis,
                                           TimeChunkGeneralAnalysis,
                                           GetTilesChunkGeneralAnalysis)
+from scripts.config import Config
 from scripts.fix_database import FixDatabase
 from scripts.tilingqualitygeneralanalysis import BitrateTilingQualityGeneralAnalysis
 
@@ -25,14 +24,25 @@ workers = {
     9: ByQuality.__name__
 }
 
+help_txt = 'WORKERS = ' + json.dumps(workers, indent=4)
+
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     description='WORKERS = ' + json.dumps(workers, indent=4))
+                                     description=help_txt)
 
-    parser.add_argument('worker', type=int, metavar='WORKER',
-                        help=f'A worker name.')
+    parser.add_argument('worker', type=int, metavar='WORKER', nargs='?',
+                        default=None, help=f'A worker name.')
+
     worker_id = parser.parse_args().worker
+    while True:
+        if worker_id not in workers:
+            try:
+                worker_id = int(input(help_txt))
+            except ValueError:
+                continue
+            break
+
     worker_str = workers[worker_id]
     worker_class = globals()[worker_str]
 
