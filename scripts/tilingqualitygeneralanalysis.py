@@ -27,9 +27,9 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
         """
         metric, categories, keys_orders
         """
-        if self.bucket_json.exists():
+        if self.bucket_pickle.exists():
             self.bucket = Bucket()
-            self.bucket.load_bucket(self.bucket_json)
+            self.bucket.load_bucket(self.bucket_pickle)
             return
 
         self.bucket = Bucket()
@@ -50,7 +50,7 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
                                 self.bucket.set_bucket_value(self.database.get_value(),
                                                              self.get_bucket_keys())
 
-        self.bucket.save_bucket(self.bucket_json)
+        self.bucket.save_bucket(self.bucket_pickle)
 
     def make_table(self):
         if self.stats_csv.exists(): return
