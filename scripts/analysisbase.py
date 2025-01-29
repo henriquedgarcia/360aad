@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
 
@@ -107,7 +108,7 @@ class AnalysisPaths(ConfigIf):
         return database_json_path
 
 
-class AnalysisBase(AnalysisPaths):
+class AnalysisBase(AnalysisPaths, ABC):
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
@@ -116,7 +117,6 @@ class AnalysisBase(AnalysisPaths):
         self._make_bucket()
         self._make_stats()
         self.plots()
-
 
     def _make_bucket(self):
         try:
@@ -134,15 +134,19 @@ class AnalysisBase(AnalysisPaths):
         self.stats_df: pd.DataFrame = pd.DataFrame(self.stats_defaultdict)
         self.stats_df.to_csv(self.stats_csv, index=False)
 
+    @abstractmethod
     def setup(self):
         ...
 
+    @abstractmethod
     def make_bucket(self) -> Bucket:
         ...
 
+    @abstractmethod
     def make_stats(self):
         ...
 
+    @abstractmethod
     def plots(self):
         ...
 
