@@ -1,3 +1,4 @@
+import pickle
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
@@ -93,10 +94,10 @@ class AnalysisPaths(ConfigIf):
         return self.stats_workfolder / 'stats.csv'
 
     @property
-    def bucket_json(self):
+    def bucket_pickle(self):
         cat = '-'.join(self.categories)
         keys = '_'.join(self.bucket_keys_name)
-        return self.bucket_workfolder / f'{self.metric}_[{cat}]_{keys}.json'
+        return self.bucket_workfolder / f'{self.metric}_[{cat}]_{keys}.pickle'
 
     @property
     def database_json(self):
@@ -159,10 +160,10 @@ class AnalysisBase(AnalysisPaths, ABC):
         return value
 
     def load_bucket(self):
-        self.bucket = load_json(self.bucket_json)
+        self.bucket = pickle.loads(self.bucket_pickle.read_bytes())
 
     def save_bucket(self):
-        save_json(self.bucket, self.bucket_json)
+        self.bucket_pickle.write_bytes(pickle.dumps(self.bucket))
 
     def set_bucket_value(self, value, bucket_keys: list):
         try:
