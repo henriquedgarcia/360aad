@@ -178,7 +178,6 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
             for self.projection in self.projection_list:
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
-                        self.ui.update(f'{self}')
                         for self.quality in self.quality_list:
                             for self.chunk in self.chunk_list:
                                 self.update_ui(f'{self.tiling}_qp{self.quality}')
