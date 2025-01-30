@@ -8,7 +8,7 @@ import pandas as pd
 from scripts.bucket import Bucket
 from scripts.config import ConfigIf
 from scripts.progressbar import ProgressBar
-from scripts.utils import save_json, load_json, get_nested_value, set_nested_value
+from scripts.utils import load_json, get_nested_value, set_nested_value
 
 
 class AnalysisPaths(ConfigIf):
@@ -164,6 +164,10 @@ class AnalysisBase(AnalysisPaths, ABC):
 
     def save_bucket(self):
         self.bucket_pickle.write_bytes(pickle.dumps(self.bucket))
+
+    def get_bucket_keys(self, cat):
+        bucket_keys = [cat] + [getattr(self, key) for key in self.bucket_keys_name]
+        return bucket_keys
 
     def set_bucket_value(self, value, bucket_keys: list):
         try:
