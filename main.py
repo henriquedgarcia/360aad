@@ -8,7 +8,7 @@ from scripts.chunkgeneralanalysis import (QualityChunkGeneralAnalysis,
                                           GetTilesChunkGeneralAnalysis)
 from scripts.config import Config
 from scripts.fix_database import FixDatabase
-from scripts.tilingqualitygeneralanalysis import BitrateTilingQualityGeneralAnalysis
+from scripts.chunktilingqualitygeneralanalysis import BitrateTilingQualityGeneralAnalysis
 
 config = Config()
 
