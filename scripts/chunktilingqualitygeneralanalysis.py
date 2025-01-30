@@ -113,7 +113,6 @@ class TimeTilingQualityGeneralAnalysis(AnalysisBase):
         stats_defaultdict = defaultdict(list)
         for self.tiling in self.tiling_list:
             for self.quality in self.quality_list:
-
                 for cat in self.categories:
                     value = self.bucket[cat][self.tiling][self.quality]
                     stats_defaultdict['Nome'].append(cat)
@@ -160,7 +159,6 @@ class TimeTilingQualityGeneralAnalysis(AnalysisBase):
 
 
 class QualityTilingQualityGeneralAnalysis(AnalysisBase):
-
 
     def setup(self):
         self.metric = 'chunk_quality'
