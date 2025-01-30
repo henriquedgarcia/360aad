@@ -12,8 +12,7 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
         self.metric = 'bitrate'
         self.categories = ['dash_m4s', ]
         self.bucket_keys_name = ['tiling', 'quality']
-        self.database_keys = {'dash_mpd': ['name', 'projection', 'tiling', 'tile'],
-                              'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality'],
+        self.database_keys = {'dash_mpd': ['name', 'projection', 'tiling', 'tile'], 'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality'],
                               'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
@@ -164,10 +163,8 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
         self.metric = 'chunk_quality'
         self.categories = ['ssim', 'mse', 's-mse', 'ws-mse']
         self.bucket_keys_name = ['tiling', 'quality']
-        self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
+        self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'], 'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'], 'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
