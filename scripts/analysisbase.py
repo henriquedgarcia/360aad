@@ -12,8 +12,8 @@ from scripts.utils import save_json, load_json, get_nested_value, set_nested_val
 
 class AnalysisPaths(ConfigIf):
     # constants
-    categories: tuple
-    bucket_keys_name: tuple
+    categories: list
+    bucket_keys_name: list
     database_keys: dict
 
     # database-dependent
