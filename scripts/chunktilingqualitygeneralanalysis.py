@@ -20,7 +20,6 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
 
     def make_bucket(self):
         print(f'Collecting Data.')
-        cat = 'dash_m4s'
         total = 181 * len(self.quality_list) * len(self.chunk_list)
 
         for self.name in self.name_list:
@@ -31,27 +30,32 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
                     for self.quality in self.quality_list:
                         for self.chunk in self.chunk_list:
                             self.update_ui(f'{self.tiling}_qp{self.quality}')
-                            value = self.get_dataset_value(cat)
-                            self.set_bucket_value(value, [cat] + self.bucket_keys_name)
+                            for cat in self.categories:
+                                value = self.get_dataset_value(cat)
+                                self.set_bucket_value(value, self.get_bucket_keys(cat))
 
         self.close_ui()
 
+
     def make_stats(self):
+        print(f'Calculating stats.')
         stats_defaultdict = defaultdict(list)
         for self.tiling in self.tiling_list:
             for self.quality in self.quality_list:
-                value = self.bucket['dash_m4s'][self.tiling][self.quality]
-                stats_defaultdict['Nome'].append('m4s')
-                stats_defaultdict['tiling'].append(self.tiling)
-                stats_defaultdict['quality'].append(self.quality)
-                stats_defaultdict['n_arquivos'].append(len(value))
-                stats_defaultdict['Média'].append(np.average(value))
-                stats_defaultdict['Desvio Padrão'].append(np.std(value))
-                stats_defaultdict['Mínimo'].append(np.quantile(value, 0))
-                stats_defaultdict['1º Quartil'].append(np.quantile(value, 0.25))
-                stats_defaultdict['Mediana'].append(np.quantile(value, 0.5))
-                stats_defaultdict['3º Quartil'].append(np.quantile(value, 0.75))
-                stats_defaultdict['Máximo'].append(np.quantile(value, 1))
+                for cat in self.categories:
+                    value = self.bucket[cat][self.tiling][self.quality]
+                    stats_defaultdict['Nome'].append(cat)
+                    stats_defaultdict['tiling'].append(self.tiling)
+                    stats_defaultdict['quality'].append(self.quality)
+                    stats_defaultdict['n_arquivos'].append(len(value))
+                    stats_defaultdict['Média'].append(np.average(value))
+                    stats_defaultdict['Desvio Padrão'].append(np.std(value))
+                    stats_defaultdict['Mínimo'].append(np.quantile(value, 0))
+                    stats_defaultdict['1º Quartil'].append(np.quantile(value, 0.25))
+                    stats_defaultdict['Mediana'].append(np.quantile(value, 0.5))
+                    stats_defaultdict['3º Quartil'].append(np.quantile(value, 0.75))
+                    stats_defaultdict['Máximo'].append(np.quantile(value, 1))
+
 
     def plots(self):
         # self.make_boxplot()
@@ -105,7 +109,7 @@ class TimeTilingQualityGeneralAnalysis(AnalysisBase):
                             for self.chunk in self.chunk_list:
                                 self.update_ui(f'{self.tiling}_qp{self.quality}')
                                 value = self.get_dataset_value(cat)
-                                self.set_bucket_value(value, [cat, self.tiling, self.quality])
+                                self.set_bucket_value(value, self.get_bucket_keys(cat))
 
     def make_stats(self):
         print(f'Calculating stats.')
@@ -183,7 +187,7 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
                                 self.update_ui(f'{self.tiling}_qp{self.quality}')
                                 for cat in self.categories:
                                     value = self.get_dataset_value(cat)
-                                    self.set_bucket_value(value, [cat] + self.bucket_keys_name)
+                                    self.set_bucket_value(value, self.get_bucket_keys(cat))
         self.close_ui()
 
     def make_stats(self):
