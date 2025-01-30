@@ -354,7 +354,7 @@ class ConfigIf(Factors, Lists):
         return b
 
     def __str__(self):
-        factors_list = ['category', 'name', 'projection', 'tiling', 'tile', 'user', 'quality', 'chunk',
+        factors_list = ['name', 'projection', 'tiling', 'tile', 'user', 'quality', 'chunk',
                         'frame', 'metric', 'group']
 
         txt = []
