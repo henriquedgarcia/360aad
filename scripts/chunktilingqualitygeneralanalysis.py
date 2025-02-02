@@ -8,6 +8,12 @@ from scripts.utils import AutoDict
 
 
 class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
+    @property
+    def bucket_pickle(self):
+        cat = '-'.join(self.categories)
+        keys = '_'.join(self.bucket_keys_name)
+        return self.bucket_workfolder / f'bytile_{self.metric}_[{cat}]_{keys}.pickle'
+
     def setup(self):
         self.metric = 'bitrate'
         self.categories = ['dash_m4s', ]
