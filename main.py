@@ -3,12 +3,19 @@ import json
 
 from scripts.chunkgeneralanalysis import (QualityChunkGeneralAnalysis, BitrateChunkGeneralAnalysis, TimeChunkGeneralAnalysis, )
 from scripts.chunktilingqualitygeneralanalysis import (BitrateTilingQualityGeneralAnalysis, QualityTilingQualityGeneralAnalysis, TimeTilingQualityGeneralAnalysis)
+from scripts.tile_tiling_quality_analysis import BitrateTileTilingQualityAnalysis
 from scripts.config import Config
 
 config = Config()
 
-workers = {1: BitrateChunkGeneralAnalysis.__name__, 2: TimeChunkGeneralAnalysis.__name__, 3: QualityChunkGeneralAnalysis.__name__, 4: BitrateTilingQualityGeneralAnalysis.__name__,
-    5: TimeTilingQualityGeneralAnalysis.__name__, 6: QualityTilingQualityGeneralAnalysis.__name__, }
+workers = {1: BitrateChunkGeneralAnalysis.__name__,
+           2: TimeChunkGeneralAnalysis.__name__,
+           3: QualityChunkGeneralAnalysis.__name__,
+           4: BitrateTilingQualityGeneralAnalysis.__name__,
+           5: TimeTilingQualityGeneralAnalysis.__name__,
+           6: QualityTilingQualityGeneralAnalysis.__name__,
+           7: BitrateTileTilingQualityAnalysis.__name__,
+           }
 
 help_txt = 'WORKERS = ' + json.dumps(workers, indent=4)
 
