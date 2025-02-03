@@ -12,12 +12,12 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
     def bucket_pickle(self):
         cat = '-'.join(self.categories)
         keys = '_'.join(self.bucket_keys_name)
-        return self.bucket_workfolder / f'bytile_{self.metric}_[{cat}]_{keys}.pickle'
+        return self.bucket_workfolder / f'{self.__class__.__name__}_{self.metric}_[{cat}]_{keys}.pickle'
 
     def setup(self):
         self.metric = 'bitrate'
-        self.categories = ['dash_m4s', ]
-        self.bucket_keys_name = ['tiling', 'quality']
+        self.categories = ('dash_m4s',)
+        self.bucket_keys_name = ('tiling', 'quality')
         self.database_keys = {'dash_mpd': ['name', 'projection', 'tiling', 'tile'], 'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality'],
                               'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
         self.bucket = AutoDict()
@@ -42,7 +42,6 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
 
         self.close_ui()
 
-
     def make_stats(self):
         print(f'Calculating stats.')
         stats_defaultdict = defaultdict(list)
@@ -61,7 +60,6 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
                     stats_defaultdict['Mediana'].append(np.quantile(value, 0.5))
                     stats_defaultdict['3º Quartil'].append(np.quantile(value, 0.75))
                     stats_defaultdict['Máximo'].append(np.quantile(value, 1))
-
 
     def plots(self):
         # self.make_boxplot()
@@ -94,8 +92,8 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
 class TimeTilingQualityGeneralAnalysis(AnalysisBase):
     def setup(self):
         self.metric = 'time'
-        self.categories = ['dectime_avg', ]
-        self.bucket_keys_name = ['tiling', 'quality']
+        self.categories = ('dectime_avg',)
+        self.bucket_keys_name = ('tiling', 'quality')
         self.database_keys = {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
@@ -171,10 +169,12 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
 
     def setup(self):
         self.metric = 'chunk_quality'
-        self.categories = ['ssim', 'mse', 's-mse', 'ws-mse']
-        self.bucket_keys_name = ['tiling', 'quality']
-        self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'], 'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'], 'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
+        self.bucket_keys_name = ('tiling', 'quality')
+        self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                              'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
+        self.categories = tuple(self.database_keys)
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
@@ -185,15 +185,14 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
         for self.name in self.name_list:
             self.load_database()
             self.start_ui(total, '\t' + self.name)
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.tile in self.tile_list:
-                        for self.quality in self.quality_list:
-                            for self.chunk in self.chunk_list:
-                                self.update_ui(f'{self.tiling}_qp{self.quality}')
-                                for cat in self.categories:
-                                    value = self.get_dataset_value(cat)
-                                    self.set_bucket_value(value, self.get_bucket_keys(cat))
+            for self.tiling in self.tiling_list:
+                for self.tile in self.tile_list:
+                    for self.quality in self.quality_list:
+                        for self.chunk in self.chunk_list:
+                            self.update_ui(f'{self.tiling}_qp{self.quality}')
+                            for cat in self.categories:
+                                value = self.get_dataset_value(cat)
+                                self.set_bucket_value(value, self.get_bucket_keys(cat))
         self.close_ui()
 
     def make_stats(self):
@@ -216,20 +215,42 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
                     stats_defaultdict['Máximo'].append(np.quantile(value, 1))
 
     def plots(self):
-        pass
+        self.make_boxplot()
+
+    @property
+    def boxplot_path_quality(self):
+        return self.boxplot_folder / f'boxplot_qp{self.quality}.png'
+
+    @property
+    def boxplot_path_tiling(self):
+        return self.boxplot_folder / f'boxplot_{self.tiling}.png'
 
     def make_boxplot(self):
-        if self.boxplot_path.exists(): return
         print(f'Boxplot 1.')
+        for self.quality in self.quality_list:
+            if self.boxplot_path_quality.exists(): continue
+            fig = plt.Figure((7, 5))
+            for n, self.category in enumerate(self.categories):
+                ax = fig.add_subplot(1, len(self.categories), n + 1)
+                for self.tiling in self.tiling_list:
+                    bucket = self.get_bucket_value(self.get_bucket_keys(self.category))
+                    ax.boxplot(bucket, whis=(0, 100))
+                    ax.set_title(self.category)
+            fig.tight_layout()
+            fig.savefig(self.boxplot_path_quality)
+            fig.clf()
 
-        fig = plt.Figure((7, 5))
-        for n, cat in enumerate(self.categories):
-            ax = fig.add_subplot(1, len(self.categories), n + 1)
-            ax.boxplot(self.bucket[cat], whis=(0, 100))
-            ax.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.boxplot_path)
-        fig.clf()
+        if not self.boxplot_path_tiling.exists():
+            print(f'Boxplot 2.')
+
+            fig = plt.Figure((7, 5))
+            for n, cat in enumerate(self.categories):
+                ax = fig.add_subplot(1, len(self.categories), n + 1)
+                ax.boxplot(self.bucket[cat], whis=(0, 100))
+                ax.set_title(cat)
+            fig.tight_layout()
+            fig.savefig(self.boxplot_path)
+            fig.clf()
 
     def make_hist(self):
         if self.hist_path.exists(): return
