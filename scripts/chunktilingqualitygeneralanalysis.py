@@ -181,15 +181,15 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
 
     def make_bucket(self):
         print(f'Collecting Data.')
-        total = 181 * len(self.quality_list) * len(self.chunk_list)
+        total = 181 * len(self.tiling_list) * len(self.quality_list)
         for self.name in self.name_list:
             self.load_database()
             self.start_ui(total, '\t' + self.name)
             for self.tiling in self.tiling_list:
                 for self.tile in self.tile_list:
                     for self.quality in self.quality_list:
+                        self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
                         for self.chunk in self.chunk_list:
-                            self.update_ui(f'{self.tiling}_qp{self.quality}')
                             for cat in self.categories:
                                 value = self.get_dataset_value(cat)
                                 self.set_bucket_value(value, self.get_bucket_keys(cat))
