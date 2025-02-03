@@ -13,8 +13,8 @@ from scripts.utils import load_json, get_nested_value, set_nested_value
 
 class AnalysisPaths(ConfigIf):
     # constants
-    categories: list
-    bucket_keys_name: list
+    categories: tuple
+    bucket_keys_name: tuple
     database_keys: dict
 
     # database-dependent
@@ -160,14 +160,23 @@ class AnalysisBase(AnalysisPaths, ABC):
         return value
 
     def load_bucket(self):
-        self.bucket = pickle.loads(self.bucket_pickle.read_bytes())
+        with open(self.bucket_pickle, 'rb') as f:
+            self.bucket = pickle.load(f)
 
+        # self.bucket = pickle.loads(self.bucket_pickle.read_bytes())
+
+    # noinspection PyTypeChecker
     def save_bucket(self):
-        self.bucket_pickle.write_bytes(pickle.dumps(self.bucket))
+        with open(self.bucket_pickle, 'wb') as f:
+            pickle.dump(self.bucket, f)
+        # self.bucket_pickle.write_bytes(pickle.dumps(self.bucket))
 
     def get_bucket_keys(self, cat):
         bucket_keys = [cat] + [getattr(self, key) for key in self.bucket_keys_name]
         return bucket_keys
+
+    def get_bucket_value(self,bucket_keys: list):
+        return get_nested_value(self.bucket, bucket_keys)
 
     def set_bucket_value(self, value, bucket_keys: list):
         try:
