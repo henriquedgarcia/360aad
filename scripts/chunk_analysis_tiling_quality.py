@@ -7,7 +7,7 @@ from scripts.analysisbase import AnalysisBase
 from scripts.utils import AutoDict
 
 
-class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
+class ChunkAnalysisTilingQualityBitrate(AnalysisBase):
     def setup(self):
         print(f'Setup.')
         self.metric = 'bitrate'
@@ -115,7 +115,7 @@ class BitrateTilingQualityGeneralAnalysis(AnalysisBase):
             fig.clf()
 
 
-class TimeTilingQualityGeneralAnalysis(AnalysisBase):
+class ChunkAnalysisTilingQualityTime(AnalysisBase):
     def setup(self):
         print(f'Setup.')
         self.metric = 'time'
@@ -223,7 +223,7 @@ class TimeTilingQualityGeneralAnalysis(AnalysisBase):
             fig.clf()
 
 
-class QualityTilingQualityGeneralAnalysis(AnalysisBase):
+class ChunkAnalysisTilingQualityQuality(AnalysisBase):
     def setup(self):
         print(f'Setup.')
         self.metric = 'chunk_quality'
@@ -332,6 +332,7 @@ class QualityTilingQualityGeneralAnalysis(AnalysisBase):
                 ax.set_title(self.category)
             fig.savefig(boxplot_path_tiling)
             fig.clf()
+
 
 # class GetTilesChunkGeneralAnalysis(AnalysisBase):
 #     def main(self):
