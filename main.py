@@ -3,7 +3,7 @@ import json
 
 from scripts.chunkgeneralanalysis import (QualityChunkGeneralAnalysis, BitrateChunkGeneralAnalysis, TimeChunkGeneralAnalysis, )
 from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQualityBitrate, ChunkAnalysisTilingQualityQuality, ChunkAnalysisTilingQualityTime)
-from scripts.tile_tiling_quality_analysis import BitrateTileTilingQualityAnalysis
+from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQualityBitrate
 from scripts.config import Config
 
 config = Config()
@@ -14,7 +14,7 @@ workers = {1: BitrateChunkGeneralAnalysis.__name__,
            4: ChunkAnalysisTilingQualityBitrate.__name__,
            5: ChunkAnalysisTilingQualityTime.__name__,
            6: ChunkAnalysisTilingQualityQuality.__name__,
-           7: BitrateTileTilingQualityAnalysis.__name__,
+           7: TileAnalysisTilingQualityBitrate.__name__,
            }
 
 help_txt = 'WORKERS = ' + json.dumps(workers, indent=4)

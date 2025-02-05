@@ -10,20 +10,20 @@ from scripts.utils import AutoDict
 lock = asyncio.Lock()
 
 
-class BitrateTileTilingQualityAnalysis(AnalysisBase):
+class TileAnalysisTilingQualityBitrate(AnalysisBase):
     def setup(self):
+        print(f'Setup.')
         self.metric = 'bitrate'
-        self.categories = ['dash_m4s']
-        self.bucket_keys_name = ['tiling', 'quality']
+        self.bucket_keys_name = ('tiling', 'quality')
         self.database_keys = {'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
+        self.categories = tuple(self.database_keys)
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
-
         self.projection = 'cmp'
 
     def make_bucket(self):
-        print(f'make_dash_m4s_bucket')
-        total = 181 * len(self.quality_list) * len(self.chunk_list)
+        print(f'Collecting Data.')
+        total = 181 * len(self.quality_list)
         for self.name in self.name_list:
             self.load_database()
             self.start_ui(total, '\t' + self.name)
@@ -31,7 +31,7 @@ class BitrateTileTilingQualityAnalysis(AnalysisBase):
                 for self.tiling in self.tiling_list:
                     for self.tile in self.tile_list:
                         for self.quality in self.quality_list:
-                            self.update_ui(f'{self.tiling}_qp{self.quality}')
+                            self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
                             for cat in self.categories:
                                 chunks_of_this_tile = []
                                 for self.chunk in self.chunk_list:
@@ -45,18 +45,18 @@ class BitrateTileTilingQualityAnalysis(AnalysisBase):
         for self.tiling in self.tiling_list:
             for self.quality in self.quality_list:
                 for cat in self.categories:
-                    value = self.bucket[cat][self.tiling][self.quality]
+                    bucket_value = self.bucket[cat][self.tiling][self.quality]
                     self.stats_defaultdict['Nome'].append(cat)
                     self.stats_defaultdict['tiling'].append(self.tiling)
                     self.stats_defaultdict['quality'].append(self.quality)
-                    self.stats_defaultdict['n_arquivos'].append(len(value))
-                    self.stats_defaultdict['Média'].append(np.average(value))
-                    self.stats_defaultdict['Desvio Padrão'].append(np.std(value))
-                    self.stats_defaultdict['Mínimo'].append(np.quantile(value, 0))
-                    self.stats_defaultdict['1º Quartil'].append(np.quantile(value, 0.25))
-                    self.stats_defaultdict['Mediana'].append(np.quantile(value, 0.5))
-                    self.stats_defaultdict['3º Quartil'].append(np.quantile(value, 0.75))
-                    self.stats_defaultdict['Máximo'].append(np.quantile(value, 1))
+                    self.stats_defaultdict['n_arquivos'].append(len(bucket_value))
+                    self.stats_defaultdict['Média'].append(np.average(bucket_value))
+                    self.stats_defaultdict['Desvio Padrão'].append(np.std(bucket_value))
+                    self.stats_defaultdict['Mínimo'].append(np.quantile(bucket_value, 0))
+                    self.stats_defaultdict['1º Quartil'].append(np.quantile(bucket_value, 0.25))
+                    self.stats_defaultdict['Mediana'].append(np.quantile(bucket_value, 0.5))
+                    self.stats_defaultdict['3º Quartil'].append(np.quantile(bucket_value, 0.75))
+                    self.stats_defaultdict['Máximo'].append(np.quantile(bucket_value, 1))
 
     def plots(self):
         pass
