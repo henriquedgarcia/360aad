@@ -152,6 +152,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         ...
 
     def load_database(self):
+        print(f'\n{self.__class__.__name__} loading database...')
         self.database = load_json(self.database_json)
 
     def get_dataset_value(self, category):
@@ -161,6 +162,7 @@ class AnalysisBase(AnalysisPaths, ABC):
 
     def load_bucket(self):
         with open(self.bucket_pickle, 'rb') as f:
+            print(f'\t{self.__class__.__name__} loading bucket...')
             self.bucket = pickle.load(f)
 
         # self.bucket = pickle.loads(self.bucket_pickle.read_bytes())
@@ -175,7 +177,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         bucket_keys = [cat] + [getattr(self, key) for key in self.bucket_keys_name]
         return bucket_keys
 
-    def get_bucket_value(self,bucket_keys: list):
+    def get_bucket_value(self, bucket_keys: list):
         return get_nested_value(self.bucket, bucket_keys)
 
     def set_bucket_value(self, value, bucket_keys: list):
