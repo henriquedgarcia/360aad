@@ -144,6 +144,7 @@ class TileAnalysisTilingQualityTime(TileAnalysisTilingQualityBase):
 class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
     def setup(self):
         print(f'Setup.')
+        self.metric = 'chunk_quality'
         self.bucket_keys_name = ('tiling', 'quality')
         self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                               'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
