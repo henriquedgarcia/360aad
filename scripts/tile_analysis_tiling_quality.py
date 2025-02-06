@@ -99,7 +99,7 @@ class TileAnalysisTilingQualityBitrate(TileAnalysisTilingQualityBase):
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
                 # ax.boxplot(buckets, whis=(0, 100), tick_labels=list(self.tiling_list))
                 ax.set_title(self.category)
-                ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
+                ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
                               list(self.tiling_list))
             fig.savefig(boxplot_path_quality)
             fig.clf()
