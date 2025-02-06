@@ -65,6 +65,8 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
         self.make_boxplot1()
         self.make_boxplot2()
 
+    figsize = (6, 2.4)
+
     def make_boxplot1(self):
         print(f'Boxplot 1.')
         n_subplots = len(self.categories)
@@ -74,7 +76,7 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
                 print(f'\t{boxplot_path_quality} exists.')
                 continue
 
-            fig = plt.figure(figsize=(6, 2.4), layout='tight')
+            fig = plt.figure(figsize=self.figsize, layout='tight')
             fig.suptitle(f'QP {self.quality}')
 
             for n, self.category in enumerate(self.categories, 1):
@@ -103,7 +105,7 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
                 print(f'\t{boxplot_path_tiling} exists.')
                 continue
 
-            fig = plt.figure(figsize=(6, 2.4), layout='tight')
+            fig = plt.figure(figsize=self.figsize, layout='tight')
             fig.suptitle(f'{self.tiling}')
 
             for n, self.category in enumerate(self.categories, 1):
@@ -142,6 +144,8 @@ class TileAnalysisTilingQualityTime(TileAnalysisTilingQualityBase):
 
 
 class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
+    figsize = (6, 8.5)
+
     def setup(self):
         print(f'Setup.')
         self.metric = 'chunk_quality'
