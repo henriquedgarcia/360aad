@@ -1,4 +1,5 @@
 import asyncio
+import pickle
 from abc import ABC
 from collections import defaultdict
 
@@ -6,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.utils import AutoDict
+from scripts.utils import AutoDict, id2xy, set_bucket_value, splitx
 
 lock = asyncio.Lock()
 
@@ -33,15 +34,19 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
                     for self.quality in self.quality_list:
                         self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
                         for cat in self.categories:
-                            self.set_bucket(cat)
+                            average_of_chunks = self.get_average_of_chunks(cat)
+                            self.set_bucket_value(average_of_chunks,
+                                                  self.get_bucket_keys(cat))
+
             self.close_ui()
 
-    def set_bucket(self, cat):
+    def get_average_of_chunks(self, cat):
         chunks_of_this_tile = []
         for self.chunk in self.chunk_list:
-            value = self.get_dataset_value(cat)
+            value = np.average(self.get_dataset_value(cat))
             chunks_of_this_tile.append(value)
-        self.set_bucket_value(np.average(chunks_of_this_tile), self.get_bucket_keys(cat))
+        average_of_chunks = np.average(chunks_of_this_tile)
+        return average_of_chunks
 
     def make_stats(self):
         print(f'Calculating stats.')
@@ -157,12 +162,62 @@ class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
                               }
         self.categories = tuple(self.database_keys)
 
-    def set_bucket(self, cat):
-        chunks_of_this_tile = []
-        for self.chunk in self.chunk_list:
-            value = np.average(self.get_dataset_value(cat))
-            chunks_of_this_tile.append(value)
-        self.set_bucket_value(np.average(chunks_of_this_tile), self.get_bucket_keys(cat))
+    def make_heatmap(self):
+        print(f'Heatmap 1.')
+        '[cat, self.quality, self.tiling, self.tile]'
+        self.make_heatmap_bucket()
+        for self.quality in self.quality_list:
+            heatmap_path_quality = self.boxplot_folder / f'heatmap_qp{self.quality}.png'
+            n = 0
+            fig = plt.figure(figsize=self.figsize, layout='tight')
+            fig.suptitle(f'QP {self.quality}')
+
+            for self.category in self.categories:
+                for self.tiling in self.tiling_list:
+                    if self.tiling =='1x1': continue
+                    n+=1
+                    shape = splitx(self.tiling)[::-1]
+                    image = np.zeros(shape)
+                    ax: plt.Axes = fig.add_subplot(len(self.categories),
+                                                   len(self.tiling_list),
+                                                   n)
+
+                    for self.tile in self.tile_list:
+                        x, y = id2xy(self.tile, shape)
+                        image[y, x] = bucket
+                    ax.imshow(image, cmap='jet')
+
+        self.close_ui()
+
+    def make_heatmap_bucket(self):
+        print(f'Collecting Data.')
+        total = 181 * len(self.quality_list)
+        self.heatmap_bucket = AutoDict()
+
+        heatmap_bucket_filename = self.bucket_pickle.name.replace('tile_', 'tile_heatmap')
+        heatmap_bucket_path = self.bucket_pickle.with_name(heatmap_bucket_filename)
+
+        if heatmap_bucket_path.exists():
+            self.heatmap_bucket = pickle.loads(heatmap_bucket_path.read_bytes())
+            return
+
+        for self.name in self.name_list:
+            self.load_database()
+            self.start_ui(total, '\t' + self.name)
+            for self.tiling in self.tiling_list:
+                for self.tile in self.tile_list:
+                    for self.quality in self.quality_list:
+                        self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
+                        for cat in self.categories:
+                            average_of_chunks = self.get_average_of_chunks(cat)
+                            set_bucket_value(self.heatmap_bucket,
+                                             average_of_chunks,
+                                             [cat, self.quality, self.tiling, self.tile])
+
+            self.close_ui()
+
+        self.bucket_pickle.with_name(heatmap_bucket_filename).write_bytes(pickle.dumps(self.heatmap_bucket))
+
 
 # class GetTilesChunkGeneralAnalysis(AnalysisBase):
 #     def main(self):
