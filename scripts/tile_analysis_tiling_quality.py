@@ -28,14 +28,14 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
         for self.name in self.name_list:
             self.load_database()
             self.start_ui(total, '\t' + self.name)
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.tile in self.tile_list:
-                        for self.quality in self.quality_list:
-                            self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
-                            for cat in self.categories:
-                                self.set_bucket(cat)
+            for self.tiling in self.tiling_list:
+                for self.tile in self.tile_list:
+                    for self.quality in self.quality_list:
+                        self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
+                        for cat in self.categories:
+                            self.set_bucket(cat)
             self.close_ui()
+        self.close_ui()
 
     def set_bucket(self, cat):
         chunks_of_this_tile = []
@@ -100,7 +100,7 @@ class TileAnalysisTilingQualityBitrate(TileAnalysisTilingQualityBase):
                 # ax.boxplot(buckets, whis=(0, 100), tick_labels=list(self.tiling_list))
                 ax.set_title(self.category)
                 ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
-                              list(self.quality_list))
+                              list(self.tiling_list))
             fig.savefig(boxplot_path_quality)
             fig.clf()
 
