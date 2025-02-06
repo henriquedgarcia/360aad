@@ -15,8 +15,8 @@ workers = {1: BitrateChunkGeneralAnalysis.__name__,
            5: ChunkAnalysisTilingQualityTime.__name__,
            6: ChunkAnalysisTilingQualityQuality.__name__,
            7: TileAnalysisTilingQualityBitrate.__name__,
-           7: TileAnalysisTilingQualityTime.__name__,
-           7: TileAnalysisTilingQualityQuality.__name__,
+           8: TileAnalysisTilingQualityTime.__name__,
+           9: TileAnalysisTilingQualityQuality.__name__,
            }
 
 help_txt = 'WORKERS = ' + json.dumps(workers, indent=4)
