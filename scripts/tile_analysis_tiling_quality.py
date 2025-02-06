@@ -1,5 +1,5 @@
 import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
 
 import numpy as np
@@ -35,7 +35,6 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
                         for cat in self.categories:
                             self.set_bucket(cat)
             self.close_ui()
-        self.close_ui()
 
     def set_bucket(self, cat):
         chunks_of_this_tile = []
@@ -61,15 +60,6 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
                     self.stats_defaultdict['Mediana'].append(np.quantile(bucket_value, 0.5))
                     self.stats_defaultdict['3º Quartil'].append(np.quantile(bucket_value, 0.75))
                     self.stats_defaultdict['Máximo'].append(np.quantile(bucket_value, 1))
-
-
-class TileAnalysisTilingQualityBitrate(TileAnalysisTilingQualityBase):
-    def setup(self):
-        print(f'Setup.')
-        self.metric = 'bitrate'
-        self.bucket_keys_name = ('tiling', 'quality')
-        self.database_keys = {'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
-        self.categories = tuple(self.database_keys)
 
     def plots(self):
         self.make_boxplot1()
@@ -133,170 +123,41 @@ class TileAnalysisTilingQualityBitrate(TileAnalysisTilingQualityBase):
             fig.clf()
 
 
-class TimeChunkGeneralAnalysis(AnalysisBase):
+class TileAnalysisTilingQualityBitrate(TileAnalysisTilingQualityBase):
     def setup(self):
+        print(f'Setup.')
+        self.metric = 'bitrate'
+        self.bucket_keys_name = ('tiling', 'quality')
+        self.database_keys = {'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
+        self.categories = tuple(self.database_keys)
+
+
+class TileAnalysisTilingQualityTime(TileAnalysisTilingQualityBase):
+    def setup(self):
+        print(f'Setup.')
         self.metric = 'time'
-        # self.categories = ('dectime', 'dectime_avg', 'dectime_med', 'dectime_std')
-        self.categories = ['dectime_avg', 'dectime_std']
-        self.bucket_keys_name = []
-        self.database_keys = {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              'dectime_std': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              }
-        self.bucket = AutoDict()
-        self.stats_defaultdict = defaultdict(list)
-        self.projection = 'cmp'
-
-    def make_bucket(self):
-        print(f'make_dectime_bucket')
-        total = (181 * len(self.quality_list) * len(self.chunk_list))
-        for self.name in self.name_list:
-            self.load_database()
-            self.start_ui(total, '\t' + self.name)
-            for self.tiling in self.tiling_list:
-                for self.tile in self.tile_list:
-                    for self.quality in self.quality_list:
-                        for self.chunk in self.chunk_list:
-                            self.update_ui(f'{self.tiling}-{self.tile}_qp{self.quality}')
-
-                            value = self.get_dataset_value('dectime_avg')
-                            self.set_bucket_value(value, ['dectime_avg'])
-
-                            value = self.get_dataset_value('dectime_std')
-                            self.set_bucket_value(value, ['dectime_std'])
-            self.close_ui()
-
-    def make_stats(self):
-        print(f'Calculating stats.')
-        for cat in self.categories:
-            self.stats_defaultdict['Nome'].append(cat)
-            self.stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
-            self.stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
-            self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
-            self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
-            self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
-            self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
-            self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
-            self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
-
-    def plots(self):
-        """
-        não faz sentido aqui. O desvio padrão é muito grande por
-        misturar diferentes qualidades e tiling.
-        Returns
-        -------
-
-        """
-        if not self.boxplot_path.exists():
-            self.make_boxplot()
-        if not self.boxplot_path.exists():
-            self.make_hist()
-
-    def make_boxplot(self):
-        print(f'Boxplot 1.')
-
-        fig = plt.Figure((3, 9))
-        for n, cat in enumerate(self.categories):
-            ax = fig.add_subplot(1, len(self.categories), n + 1)
-            ax.boxplot(self.bucket[cat], whis=(0, 100))
-            ax.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.boxplot_folder / 'boxplot.png')
-        fig.clf()
-
-    def make_hist(self):
-        if self.hist_path.exists(): return
-        print(f'Histogram 1.')
-        fig = plt.Figure((10, 3))
-        for n, cat in enumerate(self.categories):
-            ax1 = fig.add_subplot(1, len(self.categories), n + 1)
-            ax1.hist(self.bucket[cat], bins=30)
-            ax1.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.hist_path)
-        fig.clf()
+        self.bucket_keys_name = ('tiling', 'quality')
+        self.database_keys = {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
+        self.categories = tuple(self.database_keys)
 
 
-class QualityChunkGeneralAnalysis(AnalysisBase):
+class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
     def setup(self):
-        self.metric = 'chunk_quality'
-        self.categories = ['ssim', 'mse', 's-mse', 'ws-mse']
-        self.bucket_keys_name = []
+        print(f'Setup.')
+        self.bucket_keys_name = ('tiling', 'quality')
         self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                               'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                               's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                               'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                               }
-        self.bucket = AutoDict()
-        self.stats_defaultdict = defaultdict(list)
-        self.projection = 'cmp'
+        self.categories = tuple(self.database_keys)
 
-    def make_bucket(self):
-        print(f'make_quality_bucket')
-        total = (181 * len(self.quality_list) * len(self.chunk_list))
-        for self.name in self.name_list:
-            self.load_database()
-            self.start_ui(total, '\t' + self.name)
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.tile in self.tile_list:
-                        for self.quality in self.quality_list:
-                            for self.chunk in self.chunk_list:
-                                self.update_ui(f'{self.tiling}-{self.tile}_qp{self.quality}')
-
-                                for cat in self.categories:
-                                    value = self.get_dataset_value(cat)
-                                    self.set_bucket_value(value, [cat])
-            self.close_ui()
-
-    def make_stats(self):
-        print(f'Calculating stats.')
-        for cat in self.categories:
-            self.stats_defaultdict['Nome'].append(cat)
-            self.stats_defaultdict['n_arquivos'].append(len(self.bucket[cat]))
-            self.stats_defaultdict['Média'].append(np.average(self.bucket[cat]))
-            self.stats_defaultdict['Desvio Padrão'].append(np.std(self.bucket[cat]))
-            self.stats_defaultdict['Mínimo'].append(np.quantile(self.bucket[cat], 0))
-            self.stats_defaultdict['1º Quartil'].append(np.quantile(self.bucket[cat], 0.25))
-            self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
-            self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
-            self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
-
-    def plots(self):
-        """
-        não faz sentido aqui. O desvio padrão é muito grande por
-        misturar diferentes qualidades e tiling.
-        Returns
-        -------
-
-        """
-        ...
-        # if not self.boxplot_path.exists():
-        #     self.make_boxplot()
-
-    def make_boxplot(self):
-        if self.boxplot_path.exists(): return
-        print(f'Boxplot 1.')
-
-        fig = plt.Figure((7, 5))
-        for n, cat in enumerate(self.categories):
-            ax = fig.add_subplot(1, len(self.categories), n + 1)
-            ax.boxplot(self.bucket[cat], whis=(0, 100))
-            ax.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.boxplot_path)
-        fig.clf()
-
-    def make_hist(self):
-        if self.hist_path.exists(): return
-        print(f'Histogram 1.')
-        fig = plt.Figure((10, 6))
-        for n, cat in enumerate(self.categories):
-            ax1 = fig.add_subplot(1, len(self.categories), n + 1)
-            ax1.hist(self.bucket[cat], bins=30)
-            ax1.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.hist_path)
-        fig.clf()
+    def set_bucket(self, cat):
+        chunks_of_this_tile = []
+        for self.chunk in self.chunk_list:
+            value = np.average(self.get_dataset_value(cat))
+            chunks_of_this_tile.append(value)
+        self.set_bucket_value(np.average(chunks_of_this_tile), self.get_bucket_keys(cat))
 
 # class GetTilesChunkGeneralAnalysis(AnalysisBase):
 #     def main(self):
