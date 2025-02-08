@@ -3,11 +3,12 @@ import json
 
 from scripts.chunk_analysis_general import (ChunkAnalysisGeneralQuality, ChunkAnalysisGeneralBitrate, ChunkAnalysisGeneralTime, )
 from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQualityBitrate, ChunkAnalysisTilingQualityQuality, ChunkAnalysisTilingQualityTime)
-from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQualityBitrate, TileAnalysisTilingQualityTime, TileAnalysisTilingQualityQuality
 from scripts.config import Config
+from scripts.fix_database import FixDatabase
+from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQualityBitrate, TileAnalysisTilingQualityTime, TileAnalysisTilingQualityQuality
 
-
-workers = {1: ChunkAnalysisGeneralBitrate.__name__,
+workers = {0: FixDatabase.__name__,
+           1: ChunkAnalysisGeneralBitrate.__name__,
            2: ChunkAnalysisGeneralTime.__name__,
            3: ChunkAnalysisGeneralQuality.__name__,
            4: ChunkAnalysisTilingQualityBitrate.__name__,
