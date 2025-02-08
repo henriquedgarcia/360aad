@@ -238,8 +238,8 @@ class LazyProperty:
 
 
 def set_bucket_value(bucket: dict,
-                     value: Any,
-                     bucket_keys: Sequence):
+                     bucket_keys: Sequence,
+                     value: Any):
     try:
         get_nested_value(bucket, bucket_keys).append(value)
     except AttributeError:
