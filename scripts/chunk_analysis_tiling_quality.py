@@ -31,7 +31,7 @@ class ChunkAnalysisTilingQualityBitrate(AnalysisBase):
                         for self.chunk in self.chunk_list:
                             for cat in self.categories:
                                 value = self.get_dataset_value(cat)
-                                self.set_bucket_value(value, self.get_bucket_keys(cat))
+                                self.set_bucket_value(self.get_bucket_keys(cat), value, )
             self.close_ui()
 
     def make_stats(self):
@@ -80,9 +80,11 @@ class ChunkAnalysisTilingQualityBitrate(AnalysisBase):
                     buckets.append(bucket_value)
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
                 # ax.boxplot(buckets, whis=(0, 100), tick_labels=list(self.tiling_list))
+                ax.set_xlabel(f'Tiling')
+                ax.set_ylabel(f'Bitrate (bps)')
                 ax.set_title(self.category)
-                ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
-                              list(self.quality_list))
+                ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
+                              list(self.tiling_list))
             fig.savefig(boxplot_path_quality)
             fig.clf()
 
@@ -110,6 +112,8 @@ class ChunkAnalysisTilingQualityBitrate(AnalysisBase):
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
                 ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
                               list(self.quality_list))
+                ax.set_xlabel(f'Quality (QP)')
+                ax.set_ylabel(f'Bitrate (bps)')
                 ax.set_title(self.category)
             fig.savefig(boxplot_path_tiling)
             fig.clf()
@@ -140,7 +144,7 @@ class ChunkAnalysisTilingQualityTime(AnalysisBase):
                             for self.chunk in self.chunk_list:
                                 for cat in self.categories:
                                     value = self.get_dataset_value(cat)
-                                    self.set_bucket_value(value, self.get_bucket_keys(cat))
+                                    self.set_bucket_value(self.get_bucket_keys(cat), value, )
             self.close_ui()
 
     def make_stats(self):
@@ -187,10 +191,10 @@ class ChunkAnalysisTilingQualityTime(AnalysisBase):
                     bucket_value = self.get_bucket_value(bucket_keys)
                     buckets.append(bucket_value)
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
-                # ax.boxplot(buckets, whis=(0, 100), tick_labels=list(self.tiling_list))
-                ax.set_title(self.category)
-                ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
-                              list(self.quality_list))
+                ax.set_ylabel(f'Time (s)')
+                ax.set_xlabel(f'Tiling')
+                ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
+                              list(self.tiling_list))
             fig.savefig(boxplot_path_quality)
             fig.clf()
 
@@ -218,7 +222,10 @@ class ChunkAnalysisTilingQualityTime(AnalysisBase):
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
                 ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
                               list(self.quality_list))
+                ax.set_xlabel(f'Quality (QP)')
+                ax.set_ylabel(f'Time (s)')
                 ax.set_title(self.category)
+            fig.tight_layout()
             fig.savefig(boxplot_path_tiling)
             fig.clf()
 
@@ -250,7 +257,7 @@ class ChunkAnalysisTilingQualityQuality(AnalysisBase):
                         for self.chunk in self.chunk_list:
                             for cat in self.categories:
                                 value = np.average(self.get_dataset_value(cat))
-                                self.set_bucket_value(value, self.get_bucket_keys(cat))
+                                self.set_bucket_value(self.get_bucket_keys(cat), value, )
             self.close_ui()
 
     def make_stats(self):
@@ -299,9 +306,10 @@ class ChunkAnalysisTilingQualityQuality(AnalysisBase):
                     buckets.append(bucket_value)
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
                 # ax.boxplot(buckets, whis=(0, 100), tick_labels=list(self.tiling_list))
+                ax.set_xlabel(f'Tiling')
                 ax.set_title(self.category)
-                ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
-                              list(self.quality_list))
+                ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
+                              list(self.tiling_list))
             fig.savefig(boxplot_path_quality)
             fig.clf()
 
@@ -329,10 +337,10 @@ class ChunkAnalysisTilingQualityQuality(AnalysisBase):
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
                 ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
                               list(self.quality_list))
+                ax.set_xlabel(f'Quality (QP)')
                 ax.set_title(self.category)
             fig.savefig(boxplot_path_tiling)
             fig.clf()
-
 
 # class GetTilesChunkGeneralAnalysis(AnalysisBase):
 #     def main(self):
