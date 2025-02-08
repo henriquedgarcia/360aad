@@ -35,8 +35,7 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
                         self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
                         for cat in self.categories:
                             average_of_chunks = self.get_average_of_chunks(cat)
-                            self.set_bucket_value(average_of_chunks,
-                                                  self.get_bucket_keys(cat))
+                            self.set_bucket_value(self.get_bucket_keys(cat), average_of_chunks, )
 
             self.close_ui()
 
@@ -174,8 +173,8 @@ class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
 
             for self.category in self.categories:
                 for self.tiling in self.tiling_list:
-                    if self.tiling =='1x1': continue
-                    n+=1
+                    if self.tiling == '1x1': continue
+                    n += 1
                     shape = splitx(self.tiling)[::-1]
                     image = np.zeros(shape)
                     ax: plt.Axes = fig.add_subplot(len(self.categories),
@@ -183,6 +182,7 @@ class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
                                                    n)
 
                     for self.tile in self.tile_list:
+                        bucket = self.get_bucket_keys(self.category)
                         x, y = id2xy(self.tile, shape)
                         image[y, x] = bucket
                     ax.imshow(image, cmap='jet')
@@ -211,13 +211,12 @@ class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
                         for cat in self.categories:
                             average_of_chunks = self.get_average_of_chunks(cat)
                             set_bucket_value(self.heatmap_bucket,
-                                             average_of_chunks,
-                                             [cat, self.quality, self.tiling, self.tile])
+                                             [cat, self.quality, self.tiling, self.tile],
+                                             average_of_chunks)
 
             self.close_ui()
 
         self.bucket_pickle.with_name(heatmap_bucket_filename).write_bytes(pickle.dumps(self.heatmap_bucket))
-
 
 # class GetTilesChunkGeneralAnalysis(AnalysisBase):
 #     def main(self):
