@@ -19,28 +19,30 @@ workers = {1: ChunkAnalysisGeneralBitrate.__name__,
            9: TileAnalysisTilingQualityQuality.__name__,
            }
 
-help_txt = 'WORKERS = ' + json.dumps(workers, indent=4)
+help_txt = 'WORKERS = ' + json.dumps(workers, indent=4) + ': '
 
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=help_txt)
+    config = Config()
+    worker_class = menu()
+    worker_class(config)
 
+
+def menu():
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=help_txt)
     parser.add_argument('worker', type=int, metavar='WORKER', nargs='?', default=None, help=f'A worker name.')
 
     worker_id = parser.parse_args().worker
     while True:
-        if worker_id not in workers:
-            try:
-                worker_id = int(input(help_txt))
-            except ValueError:
-                continue
+        if worker_id in workers:
             break
+        try:
+            worker_id = int(input(help_txt))
+        except ValueError:
+            worker_id = None
 
     worker_str = workers[worker_id]
-    worker_class = globals()[worker_str]
-
-    print(worker_str)
-    worker_class(config)
+    return globals()[worker_str]
 
 
 if __name__ == '__main__':
