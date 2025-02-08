@@ -2,7 +2,6 @@ import asyncio
 from collections import defaultdict
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
 from scripts.utils import AutoDict
@@ -13,8 +12,8 @@ lock = asyncio.Lock()
 class ChunkAnalysisGeneralBitrate(AnalysisBase):
     def setup(self):
         self.metric = 'bitrate'
-        self.categories = ['dash_mpd', 'dash_init', 'dash_m4s']
-        self.bucket_keys_name = []
+        self.categories = ('dash_mpd', 'dash_init', 'dash_m4s')
+        self.bucket_keys_name = ()
         self.database_keys = {'dash_mpd': ['name', 'projection', 'tiling', 'tile'],
                               'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality'],
                               'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
@@ -113,44 +112,6 @@ class ChunkAnalysisGeneralBitrate(AnalysisBase):
                                 self.set_bucket_value(value, ['dash_m4s'])
             self.close_ui()
 
-    def make_boxplot(self):
-        """
-        O box plot nao vai fazer sentido aqui.
-        O desvio padrão é tao grande que não faz sentido mostrar a distribuição.
-        Os outliers fazem a distribuição nem ser desenhada direito.
-        Returns
-        -------
-
-        """
-        if self.boxplot_path.exists(): return
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
-        ax1.boxplot(self.bucket['dash_mpd'], whis=(0, 100))
-        ax1.title.set_text('Arquivo mpd')
-        ax2.boxplot(self.bucket['dash_init'], whis=(0, 100))
-        ax2.title.set_text('Arquivo init')
-        ax3.boxplot(self.bucket['dash_m4s'], whis=(0, 100))
-        ax3.title.set_text('Arquivo m4s')
-        fig.tight_layout()
-        fig: plt.Figure
-        fig.savefig(self.boxplot_path)
-
-    def make_hist(self):
-        """
-        O box plot nao vai fazer sentido aqui.
-        O desvio padrão é tao grande que não faz sentido mostrar a distribuição.
-        Os outliers fazem a distribuição nem ser desenhada direito.
-        Returns
-        -------
-
-        """
-        # if self.hist_path.exists(): return
-        fig, ax3 = plt.subplots(1, 1, figsize=(10, 5))
-        ax3.hist(self.bucket['dash_m4s'], bins=30)
-        ax3.set_title('chunk')
-        fig.tight_layout()
-        fig.savefig(self.hist_path)
-        fig.clf()
-
 
 class ChunkAnalysisGeneralTime(AnalysisBase):
     def setup(self):
@@ -196,43 +157,6 @@ class ChunkAnalysisGeneralTime(AnalysisBase):
             self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
             self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
             self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
-
-    def plots(self):
-        """
-        não faz sentido aqui. o desvio padrão é muito grande por
-        misturar diferentes qualidades e tiling.
-        Returns
-        -------
-
-        """
-        if not self.boxplot_path.exists():
-            self.make_boxplot()
-        if not self.boxplot_path.exists():
-            self.make_hist()
-
-    def make_boxplot(self):
-        print(f'Boxplot 1.')
-
-        fig = plt.Figure((3, 9))
-        for n, cat in enumerate(self.categories):
-            ax = fig.add_subplot(1, len(self.categories), n + 1)
-            ax.boxplot(self.bucket[cat], whis=(0, 100))
-            ax.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.boxplot_folder / 'boxplot.png')
-        fig.clf()
-
-    def make_hist(self):
-        if self.hist_path.exists(): return
-        print(f'Histogram 1.')
-        fig = plt.Figure((10, 3))
-        for n, cat in enumerate(self.categories):
-            ax1 = fig.add_subplot(1, len(self.categories), n + 1)
-            ax1.hist(self.bucket[cat], bins=30)
-            ax1.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.hist_path)
-        fig.clf()
 
 
 class ChunkAnalysisGeneralQuality(AnalysisBase):
@@ -282,40 +206,13 @@ class ChunkAnalysisGeneralQuality(AnalysisBase):
 
     def plots(self):
         """
-        não faz sentido aqui. o desvio padrão é muito grande por
-        misturar diferentes qualidades e tiling.
+        Não faz sentido aqui. O desvio padrão é muito grande por
+        misturar diferentes qualidades e tiling. Os dados estão muito misturados ainda
+
         Returns
         -------
 
         """
-        ...
-        # if not self.boxplot_path.exists():
-        #     self.make_boxplot()
-
-    def make_boxplot(self):
-        if self.boxplot_path.exists(): return
-        print(f'Boxplot 1.')
-
-        fig = plt.Figure((7, 5))
-        for n, cat in enumerate(self.categories):
-            ax = fig.add_subplot(1, len(self.categories), n + 1)
-            ax.boxplot(self.bucket[cat], whis=(0, 100))
-            ax.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.boxplot_path)
-        fig.clf()
-
-    def make_hist(self):
-        if self.hist_path.exists(): return
-        print(f'Histogram 1.')
-        fig = plt.Figure((10, 6))
-        for n, cat in enumerate(self.categories):
-            ax1 = fig.add_subplot(1, len(self.categories), n + 1)
-            ax1.hist(self.bucket[cat], bins=30)
-            ax1.set_title(cat)
-        fig.tight_layout()
-        fig.savefig(self.hist_path)
-        fig.clf()
 
 # class GetTilesChunkGeneralAnalysis(AnalysisBase):
 #     def main(self):

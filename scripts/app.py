@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from scripts.bucket import Bucket
-from scripts.chunkgeneralanalysis import ChunkAnalysisGeneralBitrate
+from scripts.chunk_analysis_general import ChunkAnalysisGeneralBitrate
 from scripts.make_bucket import MakeBuket
 from scripts.utils import load_json, splitx, get_nested_value
 

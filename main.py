@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from scripts.chunkgeneralanalysis import (ChunkAnalysisGeneralQuality, ChunkAnalysisGeneralBitrate, ChunkAnalysisGeneralTime, )
+from scripts.chunk_analysis_general import (ChunkAnalysisGeneralQuality, ChunkAnalysisGeneralBitrate, ChunkAnalysisGeneralTime, )
 from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQualityBitrate, ChunkAnalysisTilingQualityQuality, ChunkAnalysisTilingQualityTime)
 from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQualityBitrate, TileAnalysisTilingQualityTime, TileAnalysisTilingQualityQuality
 from scripts.config import Config
