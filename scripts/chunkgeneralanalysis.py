@@ -10,7 +10,7 @@ from scripts.utils import AutoDict
 lock = asyncio.Lock()
 
 
-class BitrateChunkGeneralAnalysis(AnalysisBase):
+class ChunkAnalysisGeneralBitrate(AnalysisBase):
     def setup(self):
         self.metric = 'bitrate'
         self.categories = ['dash_mpd', 'dash_init', 'dash_m4s']
@@ -152,7 +152,7 @@ class BitrateChunkGeneralAnalysis(AnalysisBase):
         fig.clf()
 
 
-class TimeChunkGeneralAnalysis(AnalysisBase):
+class ChunkAnalysisGeneralTime(AnalysisBase):
     def setup(self):
         self.metric = 'time'
         # self.categories = ('dectime', 'dectime_avg', 'dectime_med', 'dectime_std')
@@ -235,7 +235,7 @@ class TimeChunkGeneralAnalysis(AnalysisBase):
         fig.clf()
 
 
-class QualityChunkGeneralAnalysis(AnalysisBase):
+class ChunkAnalysisGeneralQuality(AnalysisBase):
     def setup(self):
         self.metric = 'chunk_quality'
         self.categories = ('ssim', 'mse', 's-mse', 'ws-mse')

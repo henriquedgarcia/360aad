@@ -19,12 +19,12 @@ import numpy as np
 import pandas as pd
 
 from scripts.bucket import Bucket
-from scripts.chunkgeneralanalysis import BitrateChunkGeneralAnalysis
+from scripts.chunkgeneralanalysis import ChunkAnalysisGeneralBitrate
 from scripts.make_bucket import MakeBuket
 from scripts.utils import load_json, splitx, get_nested_value
 
 
-class ByQuality(BitrateChunkGeneralAnalysis):
+class ByQuality(ChunkAnalysisGeneralBitrate):
     def _make_bucket(self):
         if self.bucket_pickle.exists():
             self.bucket = Bucket()
@@ -149,7 +149,7 @@ class ByQuality(BitrateChunkGeneralAnalysis):
         return self.histogram_folder / f'histogram_qp{self.config.quality}.pdf'
 
 
-class ByTiling(BitrateChunkGeneralAnalysis):
+class ByTiling(ChunkAnalysisGeneralBitrate):
     def _make_bucket(self):
         if self.bucket_pickle.exists():
             self.bucket = Bucket()
@@ -275,7 +275,7 @@ class ByTiling(BitrateChunkGeneralAnalysis):
         return self.histogram_folder / f'histogram_qp{self.config.tiling}.pdf'
 
 
-class ByTilingByQuality(BitrateChunkGeneralAnalysis):
+class ByTilingByQuality(ChunkAnalysisGeneralBitrate):
     database: dict
 
     def make_plots(self):
