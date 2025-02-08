@@ -106,5 +106,4 @@ class FixDatabase(AnalysisBase):
                                                 self.chunk,
                                                 )] = value
                 print('Saving new database...')
-                mode = 'a' if new_name.exists() else 'w'
-                df.to_hdf(new_name, key=df_name, mode=mode)
+                df.to_hdf(new_name, key=df_name, mode='a')
