@@ -8,7 +8,7 @@ import pandas as pd
 from scripts.bucket import Bucket
 from scripts.config import ConfigIf
 from scripts.progressbar import ProgressBar
-from scripts.utils import load_json, get_nested_value, set_nested_value
+from scripts.utils import load_json, get_nested_value, set_nested_value, get_bucket_value, set_bucket_value
 
 
 class AnalysisPaths(ConfigIf):
@@ -178,13 +178,10 @@ class AnalysisBase(AnalysisPaths, ABC):
         return bucket_keys
 
     def get_bucket_value(self, bucket_keys: list):
-        return get_nested_value(self.bucket, bucket_keys)
+        return get_bucket_value(self.bucket, bucket_keys)
 
     def set_bucket_value(self, value, bucket_keys: list):
-        try:
-            get_nested_value(self.bucket, bucket_keys).append(value)
-        except AttributeError:
-            set_nested_value(self.bucket, bucket_keys, [value])
+        set_bucket_value(self.bucket, bucket_keys, value)
 
     def start_ui(self, total, desc):
         self.ui = ProgressBar(total=total, desc=desc)

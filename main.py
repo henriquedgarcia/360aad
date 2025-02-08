@@ -1,20 +1,22 @@
 import argparse
 import json
 
-from scripts.chunkgeneralanalysis import (QualityChunkGeneralAnalysis, BitrateChunkGeneralAnalysis, TimeChunkGeneralAnalysis, )
+from scripts.chunkgeneralanalysis import (ChunkAnalysisGeneralQuality, ChunkAnalysisGeneralBitrate, ChunkAnalysisGeneralTime, )
 from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQualityBitrate, ChunkAnalysisTilingQualityQuality, ChunkAnalysisTilingQualityTime)
-from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQualityBitrate
+from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQualityBitrate, TileAnalysisTilingQualityTime, TileAnalysisTilingQualityQuality
 from scripts.config import Config
 
 config = Config()
 
-workers = {1: BitrateChunkGeneralAnalysis.__name__,
-           2: TimeChunkGeneralAnalysis.__name__,
-           3: QualityChunkGeneralAnalysis.__name__,
+workers = {1: ChunkAnalysisGeneralBitrate.__name__,
+           2: ChunkAnalysisGeneralTime.__name__,
+           3: ChunkAnalysisGeneralQuality.__name__,
            4: ChunkAnalysisTilingQualityBitrate.__name__,
            5: ChunkAnalysisTilingQualityTime.__name__,
            6: ChunkAnalysisTilingQualityQuality.__name__,
            7: TileAnalysisTilingQualityBitrate.__name__,
+           8: TileAnalysisTilingQualityTime.__name__,
+           9: TileAnalysisTilingQualityQuality.__name__,
            }
 
 help_txt = 'WORKERS = ' + json.dumps(workers, indent=4)
