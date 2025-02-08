@@ -1,5 +1,6 @@
 import json
 from collections import defaultdict
+from collections.abc import Sequence
 from functools import reduce
 from pathlib import Path
 from typing import Any, Union
@@ -234,3 +235,17 @@ class LazyProperty:
 
     def deleter(self, value: Callable):
         self._deleter = value
+
+
+def set_bucket_value(bucket: dict,
+                     value: Any,
+                     bucket_keys: Sequence):
+    try:
+        get_nested_value(bucket, bucket_keys).append(value)
+    except AttributeError:
+        set_nested_value(bucket, bucket_keys, [value])
+
+
+def get_bucket_value(bucket: dict,
+                     bucket_keys: list) -> Any:
+    return get_nested_value(bucket, bucket_keys)
