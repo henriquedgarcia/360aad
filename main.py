@@ -6,7 +6,6 @@ from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQualityBit
 from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQualityBitrate, TileAnalysisTilingQualityTime, TileAnalysisTilingQualityQuality
 from scripts.config import Config
 
-config = Config()
 
 workers = {1: ChunkAnalysisGeneralBitrate.__name__,
            2: ChunkAnalysisGeneralTime.__name__,
@@ -23,9 +22,8 @@ help_txt = 'WORKERS = ' + json.dumps(workers, indent=4) + ': '
 
 
 def main():
-    config = Config()
     worker_class = menu()
-    worker_class(config)
+    worker_class(Config())
 
 
 def menu():
