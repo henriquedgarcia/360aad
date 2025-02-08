@@ -149,7 +149,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         ...
 
     def load_database(self):
-        print(f'\n{self.__class__.__name__} loading database...')
+        print(f'{self.__class__.__name__} loading database...')
         self.database = load_json(self.database_json)
 
     def get_dataset_value(self, category):
@@ -177,7 +177,7 @@ class AnalysisBase(AnalysisPaths, ABC):
     def get_bucket_value(self, bucket_keys: list):
         return get_bucket_value(self.bucket, bucket_keys)
 
-    def set_bucket_value(self, value, bucket_keys: list):
+    def set_bucket_value(self, bucket_keys: list, value):
         set_bucket_value(self.bucket, bucket_keys, value)
 
     def start_ui(self, total, desc):
