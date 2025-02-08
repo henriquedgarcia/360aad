@@ -76,7 +76,7 @@ class ChunkAnalysisGeneralBitrate(AnalysisBase):
                     for self.tile in self.tile_list:
                         self.update_ui(f'{self.tiling}')
                         value = self.get_dataset_value('dash_mpd')
-                        self.set_bucket_value(value, ['dash_mpd'])
+                        self.set_bucket_value(['dash_mpd'], value, )
             self.close_ui()
 
     def make_dash_init_bucket(self):
@@ -92,7 +92,7 @@ class ChunkAnalysisGeneralBitrate(AnalysisBase):
                         for self.quality in self.quality_list:
                             self.update_ui(f'{self.tiling}_qp{self.quality}')
                             value = self.get_dataset_value('dash_init')
-                            self.set_bucket_value(value, ['dash_init'])
+                            self.set_bucket_value(['dash_init'], value, )
             self.close_ui()
 
     def make_dash_m4s_bucket(self):
@@ -107,9 +107,8 @@ class ChunkAnalysisGeneralBitrate(AnalysisBase):
                         for self.quality in self.quality_list:
                             for self.chunk in self.chunk_list:
                                 self.update_ui(f'{self.tiling}_qp{self.quality}')
-
                                 value = self.get_dataset_value('dash_m4s')
-                                self.set_bucket_value(value, ['dash_m4s'])
+                                self.set_bucket_value(['dash_m4s'], value, )
             self.close_ui()
 
 
@@ -139,10 +138,10 @@ class ChunkAnalysisGeneralTime(AnalysisBase):
                             self.update_ui(f'{self.tiling}-{self.tile}_qp{self.quality}')
 
                             value = self.get_dataset_value('dectime_avg')
-                            self.set_bucket_value(value, ['dectime_avg'])
+                            self.set_bucket_value(['dectime_avg'], value, )
 
                             value = self.get_dataset_value('dectime_std')
-                            self.set_bucket_value(value, ['dectime_std'])
+                            self.set_bucket_value(['dectime_std'], value, )
             self.close_ui()
 
     def make_stats(self):
@@ -157,6 +156,9 @@ class ChunkAnalysisGeneralTime(AnalysisBase):
             self.stats_defaultdict['Mediana'].append(np.quantile(self.bucket[cat], 0.5))
             self.stats_defaultdict['3º Quartil'].append(np.quantile(self.bucket[cat], 0.75))
             self.stats_defaultdict['Máximo'].append(np.quantile(self.bucket[cat], 1))
+
+    def plots(self):
+        ...
 
 
 class ChunkAnalysisGeneralQuality(AnalysisBase):
@@ -188,7 +190,7 @@ class ChunkAnalysisGeneralQuality(AnalysisBase):
 
                                 for cat in self.categories:
                                     value = self.get_dataset_value(cat)
-                                    self.set_bucket_value(value, [cat])
+                                    self.set_bucket_value([cat], value, )
             self.close_ui()
 
     def make_stats(self):
