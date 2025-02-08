@@ -35,8 +35,13 @@ class AnalysisPaths(ConfigIf):
         return self.__class__.__name__
 
     @property
+    def results_folder(self):
+        folder = Path('results') / f'{self.class_name}'
+        return folder
+
+    @property
     def graphs_workfolder(self):
-        folder = Path(f'graphs/{self.metric}/{self.class_name}/')
+        folder = self.results_folder / f'graphs/'
         return folder
 
     @property
@@ -71,27 +76,19 @@ class AnalysisPaths(ConfigIf):
 
     @property
     def stats_workfolder(self):
-        folder = Path(f'stats/{self.metric}/{self.class_name}/')
+        folder = self.results_folder / f'stats/'
         folder.mkdir(exist_ok=True, parents=True)
         return folder
 
     @property
     def bucket_workfolder(self):
-        folder = Path(f'bucket/')
+        folder = self.results_folder / f'bucket/'
         folder.mkdir(exist_ok=True, parents=True)
         return folder
 
     @property
-    def boxplot_path(self):
-        return self.boxplot_folder / 'boxplot.png'
-
-    @property
-    def hist_path(self):
-        return self.histogram_folder / 'histogram.png'
-
-    @property
     def stats_csv(self):
-        return self.stats_workfolder / 'stats.csv'
+        return self.stats_workfolder / f'{self.__class__.__name__}_stats.csv'
 
     @property
     def bucket_pickle(self):
