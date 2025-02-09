@@ -149,7 +149,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         ...
 
     def load_database(self):
-        print(f'{self.__class__.__name__} loading database...')
+        print(f'{self.__class__.__name__} loading {self.name} database...')
         self.database = load_json(self.database_json)
 
     def get_dataset_value(self, category):
