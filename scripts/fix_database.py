@@ -4,28 +4,11 @@ import numpy as np
 import pandas as pd
 
 from scripts.analysisbase import AnalysisPaths
-from scripts.bucket import Bucket
 from scripts.progressbar import ProgressBar
 from scripts.utils import dict_to_tuples, AutoDict, save_pickle, load_json, load_pickle
 
 
 class FixDatabase(AnalysisPaths):
-    """
-    Database[name][projection][tiling][tile][quality][chunk]
-    """
-
-    def setup(self):
-        pass
-
-    def make_bucket(self) -> Bucket:
-        pass
-
-    def make_stats(self):
-        pass
-
-    def plots(self):
-        pass
-
     dataset_structure = {'bitrate': {'dash_mpd': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
                                      'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality', 'category', 'value', None],
                                      'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value']
