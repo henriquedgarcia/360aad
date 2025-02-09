@@ -32,10 +32,10 @@ class FixDatabase(AnalysisBase):
                          'time': {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
                                   'dectime_std': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
                                   },
-                         'chunk_quality': {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
-                                           'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
-                                           's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
-                                           'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
+                         'chunk_quality': {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
+                                           'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
+                                           's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
+                                           'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
                                            }
                          }
     metrics = list(dataset_structute)
