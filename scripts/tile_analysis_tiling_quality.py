@@ -1,59 +1,32 @@
-import asyncio
-import pickle
-from abc import ABC
+import os
 from collections import defaultdict
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.utils import AutoDict, id2xy, set_bucket_value, splitx
+from scripts.config import Config
+from scripts.utils import AutoDict
 
-lock = asyncio.Lock()
 
-
-class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
-    bucket = AutoDict()
-    stats_defaultdict = defaultdict(list)
-    projection = 'cmp'
-
-    @property
-    def bucket_pickle(self):
-        cat = '-'.join(self.categories)
-        keys = '_'.join(self.bucket_keys_name)
-        return self.bucket_workfolder / f'tile_{self.metric}_[{cat}]_{keys}.pickle'
-
-    def make_bucket(self):
-        print(f'Collecting Data.')
-        total = 181 * len(self.quality_list)
-        for self.name in self.name_list:
-            self.load_database()
-            self.start_ui(total, '\t' + self.name)
-            for self.tiling in self.tiling_list:
-                for self.tile in self.tile_list:
-                    for self.quality in self.quality_list:
-                        self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
-                        for cat in self.categories:
-                            average_of_chunks = self.get_average_of_chunks(cat)
-                            self.set_bucket_value(self.get_bucket_keys(cat), average_of_chunks, )
-
-            self.close_ui()
-
-    def get_average_of_chunks(self, cat):
-        chunks_of_this_tile = []
-        for self.chunk in self.chunk_list:
-            value = np.average(self.get_dataset_value(cat))
-            chunks_of_this_tile.append(value)
-        average_of_chunks = np.average(chunks_of_this_tile)
-        return average_of_chunks
+class TileAnalysisTilingQuality(AnalysisBase):
+    def setup(self):
+        print(f'Setup.')
+        self.bucket = AutoDict()
+        self.stats_defaultdict = defaultdict(list)
+        self.projection = 'cmp'
+        del self.dataset_structure['dash_mpd']
+        del self.dataset_structure['dash_init']
+        del self.dataset_structure['dectime_std']
 
     def make_stats(self):
+        return
         print(f'Calculating stats.')
         for self.tiling in self.tiling_list:
             for self.quality in self.quality_list:
                 for cat in self.categories:
                     bucket_value = self.bucket[cat][self.tiling][self.quality]
-                    self.stats_defaultdict['Nome'].append(cat)
+                    self.stats_defaultdict['Metric'].append(cat)
                     self.stats_defaultdict['tiling'].append(self.tiling)
                     self.stats_defaultdict['quality'].append(self.quality)
                     self.stats_defaultdict['n_arquivos'].append(len(bucket_value))
@@ -66,157 +39,83 @@ class TileAnalysisTilingQualityBase(AnalysisBase, ABC):
                     self.stats_defaultdict['Máximo'].append(np.quantile(bucket_value, 1))
 
     def plots(self):
-        self.make_boxplot1()
-        self.make_boxplot2()
+        self.make_boxplot_quality_tiling()
+        self.make_boxplot_tiling_quality()
 
-    figsize = (6, 2.4)
+    def make_boxplot_quality_tiling(self):
+        print(f'make_boxplot_quality_tiling.')
+        for self.metric in self.dataset_structure:
+            self.load_database()
 
-    def make_boxplot1(self):
-        print(f'Boxplot 1.')
-        n_subplots = len(self.categories)
-        for self.quality in self.quality_list:
-            boxplot_path_quality = self.boxplot_folder / f'boxplot_qp{self.quality}.png'
+            boxplot_path_quality = self.boxplot_folder / f'boxplot_{self.metric}_quality.png'
             if boxplot_path_quality.exists():
                 print(f'\t{boxplot_path_quality} exists.')
                 continue
 
-            fig = plt.figure(figsize=self.figsize, layout='tight')
-            fig.suptitle(f'QP {self.quality}')
+            fig = plt.figure(figsize=(6, 7.5), layout='tight')
+            fig.suptitle(f'{self.metric}')
 
-            for n, self.category in enumerate(self.categories, 1):
-                ax: plt.Axes = fig.add_subplot(n_subplots, 1, n)
-                ax.set_title(self.category)
+            for n, self.quality in enumerate(self.quality_list, 1):
+                ax: plt.Axes = fig.add_subplot(3, 2, n)
+                ax.set_title(f'qp{self.quality}')
+
+                print(f'fill bucket')
 
                 buckets = []
                 for self.tiling in self.tiling_list:
-                    bucket_keys = self.get_bucket_keys(self.category)
-                    bucket_value = self.get_bucket_value(bucket_keys)
-                    buckets.append(bucket_value)
+                    for self.tile in self.tile_list:
+                        for self.name in self.name_list:
+                            bucket = self.database.xs((self.tiling, self.quality, self.tile, self.name), level=('tiling', 'quality', 'tile', 'name'))['value'].mean()
+                            buckets.append(bucket)
+
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
-                # ax.boxplot(buckets, whis=(0, 100), tick_labels=list(self.tiling_list))
-                ax.set_title(self.category)
+                ax.set_xlabel(f'Tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
                 ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
                               list(self.tiling_list))
             fig.savefig(boxplot_path_quality)
             fig.clf()
 
-    def make_boxplot2(self):
-        print(f'Boxplot 2.')
-        n_subplots = len(self.categories)
-        for self.tiling in self.tiling_list:
-            boxplot_path_tiling = self.boxplot_folder / f'boxplot_{self.tiling}.png'
-            if boxplot_path_tiling.exists():
-                print(f'\t{boxplot_path_tiling} exists.')
+    def make_boxplot_tiling_quality(self):
+        print(f'make_boxplot_tiling_quality.')
+        for self.metric in self.dataset_structure:
+            self.load_database()
+            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.png'
+
+            if boxplot_path.exists():
+                print(f'\t{boxplot_path} exists.')
                 continue
 
-            fig = plt.figure(figsize=self.figsize, layout='tight')
-            fig.suptitle(f'{self.tiling}')
+            fig = plt.figure(figsize=(6, 7.5), layout='tight')
+            fig.suptitle(f'{self.metric}')
 
-            for n, self.category in enumerate(self.categories, 1):
-                ax: plt.Axes = fig.add_subplot(n_subplots, 1, n)
-                ax.set_title(self.category)
+            for n, self.tiling in enumerate(self.tiling_list, 1):
+                ax: plt.Axes = fig.add_subplot(3, 2, n)
+                ax.set_title(f'qp{self.tiling}')
+
+                print(f'fill bucket {self.tiling}')
 
                 buckets = []
                 for self.quality in self.quality_list:
-                    bucket_keys = self.get_bucket_keys(self.category)
-                    bucket_value = self.get_bucket_value(bucket_keys)
-                    buckets.append(bucket_value)
+                    bucket = list(self.database.xs(self.quality, level='quality')['value'])
+                    buckets.append(bucket)
+
                 ax.violinplot(buckets, showmeans=False, showmedians=True)
+                ax.set_xlabel(f'Quality (QP)')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
                 ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
                               list(self.quality_list))
-                ax.set_title(self.category)
-            fig.savefig(boxplot_path_tiling)
+            fig.savefig(boxplot_path)
             fig.clf()
 
+    def get_average_of_chunks(self, cat):
+        chunks_of_this_tile = []
+        for self.chunk in self.chunk_list:
+            value = np.average(self.get_database_value(cat))
+            chunks_of_this_tile.append(value)
+        average_of_chunks = np.average(chunks_of_this_tile)
+        return average_of_chunks
 
-class TileAnalysisTilingQualityBitrate(TileAnalysisTilingQualityBase):
-    def setup(self):
-        print(f'Setup.')
-        self.metric = 'bitrate'
-        self.bucket_keys_name = ('tiling', 'quality')
-        self.database_keys = {'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
-        self.categories = tuple(self.database_keys)
-
-
-class TileAnalysisTilingQualityTime(TileAnalysisTilingQualityBase):
-    def setup(self):
-        print(f'Setup.')
-        self.metric = 'time'
-        self.bucket_keys_name = ('tiling', 'quality')
-        self.database_keys = {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']}
-        self.categories = tuple(self.database_keys)
-
-
-class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
-    figsize = (6, 8.5)
-
-    def setup(self):
-        print(f'Setup.')
-        self.metric = 'chunk_quality'
-        self.bucket_keys_name = ('tiling', 'quality')
-        self.database_keys = {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                              }
-        self.categories = tuple(self.database_keys)
-
-    def make_heatmap(self):
-        print(f'Heatmap 1.')
-        '[cat, self.quality, self.tiling, self.tile]'
-        self.make_heatmap_bucket()
-        for self.quality in self.quality_list:
-            heatmap_path_quality = self.boxplot_folder / f'heatmap_qp{self.quality}.png'
-            n = 0
-            fig = plt.figure(figsize=self.figsize, layout='tight')
-            fig.suptitle(f'QP {self.quality}')
-
-            for self.category in self.categories:
-                for self.tiling in self.tiling_list:
-                    if self.tiling == '1x1': continue
-                    n += 1
-                    shape = splitx(self.tiling)[::-1]
-                    image = np.zeros(shape)
-                    ax: plt.Axes = fig.add_subplot(len(self.categories),
-                                                   len(self.tiling_list),
-                                                   n)
-
-                    for self.tile in self.tile_list:
-                        bucket = self.get_bucket_keys(self.category)
-                        x, y = id2xy(self.tile, shape)
-                        image[y, x] = bucket
-                    ax.imshow(image, cmap='jet')
-
-        self.close_ui()
-
-    def make_heatmap_bucket(self):
-        print(f'Collecting Data.')
-        total = 181 * len(self.quality_list)
-        self.heatmap_bucket = AutoDict()
-
-        heatmap_bucket_filename = self.bucket_pickle.name.replace('tile_', 'tile_heatmap')
-        heatmap_bucket_path = self.bucket_pickle.with_name(heatmap_bucket_filename)
-
-        if heatmap_bucket_path.exists():
-            self.heatmap_bucket = pickle.loads(heatmap_bucket_path.read_bytes())
-            return
-
-        for self.name in self.name_list:
-            self.load_database()
-            self.start_ui(total, '\t' + self.name)
-            for self.tiling in self.tiling_list:
-                for self.tile in self.tile_list:
-                    for self.quality in self.quality_list:
-                        self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
-                        for cat in self.categories:
-                            average_of_chunks = self.get_average_of_chunks(cat)
-                            set_bucket_value(self.heatmap_bucket,
-                                             [cat, self.quality, self.tiling, self.tile],
-                                             average_of_chunks)
-
-            self.close_ui()
-
-        self.bucket_pickle.with_name(heatmap_bucket_filename).write_bytes(pickle.dumps(self.heatmap_bucket))
 
 # class GetTilesChunkGeneralAnalysis(AnalysisBase):
 #     def main(self):
@@ -419,3 +318,9 @@ class TileAnalysisTilingQualityQuality(TileAnalysisTilingQualityBase):
 #         fig.tight_layout()
 #         fig.savefig(self.hist_path)
 #         fig.clf()
+
+if __name__ == '__main__':
+    os.chdir('../')
+
+    config = Config()
+    TileAnalysisTilingQuality(config)
