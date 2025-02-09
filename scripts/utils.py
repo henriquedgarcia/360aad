@@ -250,9 +250,13 @@ def get_bucket_value(bucket: dict,
                      bucket_keys: list) -> Any:
     return get_nested_value(bucket, bucket_keys)
 
+
 def dict_to_tuples(d, parent_key=()):
     if isinstance(d, dict):
         for k, v in d.items():
             yield from dict_to_tuples(v, parent_key + (k,))
+    elif isinstance(d, list):
+        for frame, value in enumerate(d):
+            yield from dict_to_tuples(value, parent_key + (f'{frame}',))
     else:
         yield parent_key + (d,)
