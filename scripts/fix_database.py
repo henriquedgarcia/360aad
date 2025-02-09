@@ -4,6 +4,7 @@ import pandas as pd
 
 from scripts.analysisbase import AnalysisBase
 from scripts.bucket import Bucket
+from scripts.utils import dict_to_tuples
 
 
 class FixDatabase(AnalysisBase):
@@ -23,34 +24,29 @@ class FixDatabase(AnalysisBase):
     def plots(self):
         pass
 
-    metrics = {'bitrate': ['dash_m4s'],
-               'time': ['dectime_avg'],
-               'chunk_quality': ['ssim', 'mse', 's-mse', 'ws-mse']}
-    dataset_structute = {'bitrate': {'dash_mpd': ['name', 'projection', 'tiling', 'tile'],
-                                     'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality'],
-                                     'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']},
-                         'time': {'dectime': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                  'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                  'dectime_med': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                  'dectime_std': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+
+    dataset_structute = {'bitrate': {'dash_mpd': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
+                                     'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality', 'category', 'value', None],
+                                     'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value']
+                                     },
+                         'time': {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
+                                  'dectime_std': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
                                   },
-                         'chunk_quality': {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                           'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                           's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                           'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                         'chunk_quality': {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
+                                           'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
+                                           's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
+                                           'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
                                            }
                          }
-    database_keys = {'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                     'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                     'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                     'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                     's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                     'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                     }
-
+    metrics = list(dataset_structute)
     databases: dict
-    new_names = {'dash_m4s': 'bitrate',
+    new_names = {'dash_mpd': 'dash_mpd',
+                 'dash_init': 'dash_init',
+                 'dash_m4s': 'bitrate',
+
                  'dectime_avg': 'dectime',
+                 'dectime_std': 'dectime_std',
+
                  'ssim': 'ssim',
                  'mse': 'mse',
                  's-mse': 's-mse',
@@ -60,50 +56,41 @@ class FixDatabase(AnalysisBase):
     bucket_keys_name = ['']
     bucket = {}
 
+
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
 
-        new_name = Path(f'dataset/global_dataset.h5')
-
-        if new_name.exists():
-            return
+        global_dataset_path = Path(f'dataset/global_dataset.h5')
 
         for self.metric in self.metrics:
-            for self.category in self.metrics[self.metric]:
-                df_name = self.new_names[self.category]
+            self.categories = self.dataset_structute[self.metric]
+
+            data_tuples=[]
+            for self.category in self.categories:
+                # df_name = self.new_names[self.category]
+                df_name = self.category
                 try:
-                    pd.read_hdf(new_name, key=df_name)
+                    pd.read_hdf(global_dataset_path, key=df_name)
                     continue
                 except (FileNotFoundError, KeyError):
                     pass
 
-                index = pd.MultiIndex.from_tuples([], names=['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'])
-                df = pd.DataFrame(columns=['value'], index=index)
+                if not data_tuples:
+                    for self.name in self.name_list:
+                        self.load_database()
+                        data_tuples.extend(dict_to_tuples(self.database))
 
-                for self.name in self.name_list:
-                    self.load_database()
-                    total = (181
-                             * len(self.quality_list)
-                             # * len(self.chunk_list)
-                             # * len(self.metrics[self.metric])
-                             )
-                    self.start_ui(total, f'\t{self.category}_{self.name}')
+                labels = self.dataset_structute[self.metric][self.category]
+                df = pd.DataFrame(data_tuples, columns=labels)
+                filtered_df = df[df['category'] == self.category]
+                del filtered_df['category']
+                if None in filtered_df.columns: del filtered_df[None]
+                new_index = [i for i in labels if i not in ['category', 'value', None]]
+                new_df = filtered_df.set_index(new_index)
 
-                    for self.projection in self.projection_list:
-                        for self.tiling in self.tiling_list:
-                            for self.tile in self.tile_list:
-                                for self.quality in self.quality_list:
-                                    self.update_ui(f'{self.tiling}/{self.tile}_qp{self.quality}')
-                                    for self.chunk in self.chunk_list:
-                                        value = self.get_dataset_value(self.category)
-
-                                        df.loc[(self.name,
-                                                self.projection,
-                                                self.tiling,
-                                                self.tile,
-                                                self.quality,
-                                                self.chunk,
-                                                )] = value
                 print('Saving new database...')
-                df.to_hdf(new_name, key=df_name, mode='a')
+
+                t = int if self.metric=='bitrate' else float
+                new_df['value'] = new_df['value'].astype(t)
+                new_df.to_hdf(global_dataset_path, key=df_name, mode='a')
