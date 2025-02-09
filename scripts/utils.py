@@ -1,9 +1,10 @@
 import json
+import pickle
 from collections import defaultdict
 from collections.abc import Sequence
 from functools import reduce
 from pathlib import Path
-from typing import Any, Union
+from typing import Callable, Any, Union
 
 
 def get_nested_value_(data, keys) -> Any:
@@ -62,16 +63,26 @@ class AutoDict(dict):
 
 def save_json(data: Union[dict, list], filename: Union[str, Path], separators=(',', ':'), indent=None):
     filename = Path(filename)
-    try:
-        filename.write_text(json.dumps(data, separators=separators, indent=indent), encoding='utf-8')
-    except (FileNotFoundError, OSError):
-        filename.parent.mkdir(parents=True, exist_ok=True)
-        filename.write_text(json.dumps(data, separators=separators, indent=indent), encoding='utf-8')
+    filename.parent.mkdir(parents=True, exist_ok=True)
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=indent)
 
 
 def load_json(filename: Union[str, Path], object_hook: type[dict] = None):
     filename = Path(filename)
     results = json.loads(filename.read_text(encoding='utf-8'), object_hook=object_hook)
+    return results
+
+
+def save_pickle(data: Any, filename: Union[str, Path]):
+    Path(filename).parent.mkdir(parents=True, exist_ok=True)
+    with open(filename, 'wb') as f:
+        pickle.dump(data, f)
+
+
+def load_pickle(filename: Union[str, Path]):
+    with open(filename, 'rb') as f:
+        results = pickle.load(f)
     return results
 
 
@@ -147,9 +158,6 @@ def iterate_over_key_tree(tree, level=0, keys=None):
         yield keys, value
 
     if level == 0: return list(keys.values())
-
-
-from typing import Callable
 
 
 class LazyProperty:
