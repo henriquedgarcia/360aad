@@ -249,3 +249,10 @@ def set_bucket_value(bucket: dict,
 def get_bucket_value(bucket: dict,
                      bucket_keys: list) -> Any:
     return get_nested_value(bucket, bucket_keys)
+
+def dict_to_tuples(d, parent_key=()):
+    if isinstance(d, dict):
+        for k, v in d.items():
+            yield from dict_to_tuples(v, parent_key + (k,))
+    else:
+        yield parent_key + (d,)
