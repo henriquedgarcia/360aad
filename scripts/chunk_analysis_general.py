@@ -9,18 +9,11 @@ from scripts.utils import AutoDict
 lock = asyncio.Lock()
 
 
-class ChunkAnalysisGeneralBitrate(AnalysisBase):
-
+class ChunkAnalysisGeneral(AnalysisBase):
     def setup(self):
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
-
-    def make_bucket(self):
-        """
-        metric, categories, keys_orders
-        """
-        return
 
     def make_stats(self):
         self.stats_defaultdict = defaultdict(list)
@@ -29,7 +22,7 @@ class ChunkAnalysisGeneralBitrate(AnalysisBase):
 
             bucket = list(self.database['value'])
 
-            self.stats_defaultdict['Nome'].append(self.metric)
+            self.stats_defaultdict['Metric'].append(self.metric)
             self.stats_defaultdict['n_arquivos'].append(len(bucket))
             self.stats_defaultdict['Média'].append(np.average(bucket))
             self.stats_defaultdict['Desvio Padrão'].append(np.std(bucket))
