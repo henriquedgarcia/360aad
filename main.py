@@ -1,15 +1,22 @@
 import argparse
 import json
-import os
 
+import matplotlib
+matplotlib.use('nbagg',force=True)
+# a=['', '', '', '', '', '', 'notebook',
+# 'qtagg', 'qtcairo', 'qt5agg',
+# 'qt5cairo', 'tkagg', 'tkcairo',
+# 'webagg', 'wx', 'wxagg', 'wxcairo',
+# 'agg', 'cairo', 'pdf', 'pgf', 'ps',
+# 'svg', 'template', 'inline']
 from scripts.chunk_analysis_general import ChunkAnalysisGeneral
 from scripts.chunk_analysis_tiling import ChunkAnalysisTiling
 from scripts.chunk_analysis_quality import ChunkAnalysisQuality
-from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQuality, ChunkAnalysisTilingQualityQuality, ChunkAnalysisTilingQualityTime)
+from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQuality)
 from scripts.chunk_analysis_tiling_quality_name import ChunkAnalysisTilingQualityName
 from scripts.config import Config
 from scripts.fix_database import FixDatabase
-from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQuality, TileAnalysisTilingQualityTime, TileAnalysisTilingQualityQuality
+from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQuality
 
 workers = {0: FixDatabase.__name__,
            1: ChunkAnalysisGeneral.__name__,
