@@ -49,7 +49,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 print(f'Plot qp{self.quality}')
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
-                for self.tiling in reversed(self.tiling_list):
+                for self.tiling in self.tiling_list:
                     bucket = self.get_data()
                     ax.plot(bucket, label=f'{self.tiling}')
 
