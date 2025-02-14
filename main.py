@@ -1,14 +1,6 @@
 import argparse
 import json
 
-import matplotlib
-matplotlib.use('nbagg',force=True)
-# a=['', '', '', '', '', '', 'notebook',
-# 'qtagg', 'qtcairo', 'qt5agg',
-# 'qt5cairo', 'tkagg', 'tkcairo',
-# 'webagg', 'wx', 'wxagg', 'wxcairo',
-# 'agg', 'cairo', 'pdf', 'pgf', 'ps',
-# 'svg', 'template', 'inline']
 from scripts.chunk_analysis_general import ChunkAnalysisGeneral
 from scripts.chunk_analysis_tiling import ChunkAnalysisTiling
 from scripts.chunk_analysis_quality import ChunkAnalysisQuality
