@@ -8,22 +8,22 @@ from scripts.utils import load_json, splitx
 class Config:
     dataset_file = "dataset/nasrabadi.json"
 
-    duration = 60,
-    fps = 30,
-    gop = 30,
+    duration = 60
+    fps = 30
+    gop = 30
     scale = "3240x2160"
 
-    rate_control = "qp",
-    decoding_num = 5,
+    rate_control = "qp"
+    decoding_num = 5
 
-    bins = 30,
-    metric_list = ["time", "rate", "ssim", "mse", "s-mse", "ws-mse"],
-    error_metric = "rmse",
+    bins = 30
+    metric_list = ["time", "rate", "ssim", "mse", "s-mse", "ws-mse"]
+    error_metric = "rmse"
     distributions = ["burr12", "fatiguelife", "gamma", "beta", "invgauss",
                      "rayleigh", "lognorm", "genpareto", "pareto", "halfnorm",
-                     "expon"],
+                     "expon"]
 
-    fov = "110x90",
+    fov = "110x90"
 
     chunk_list = list(map(str, range(1, 61)))
     quality_list = ["22", "28", "34", "40", "46", "50"]
