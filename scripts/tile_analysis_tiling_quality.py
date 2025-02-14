@@ -147,17 +147,22 @@ class TileAnalysisTilingQuality(AnalysisBase):
 
                     ax: plt.Axes = fig.add_subplot(3, 2, i)
                     im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal')
+                    cbar = fig.colorbar(im, ax=ax, location='bottom', anchor=(0, 1))
+                    cbar.ax.set_xlabel(self.dataset_structure[self.metric]['quantity'])
 
-                    fig.colorbar(im, ax=ax, location='bottom', anchor=(0, 1))
+                    if self.metric == 'dash_m4s':
+                        cbar.ax.ticklabel_format(axis='x', style='scientific',
+                                                 scilimits=(6, 6))
 
-                    # ax.set_xticks([])
-                    # ax.set_yticks([])
-                    # ax.set_xticklabels([])
-                    # ax.set_yticklabels([])
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_xticklabels([])
+                    ax.set_yticklabels([])
                     ax.set_title(f'qp{self.quality}')
-                fig.show()
+                # fig.show()
                 fig.savefig(heatmap_path)
                 fig.clf()
+                plt.close()
 
     def make_heatmap_quality_tiling(self):
         print(f'make_boxplot_tiling_quality.')
@@ -185,16 +190,20 @@ class TileAnalysisTilingQuality(AnalysisBase):
                     ax: plt.Axes = fig.add_subplot(3, 2, i)
 
                     im = ax.matshow(figure, cmap='jet')
-                    fig.colorbar(im, ax=ax)
+                    cbar = fig.colorbar(im, ax=ax)
 
                     ax.set_xticks([])
                     ax.set_yticks([])
                     ax.set_xticklabels([])
                     ax.set_yticklabels([])
                     ax.set_title(f'{self.tiling}')
+                    if self.metric == 'dash_m4s':
+                        cbar.ax.ticklabel_format(axis='x', style='scientific',
+                                                 scilimits=(6, 6))
 
                 fig.savefig(heatmap_path)
                 fig.clf()
+                plt.close()
 
 
 if __name__ == '__main__':
