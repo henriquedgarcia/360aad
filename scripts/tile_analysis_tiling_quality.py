@@ -4,7 +4,7 @@ from collections import defaultdict
 import numpy as np
 from PIL import Image
 from PIL.Image import Resampling
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, colors
 
 from scripts.analysisbase import AnalysisBase
 from scripts.config import Config
@@ -128,15 +128,14 @@ class TileAnalysisTilingQuality(AnalysisBase):
             self.load_database()
 
             for self.tiling in self.tiling_list:
-                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.png'
+                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.pdf'
                 if heatmap_path.exists():
                     print(f'\t{heatmap_path} exists.')
                     continue
 
-                fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
-                fig.suptitle(f'{self.metric}_{self.tiling}')
                 m, n = splitx(self.tiling)
 
+                figure_list = []
                 for i, self.quality in enumerate(self.quality_list, 1):
                     tiles_data = (self.database.xs((self.tiling, self.quality), level=('tiling', 'quality'))
                                   .groupby(['tile']).mean())
@@ -144,21 +143,33 @@ class TileAnalysisTilingQuality(AnalysisBase):
                     array = np.array(tiles_data).reshape((n, m))
                     img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
                     figure = np.asarray(img)
+                    figure_list.append(figure)
 
-                    ax: plt.Axes = fig.add_subplot(3, 2, i)
-                    im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal')
-                    cbar = fig.colorbar(im, ax=ax, location='bottom', anchor=(0, 1))
-                    cbar.ax.set_xlabel(self.dataset_structure[self.metric]['quantity'])
 
-                    if self.metric == 'dash_m4s':
-                        cbar.ax.ticklabel_format(axis='x', style='scientific',
-                                                 scilimits=(6, 6))
+                fig, axs = plt.subplots(3, 2, figsize=(6, 7.5), dpi=300, constrained_layout=True)
+                fig.suptitle(f'{self.metric}_{self.tiling}')
+
+                norm = colors.Normalize(vmin=float(np.min(figure_list)), vmax=float(np.max(figure_list)))
+
+                images = []
+                for ax, figure, self.quality in zip(axs.flat, figure_list, self.quality_list):
+                    im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal', norm=norm)
+                    images.append(im)
 
                     ax.set_xticks([])
                     ax.set_yticks([])
                     ax.set_xticklabels([])
                     ax.set_yticklabels([])
                     ax.set_title(f'qp{self.quality}')
+
+                cbr=fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
+                if self.metric == 'dash_m4s':
+                    cbr.ax.ticklabel_format(axis='x', style='scientific',
+                                            scilimits=(6, 6))
+
+                quantity = self.dataset_structure[self.metric]['quantity']
+                cbr.ax.set_xlabel(quantity)
+
                 # fig.show()
                 fig.savefig(heatmap_path)
                 fig.clf()
@@ -169,15 +180,13 @@ class TileAnalysisTilingQuality(AnalysisBase):
         for self.metric in self.dataset_structure:
             self.load_database()
 
-            for n, self.quality in enumerate(self.quality_list, 1):
-                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.quality}.png'
+            for self.quality in self.quality_list:
+                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.quality}.pdf'
                 if heatmap_path.exists():
                     print(f'\t{heatmap_path} exists.')
                     continue
 
-                fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
-                fig.suptitle(f'{self.metric}')
-
+                figure_list = []
                 for i, self.tiling in enumerate(self.tiling_list, 1):
                     m, n = splitx(self.tiling)
                     tiles_data = (self.database.xs((self.tiling, self.quality), level=('tiling', 'quality'))
@@ -186,20 +195,31 @@ class TileAnalysisTilingQuality(AnalysisBase):
                     array = np.array(tiles_data).reshape((n, m))
                     img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
                     figure = np.asarray(img)
+                    figure_list.append(figure)
 
-                    ax: plt.Axes = fig.add_subplot(3, 2, i)
+                fig, axs = plt.subplots(3, 2, figsize=(6, 7.5), dpi=300, constrained_layout=True)
+                fig.suptitle(f'{self.metric}_{self.quality}')
 
-                    im = ax.matshow(figure, cmap='jet')
-                    cbar = fig.colorbar(im, ax=ax)
+                norm = colors.Normalize(vmin=float(np.min(figure_list)), vmax=float(np.max(figure_list)))
+
+                images = []
+                for ax, figure, self.tiling in zip(axs.flat, figure_list, self.tiling_list):
+                    im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal', norm=norm)
+                    images.append(im)
 
                     ax.set_xticks([])
                     ax.set_yticks([])
                     ax.set_xticklabels([])
                     ax.set_yticklabels([])
                     ax.set_title(f'{self.tiling}')
-                    if self.metric == 'dash_m4s':
-                        cbar.ax.ticklabel_format(axis='x', style='scientific',
-                                                 scilimits=(6, 6))
+
+                cbr=fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
+                if self.metric == 'dash_m4s':
+                    cbr.ax.ticklabel_format(axis='x', style='scientific',
+                                            scilimits=(6, 6))
+
+                quantity = self.dataset_structure[self.metric]['quantity']
+                cbr.ax.set_xlabel(quantity)
 
                 fig.savefig(heatmap_path)
                 fig.clf()
