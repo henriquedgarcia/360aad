@@ -1,7 +1,9 @@
 import os
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from PIL import Image
 from PIL.Image import Resampling
 from matplotlib import pyplot as plt, colors
@@ -27,100 +29,44 @@ class TileAnalysisTilingQuality(AnalysisBase):
 
         for self.metric in self.dataset_structure:
             self.load_database()
-            new_db = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality']).mean()
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
-                    bucket = self.get_bucket(new_db)
+                    for self.tile in self.tile_list:
+                        serie: pd.Series = self.get_tile_data()
 
-                    self.stats_defaultdict['Metric'].append(self.metric)
-                    self.stats_defaultdict['Tiling'].append(self.tiling)
-                    self.stats_defaultdict['Quality'].append(self.quality)
-                    self.stats_defaultdict['n_arquivos'].append(len(bucket))
-                    self.stats_defaultdict['Média'].append(np.average(bucket))
-                    self.stats_defaultdict['Desvio Padrão'].append(np.std(bucket))
-                    self.stats_defaultdict['Mínimo'].append(np.quantile(bucket, 0))
-                    self.stats_defaultdict['1º Quartil'].append(np.quantile(bucket, 0.25))
-                    self.stats_defaultdict['Mediana'].append(np.quantile(bucket, 0.5))
-                    self.stats_defaultdict['3º Quartil'].append(np.quantile(bucket, 0.75))
-                    self.stats_defaultdict['Máximo'].append(np.quantile(bucket, 1))
+                        self.stats_defaultdict['Metric'].append(self.metric)
+                        self.stats_defaultdict['Tiling'].append(self.tiling)
+                        self.stats_defaultdict['Quality'].append(self.quality)
+                        self.stats_defaultdict['Tile'].append(self.tile)
+                        self.stats_defaultdict['n_arquivos'].append(len(serie))
+                        self.stats_defaultdict['Média'].append(serie.mean())
+                        self.stats_defaultdict['Desvio Padrão'].append(serie.std())
 
-    def get_bucket(self, db):
-        level = ('tiling', 'quality')
-        keys = (self.tiling, self.quality,)
-        values = db.xs(keys, level=level)
-        series = values['value']
-        bucket = series.to_list()
+                        quartis = serie.quantile([0.00, 0.25, 0.50, 0.75, 1.00])
+                        self.stats_defaultdict['Mínimo'].append(quartis[0])
+                        self.stats_defaultdict['1º Quartil'].append(quartis[0.25])
+                        self.stats_defaultdict['Mediana'].append(quartis[0.5])
+                        self.stats_defaultdict['3º Quartil'].append(quartis[0.75])
+                        self.stats_defaultdict['Máximo'].append(quartis[1])
+
+    def get_tile_data(self):
+        cross_section = self.database.xs(key=(self.tiling, self.quality, self.tile),
+                                         level=('tiling', 'quality', 'tile'))
+        return cross_section['value']
+
+    def get_tile_data_list(self):
+        bucket = [self.get_tile_data()
+                  for self.tile in self.tile_list]
         return bucket
 
     def plots(self):
-        # self.make_boxplot_tiling_quality()
-        # self.make_boxplot_quality_tiling()
         self.make_heatmap_tiling_quality()
         self.make_heatmap_quality_tiling()
 
-    def make_boxplot_tiling_quality(self):
-        print(f'make_boxplot_quality_tiling.')
-        for self.metric in self.dataset_structure:
-            self.load_database()
-            new_db = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality']).mean()
-
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.png'
-            if boxplot_path.exists():
-                print(f'\t{boxplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(6, 7.5), layout='tight')
-            fig.suptitle(f'{self.metric}')
-
-            for n, self.tiling in enumerate(self.tiling_list, 1):
-                ax: plt.Axes = fig.add_subplot(3, 2, n)
-                ax.set_title(f'qp{self.tiling}')
-
-                print(f'fill bucket {self.tiling}')
-                buckets = []
-                for self.quality in self.quality_list:
-                    bucket = self.get_bucket(new_db)
-                    buckets.append(bucket)
-
-                ax.violinplot(buckets, showmeans=False, showmedians=True)
-                ax.set_xlabel(f'Quality (QP)')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
-                              list(self.quality_list))
-            fig.savefig(boxplot_path)
-            fig.clf()
-
-    def make_boxplot_quality_tiling(self):
-        print(f'make_boxplot_quality_tiling.')
-        for self.metric in self.dataset_structure:
-            self.load_database()
-            new_db = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality']).mean()
-
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_quality.png'
-            if boxplot_path.exists():
-                print(f'\t{boxplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(6, 7.5), layout='tight')
-            fig.suptitle(f'{self.metric}')
-
-            for n, self.quality in enumerate(self.quality_list, 1):
-                ax: plt.Axes = fig.add_subplot(3, 2, n)
-                ax.set_title(f'qp{self.quality}')
-
-                print(f'fill buckets {self.quality}')
-                buckets = []
-                for self.tiling in self.tiling_list:
-                    bucket = self.get_bucket(new_db)
-                    buckets.append(bucket)
-
-                ax.violinplot(buckets, showmeans=False, showmedians=True)
-                ax.set_xlabel(f'Tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
-                              list(self.tiling_list))
-            fig.savefig(boxplot_path)
-            fig.clf()
+    @property
+    def heatmap_tiling_quality_path(self):
+        heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.pdf'
+        return heatmap_path
 
     def make_heatmap_tiling_quality(self):
         print(f'make_boxplot_tiling_quality.')
@@ -128,15 +74,11 @@ class TileAnalysisTilingQuality(AnalysisBase):
             self.load_database()
 
             for self.tiling in self.tiling_list:
-                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.pdf'
-                if heatmap_path.exists():
-                    print(f'\t{heatmap_path} exists.')
-                    continue
-
+                if self.is_ok(self.heatmap_tiling_quality_path):                    continue
                 m, n = splitx(self.tiling)
 
                 figure_list = []
-                for i, self.quality in enumerate(self.quality_list, 1):
+                for self.quality in self.quality_list, 1:
                     tiles_data = (self.database.xs((self.tiling, self.quality), level=('tiling', 'quality'))
                                   .groupby(['tile']).mean())
 
@@ -144,7 +86,6 @@ class TileAnalysisTilingQuality(AnalysisBase):
                     img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
                     figure = np.asarray(img)
                     figure_list.append(figure)
-
 
                 fig, axs = plt.subplots(3, 2, figsize=(6, 7.5), dpi=300, constrained_layout=True)
                 fig.suptitle(f'{self.metric}_{self.tiling}')
@@ -162,7 +103,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
                     ax.set_yticklabels([])
                     ax.set_title(f'qp{self.quality}')
 
-                cbr=fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
+                cbr = fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
                 if self.metric == 'dash_m4s':
                     cbr.ax.ticklabel_format(axis='x', style='scientific',
                                             scilimits=(6, 6))
@@ -174,6 +115,28 @@ class TileAnalysisTilingQuality(AnalysisBase):
                 fig.savefig(heatmap_path)
                 fig.clf()
                 plt.close()
+
+    @property
+    def boxplot_tiling_quality_path(self):
+        return self.boxplot_folder / f'boxplot_{self.metric}_tiling.pdf'
+
+    @staticmethod
+    def is_ok(path: Path) -> bool:
+        exists = path.exists()
+        if exists:
+            print(f'\t{path} exists.')
+        return exists
+
+    def load_database(self):
+        super().load_database()
+        self.database = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality']).mean()
+
+    def get_bucket_list_by_quality(self):
+        buckets = []
+        for self.quality in self.quality_list:
+            bucket = self.get_tile_data_list()
+            buckets.append(bucket)
+        return buckets
 
     def make_heatmap_quality_tiling(self):
         print(f'make_boxplot_tiling_quality.')
@@ -213,7 +176,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
                     ax.set_yticklabels([])
                     ax.set_title(f'{self.tiling}')
 
-                cbr=fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
+                cbr = fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
                 if self.metric == 'dash_m4s':
                     cbr.ax.ticklabel_format(axis='x', style='scientific',
                                             scilimits=(6, 6))
