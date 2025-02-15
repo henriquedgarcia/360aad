@@ -48,7 +48,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         for self.metric in self.dataset_structure:
             self.load_database()
 
-            boxplot_path_quality = self.boxplot_folder / f'boxplot_{self.metric}_quality.png'
+            boxplot_path_quality = self.boxplot_folder / f'boxplot_{self.metric}_quality.pdf'
             if boxplot_path_quality.exists():
                 print(f'\t{boxplot_path_quality} exists.')
                 continue
@@ -79,7 +79,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         print(f'make_boxplot_tiling_quality.')
         for self.metric in self.dataset_structure:
             self.load_database()
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.png'
+            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.pdf'
 
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
