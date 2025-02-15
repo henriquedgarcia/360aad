@@ -37,7 +37,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
             self.load_database()
             self.database = self.database.groupby(['name', 'projection', 'tiling', 'quality', 'chunk']).sum()
 
-            boxplot_path_quality = self.boxplot_folder / f'boxplot_{self.metric}_quality.png'
+            boxplot_path_quality = self.boxplot_folder / f'boxplot_{self.metric}_quality.pdf'
             if boxplot_path_quality.exists():
                 print(f'\t{boxplot_path_quality} exists.')
                 continue
@@ -68,7 +68,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         for self.metric in self.dataset_structure:
             self.load_database()
 
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.png'
+            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
