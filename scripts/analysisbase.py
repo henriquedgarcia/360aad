@@ -95,43 +95,44 @@ class AnalysisPaths(ConfigIf):
 
 
 class AnalysisBase(AnalysisPaths, ABC):
-    dataset_structure = {'dash_mpd': {'path': f'dataset/df_dash_mpd.pickle',
-                                      'keys': ['name', 'projection', 'tiling', 'tile'],
-                                      'quantity': 'Bitrate (bps)'
-                                      },
-                         'dash_init': {'path': f'dataset/df_dash_init.pickle',
-                                       'keys': ['name', 'projection', 'tiling', 'tile', 'quality'],
-                                       'quantity': 'Bitrate (bps)'
-                                       },
-                         'dash_m4s': {'path': f'dataset/df_dash_m4s.pickle',
-                                      'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                      'quantity': 'Bitrate (bps)'
-                                      },
-                         'dectime_avg': {'path': f'dataset/df_dectime_avg.pickle',
-                                         'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                         'quantity': 'Time (s)'
-                                         },
-                         'dectime_std': {'path': f'dataset/df_dectime_std.pickle',
-                                         'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                         'quantity': 'Time (s)'
-                                         },
-                         'ssim': {'path': f'dataset/df_ssim.pickle',
-                                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                  'quantity': ''
-                                  },
-                         'mse': {'path': f'dataset/df_mse.pickle',
-                                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                 'quantity': ''
-                                 },
-                         's-mse': {'path': f'dataset/df_s-mse.pickle',
-                                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                   'quantity': ''
-                                   },
-                         'ws-mse': {'path': f'dataset/df_ws-mse.pickle',
-                                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                                    'quantity': ''
-                                    },
-                         }
+    dataset_structure = {
+        'dash_mpd': {'path': f'dataset/df_dash_mpd.pickle',
+                     'keys': ['name', 'projection', 'tiling', 'tile'],
+                     'quantity': 'Bitrate (bps)'
+                     },
+        'dash_init': {'path': f'dataset/df_dash_init.pickle',
+                      'keys': ['name', 'projection', 'tiling', 'tile', 'quality'],
+                      'quantity': 'Bitrate (bps)'
+                      },
+        'dash_m4s': {'path': f'dataset/df_dash_m4s.pickle',
+                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                     'quantity': 'Bitrate (bps)'
+                     },
+        'dectime_avg': {'path': f'dataset/df_dectime_avg.pickle',
+                        'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                        'quantity': 'Time (s)'
+                        },
+        'dectime_std': {'path': f'dataset/df_dectime_std.pickle',
+                        'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                        'quantity': 'Time (s)'
+                        },
+        'ssim': {'path': f'dataset/df_ssim.pickle',
+                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                 'quantity': ''
+                 },
+        'mse': {'path': f'dataset/df_mse.pickle',
+                'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                'quantity': ''
+                },
+        's-mse': {'path': f'dataset/df_s-mse.pickle',
+                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                  'quantity': ''
+                  },
+        'ws-mse': {'path': f'dataset/df_ws-mse.pickle',
+                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                   'quantity': ''
+                   },
+        }
 
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
@@ -152,7 +153,6 @@ class AnalysisBase(AnalysisPaths, ABC):
     def setup(self):
         ...
 
-    @abstractmethod
     def make_stats(self):
         ...
 
