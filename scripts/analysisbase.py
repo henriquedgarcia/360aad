@@ -44,26 +44,26 @@ class AnalysisPaths(ConfigIf):
         return folder
 
     @property
+    def series_plot_folder(self):
+        folder = self.graphs_workfolder / f'series_plot/'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
     def boxplot_folder(self):
         folder = self.graphs_workfolder / 'boxplot'
         folder.mkdir(exist_ok=True, parents=True)
         return folder
 
     @property
+    def violinplot_folder(self):
+        folder = self.graphs_workfolder / 'violinplot'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
     def histogram_folder(self):
         folder = self.graphs_workfolder / 'histogram'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def plot_name_quality_folder(self):
-        folder = self.graphs_workfolder / 'plot_name_quality'
-        folder.mkdir(exist_ok=True, parents=True)
-        return folder
-
-    @property
-    def plot_name_quality_tiling_folder(self):
-        folder = self.graphs_workfolder / 'plot_name_quality_tiling'
         folder.mkdir(exist_ok=True, parents=True)
         return folder
 
