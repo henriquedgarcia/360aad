@@ -38,9 +38,14 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
     def load_database(self):
         super(SerieAnalysisTilingQualityChunk, self).load_database()
+        index_int = self.database.index.levels[5].astype(int)
+        self.database.index = self.database.index.set_levels(index_int, level=5)
+        self.database.sort_index(inplace=True)
+
 
     def get_chunk_data(self) -> pd.Series:
-        chunk_data = self.database.xs((self.tiling, self.quality), level=('tiling', 'quality'))['value']
+        database = self.database.groupby(['tiling','quality', 'chunk']).mean()
+        chunk_data: pd.Series = database.xs((self.tiling, self.quality), level=('tiling', 'quality'))['value']
         return chunk_data
 
     def plots(self):
@@ -86,6 +91,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_plot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
@@ -122,13 +128,14 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_boxplot_quality_tiling_frame(self):
         print(f'make_boxplot_quality_tiling.')
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_quality.pdf'
+            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_quality.png'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
@@ -136,7 +143,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
             # Load Database
             self.load_database()
 
-            fig = plt.figure(figsize=(6, 7.5), layout='tight')
+            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
             for n, self.quality in enumerate(self.quality_list, 1):
@@ -155,13 +162,14 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_boxplot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.pdf'
+            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.png'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
@@ -169,7 +177,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
             # Load Database
             self.load_database()
 
-            fig = plt.figure(figsize=(6, 7.5), layout='tight')
+            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
             for n, self.tiling in enumerate(self.tiling_list, 1):
@@ -188,6 +196,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_violinplot_quality_tiling_frame(self):
         print(f'make_violinplot_quality_tiling_frame.')
@@ -223,6 +232,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_violinplot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
@@ -258,6 +268,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
 
 if __name__ == '__main__':
