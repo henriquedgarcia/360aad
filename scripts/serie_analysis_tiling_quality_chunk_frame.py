@@ -96,6 +96,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_plot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
@@ -132,7 +133,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
             fig.savefig(boxplot_path)
             fig.clf()
-
+            plt.close()
     def make_boxplot_quality_tiling_frame(self):
         print(f'make_boxplot_quality_tiling.')
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
@@ -165,6 +166,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_boxplot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
@@ -198,6 +200,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_violinplot_quality_tiling_frame(self):
         print(f'make_violinplot_quality_tiling_frame.')
@@ -233,6 +236,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
     def make_violinplot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
@@ -268,6 +272,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
 
 
 if __name__ == '__main__':
