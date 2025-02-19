@@ -343,7 +343,7 @@ class ConfigIf(Factors, Lists):
         return self.config.dataset_file
 
     @property
-    def video_list_by_group(self):
+    def video_list_by_group(self) -> dict:
         """
 
         :return: a dict like {group: video_list}
