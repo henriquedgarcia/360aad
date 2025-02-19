@@ -16,7 +16,6 @@ class ChunkAnalysisTilingQualityGroupName(AnalysisBase):
         self.projection = 'cmp'
         del self.dataset_structure['dash_mpd']
         del self.dataset_structure['dash_init']
-        # del self.dataset_structure['dectime_std']
 
     def make_stats(self):
         print(f'make_stats.')
@@ -24,30 +23,26 @@ class ChunkAnalysisTilingQualityGroupName(AnalysisBase):
             self.load_database()
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
-                    for self.group in self.groups_list:
-                        for self.name in self.name_list:
-                            if not self.name_list[self.name]["group"] == self.group:
-                                continue
-                            serie = self.get_chunk_data()
+                    for self.group, video_list in self.video_list_by_group.items():
+                        for self.name in video_list:
+                            chunk_data = self.get_chunk_data()
+
                             self.stats_defaultdict['Metric'].append(self.metric)
                             self.stats_defaultdict['Tiling'].append(self.tiling)
                             self.stats_defaultdict['Quality'].append(self.quality)
+                            self.stats_defaultdict['Name'].append(self.group)
                             self.stats_defaultdict['Name'].append(self.name)
-                            self.stats_defaultdict['n_arquivos'].append(len(serie))
-                            self.stats_defaultdict['Média'].append(serie.mean())
-                            self.stats_defaultdict['Desvio Padrão'].append(serie.std())
-                            self.stats_defaultdict['Mínimo'].append(serie.quantile(0.00))
-                            self.stats_defaultdict['1º Quartil'].append(serie.quantile(0.25))
-                            self.stats_defaultdict['Mediana'].append(serie.quantile(0.50))
-                            self.stats_defaultdict['3º Quartil'].append(serie.quantile(0.75))
-                            self.stats_defaultdict['Máximo'].append(serie.quantile(1.00))
+                            self.stats_defaultdict['n_arquivos'].append(len(chunk_data))
+                            self.stats_defaultdict['Média'].append(chunk_data.mean())
+                            self.stats_defaultdict['Desvio Padrão'].append(chunk_data.std())
+                            self.stats_defaultdict['Mínimo'].append(chunk_data.quantile(0.00))
+                            self.stats_defaultdict['1º Quartil'].append(chunk_data.quantile(0.25))
+                            self.stats_defaultdict['Mediana'].append(chunk_data.quantile(0.50))
+                            self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
+                            self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
 
-    def load_database(self):
-        super(ChunkAnalysisTilingQualityGroupName, self).load_database()
-
-    def get_chunk_data(self, by_chunk=False) -> pd.Series:
-        database = self.database
-        chunk_data: pd.Series = database.xs((self.tiling, self.quality, self.name), level=('tiling', 'quality', 'name'))['value']
+    def get_chunk_data(self) -> pd.Series:
+        chunk_data: pd.Series = self.database.xs((self.tiling, self.quality, self.name), level=('tiling', 'quality', 'name'))['value']
         return chunk_data
 
     def plots(self):
