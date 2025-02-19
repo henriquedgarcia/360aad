@@ -16,7 +16,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
         self.projection = 'cmp'
         del self.dataset_structure['dash_mpd']
         del self.dataset_structure['dash_init']
-        # del self.dataset_structure['dectime_std']
+        del self.dataset_structure['dectime_std']
 
     def make_stats(self):
         print(f'make_stats.')
@@ -42,9 +42,8 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
         self.database.index = self.database.index.set_levels(index_int, level=5)
         self.database.sort_index(inplace=True)
 
-
     def get_chunk_data(self) -> pd.Series:
-        database = self.database.groupby(['tiling','quality', 'chunk']).mean()
+        database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()
         chunk_data: pd.Series = database.xs((self.tiling, self.quality), level=('tiling', 'quality'))['value']
         return chunk_data
 
