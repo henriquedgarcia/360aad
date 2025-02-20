@@ -5,7 +5,7 @@ from scripts.chunk_analysis_general import ChunkAnalysisGeneral
 from scripts.chunk_analysis_tiling import ChunkAnalysisTiling
 from scripts.chunk_analysis_quality import ChunkAnalysisQuality
 from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQuality)
-from scripts.chunk_analysis_tiling_quality_name import ChunkAnalysisTilingQualityName
+from scripts.chunk_analysis_name_tiling_quality import ChunkAnalysisNameTilingQuality
 from scripts.config import Config
 from scripts.fix_database import FixDatabase
 from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQuality
@@ -15,7 +15,7 @@ workers = {0: FixDatabase.__name__,
            2: ChunkAnalysisTiling.__name__,
            3: ChunkAnalysisQuality.__name__,
            4: ChunkAnalysisTilingQuality.__name__,
-           5: ChunkAnalysisTilingQualityName.__name__,
+           5: ChunkAnalysisNameTilingQuality.__name__,
            6: TileAnalysisTilingQuality.__name__,
            }
 
