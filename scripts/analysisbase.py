@@ -161,7 +161,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         ...
 
     def load_database(self):
-        print(f'{self.__class__.__name__} loading {self.metric} database...')
+        print(f'\t{self.__class__.__name__} loading {self.metric} database...')
         filename = self.dataset_structure[self.metric]['path']
         self.database = load_pickle(filename)
 
