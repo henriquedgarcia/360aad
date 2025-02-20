@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
@@ -41,35 +42,73 @@ class ChunkAnalysisQuality(AnalysisBase):
                 self.stats_defaultdict['Máximo'].append(np.quantile(bucket, 1))
 
     def plots(self):
-        self.make_boxplot1()
+        self.make_boxplot_quality()
+        self.make_violinplot_quality()
 
-    def make_boxplot1(self):
-        print(f'Boxplot 1.')
+    def make_boxplot_quality(self):
+        print(f'make_boxplot_quality.')
         for self.metric in self.dataset_structure:
-            boxplot_path_tiling = self.boxplot_folder / f'boxplot_{self.metric}.pdf'
-            # if boxplot_path_tiling.exists():
-            #     print(f'\t{boxplot_path_tiling} exists.')
-            #     continue
+            # Check files (do not use pdf. very much object)
+            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}.png'
+            if boxplot_path.exists():
+                print(f'\t{boxplot_path} exists.')
+                continue
 
+            # Load Database
             self.load_database()
 
-            fig = plt.figure(figsize=(6, 2.4), layout='tight')
-            fig.suptitle(f'{self.metric}')
+            serie_list = [self.get_chunk_data()
+                          for self.quality in self.quality_list]
+
+            fig = plt.figure(figsize=(6, 2.4), layout='tight', dpi=300)
+
             ax: plt.Axes = fig.add_subplot(1, 1, 1)
-
-            print(f'Making bucket')
-            buckets = []
-            for self.quality in self.quality_list:
-                bucket = list(self.database.xs(self.quality, level='quality')['value'])
-                buckets.append(bucket)
-
-            ax.violinplot(buckets, showmeans=False, showmedians=True)
-            ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
-                          list(self.quality_list))
+            ax.boxplot(serie_list, tick_labels=list(self.quality_list))
             ax.set_xlabel(f'Quality (QP)')
             ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-            fig.savefig(boxplot_path_tiling)
+            if self.metric == 'dash_m4s':
+                ax.ticklabel_format(axis='y', style='scientific',
+                                    scilimits=(6, 6))
+
+            fig.suptitle(f'{self.metric}')
+            fig.savefig(boxplot_path)
             fig.clf()
+            plt.close()
+
+    def make_violinplot_quality(self):
+        print(f'make_violinplot_quality.')
+        for self.metric in self.dataset_structure:
+            # Check files (do not use pdf. very much object)
+            violinplot_path = self.violinplot_folder / f'violinplot_{self.metric}.png'
+            if violinplot_path.exists():
+                print(f'\t{violinplot_path} exists.')
+                continue
+
+            # Load Database
+            self.load_database()
+
+            serie_list = [self.get_chunk_data()
+                          for self.quality in self.quality_list]
+
+            fig = plt.figure(figsize=(6, 2.4), layout='tight', dpi=300)
+
+            ax: plt.Axes = fig.add_subplot(1, 1, 1)
+            ax.violinplot(serie_list, showmeans=False, showmedians=True)
+            ax.set_xticks(list(range(1, len(self.quality_list) + 1)), self.quality_list)
+            ax.set_xlabel(f'Quality (QP)')
+            ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+            if self.metric == 'dash_m4s':
+                ax.ticklabel_format(axis='y', style='scientific',
+                                    scilimits=(6, 6))
+
+            fig.suptitle(f'{self.metric}')
+            fig.savefig(violinplot_path)
+            fig.clf()
+            plt.close()
+
+    def get_chunk_data(self) -> pd.Series:
+        chunk_data: pd.Series = self.database.xs((self.quality,), level=('quality',))['value']
+        return chunk_data
 
 
 if __name__ == '__main__':
