@@ -43,12 +43,12 @@ class ChunkAnalysisTiling(AnalysisBase):
 
     def plots(self):
         self.make_boxplot_tiling()
+        self.make_barplot_tiling()
         self.make_violinplot_tiling()
 
     def make_boxplot_tiling(self):
         print(f'make_boxplot_tiling.')
         for self.metric in self.dataset_structure:
-            # Check files (do not use pdf. very much object)
             boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}.png'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
@@ -75,11 +75,41 @@ class ChunkAnalysisTiling(AnalysisBase):
             fig.clf()
             plt.close()
 
+    def make_barplot_tiling(self):
+        print(f'make_barplot_quality.')
+        for self.metric in self.dataset_structure:
+            barplot_path = self.barplot_folder / f'barplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            # Load Database
+            self.load_database()
+            fig = plt.figure(figsize=(6, 2.4), layout='tight', dpi=300)
+
+            ax: plt.Axes = fig.add_subplot(1, 1, 1)
+            for x, self.tiling in enumerate(self.tiling_list):
+                ax.bar(x, self.get_chunk_data().mean())
+            ax.set_xlabel(f'Tiling')
+            ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+            ax.set_xticks(range(len(self.tiling_list)),
+                          [f"{tiling}" for tiling in self.tiling_list])
+            if self.metric == 'ssim':
+                ax.set_ylim(bottom=0.8)
+            elif self.metric == 'dash_m4s':
+                ax.ticklabel_format(axis='y', style='scientific',
+                                    scilimits=(6, 6))
+
+            fig.suptitle(f'{self.metric}')
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
+
     def make_violinplot_tiling(self):
         print(f'make_violinplot_tiling')
         for self.metric in self.dataset_structure:
             # Check files (do not use pdf. very much object)
-            violinplot_path = self.violinplot_folder / f'violinplot_{self.metric}.png'
+            violinplot_path = self.violinplot_folder / f'violinplot_{self.metric}.pdf'
             if violinplot_path.exists():
                 print(f'\t{violinplot_path} exists.')
                 continue
@@ -88,7 +118,7 @@ class ChunkAnalysisTiling(AnalysisBase):
             self.load_database()
 
             serie_list = [self.get_chunk_data()
-                          for self.quality in self.tiling_list]
+                          for self.tiling in self.tiling_list]
 
             fig = plt.figure(figsize=(6, 2.4), layout='tight', dpi=300)
 
