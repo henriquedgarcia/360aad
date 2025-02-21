@@ -46,6 +46,91 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         self.make_boxplot_tiling_quality()
         self.make_violinplot_quality_tiling()
         self.make_violinplot_tiling_quality()
+        self.make_barplot_quality_tiling()
+        self.make_barplot_tiling_quality()
+
+    def make_barplot_quality_tiling(self):
+        print(f'make_barplot_quality_tiling.')
+        for self.metric in self.dataset_structure:
+            barplot_path = self.barplot_folder / f'barplot_quality_tiling_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            # Load Database
+            self.load_database()
+            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
+            for i, self.quality in enumerate(self.quality_list, 1):
+                ax: plt.Axes = fig.add_subplot(3, 2, i)
+                data = []
+                for x, self.tiling in enumerate(self.tiling_list):
+                    data.append(self.get_chunk_data().mean())
+                    ax.bar(x, data[-1])
+
+                ax.set_title(f'qp{self.quality}')
+                ax.set_xlabel(f'Tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.tiling_list)),
+                              [f"{tiling}" for tiling in self.tiling_list])
+
+                if self.metric == 'mse':
+                    ma = max(data)
+                    mi = min(data)
+                    rg = (ma - mi) * 0.05
+                    ax.set_ylim(bottom=mi + rg, top=ma + rg)
+                elif self.metric == 'ssim':
+                    ax.set_ylim(bottom=0.8)
+                elif self.metric == 'dash_m4s':
+                    ax.ticklabel_format(axis='y', style='scientific',
+                                        scilimits=(6, 6))
+
+            fig.suptitle(f'{self.metric}')
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_barplot_tiling_quality(self):
+        print(f'make_barplot_tiling_quality.')
+        for self.metric in self.dataset_structure:
+            barplot_path = self.barplot_folder / f'barplot_tiling_quality_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            # Load Database
+            self.load_database()
+            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
+            for i, self.tiling in enumerate(self.tiling_list, 1):
+                ax: plt.Axes = fig.add_subplot(3, 2, i)
+                data = []
+                for x, self.quality in enumerate(self.quality_list):
+                    data.append(self.get_chunk_data().mean())
+                    ax.bar(x, data[-1])
+
+                ax.set_title(f'{self.tiling}')
+                ax.set_xlabel(f'Quality (QP)')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.quality_list)),
+                              [f"qp{quality}" for quality in self.quality_list])
+
+                if self.metric == 'mse':
+                    ma = max(data)
+                    mi = min(data)
+                    rg = (ma - mi) * 0.05
+                    ax.set_ylim(bottom=mi + rg, top=ma + rg)
+                elif self.metric == 'ssim':
+                    ax.set_ylim(bottom=0.8)
+                elif 'dectime' in self.metric:
+                    ax.ticklabel_format(axis='y', style='scientific',
+                                        scilimits=(-3, -3))
+                elif self.metric == 'dash_m4s':
+                    ax.ticklabel_format(axis='y', style='scientific',
+                                        scilimits=(6, 6))
+
+            fig.suptitle(f'{self.metric}')
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
 
     def make_boxplot_quality_tiling(self):
         print(f'make_boxplot_quality_tiling.')
