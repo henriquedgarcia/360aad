@@ -43,6 +43,7 @@ class ChunkAnalysisQuality(AnalysisBase):
 
     def plots(self):
         self.make_boxplot_quality()
+        self.make_barplot_quality()
         self.make_violinplot_quality()
 
     def make_boxplot_quality(self):
@@ -72,6 +73,36 @@ class ChunkAnalysisQuality(AnalysisBase):
 
             fig.suptitle(f'{self.metric}')
             fig.savefig(boxplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_barplot_quality(self):
+        print(f'make_barplot_quality.')
+        for self.metric in self.dataset_structure:
+            barplot_path = self.barplot_folder / f'barplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            # Load Database
+            self.load_database()
+            fig = plt.figure(figsize=(6, 2.4), layout='tight', dpi=300)
+
+            ax: plt.Axes = fig.add_subplot(1, 1, 1)
+            for x, self.quality in enumerate(self.quality_list):
+                ax.bar(x, self.get_chunk_data().mean())
+            ax.set_xlabel(f'Quality (QP)')
+            ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+            ax.set_xticks(range(len(self.quality_list)),
+                          [f"qp{quality}" for quality in self.quality_list])
+            if self.metric == 'ssim':
+                ax.set_ylim(bottom=0.8)
+            elif self.metric == 'dash_m4s':
+                ax.ticklabel_format(axis='y', style='scientific',
+                                    scilimits=(6, 6))
+
+            fig.suptitle(f'{self.metric}')
+            fig.savefig(barplot_path)
             fig.clf()
             plt.close()
 
