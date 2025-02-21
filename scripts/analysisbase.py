@@ -56,6 +56,12 @@ class AnalysisPaths(ConfigIf):
         return folder
 
     @property
+    def barplot_folder(self):
+        folder = self.graphs_workfolder / 'barplot'
+        folder.mkdir(exist_ok=True, parents=True)
+        return folder
+
+    @property
     def violinplot_folder(self):
         folder = self.graphs_workfolder / 'violinplot'
         folder.mkdir(exist_ok=True, parents=True)
