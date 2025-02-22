@@ -16,7 +16,6 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         self.projection = 'cmp'
         del self.dataset_structure['dash_mpd']
         del self.dataset_structure['dash_init']
-        # del self.dataset_structure['dectime_std']
 
     def make_stats(self):
         print(f'make_stats.')
@@ -44,8 +43,8 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
     def load_database(self):
         super().load_database()
         self.database = self.database.groupby(['tiling', 'quality', 'tile', 'chunk']).mean()
-        index_l3_int = self.database.index.levels[3].astype(int)
-        self.database.index = self.database.index.set_levels(index_l3_int, level=3)
+        index_int = self.database.index.levels[3].astype(int)
+        self.database.index = self.database.index.set_levels(index_int, level=3)
         self.database.sort_index(inplace=True)
 
         if self.metric in ['dash_m4s', 'dectime_avg']:
@@ -74,7 +73,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
             # Load Database
             self.load_database()
 
-            fig = plt.figure(figsize=(6, 7.5), layout='tight')
+            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
             for n, self.quality in enumerate(self.quality_list, 1):
@@ -134,6 +133,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
             fig.savefig(boxplot_path)
             fig.clf()
             plt.close()
+
     def make_boxplot_quality_tiling_frame(self):
         print(f'make_boxplot_quality_tiling.')
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
