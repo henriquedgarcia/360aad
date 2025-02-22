@@ -6,10 +6,13 @@ from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
 from scripts.config import Config
-from scripts.utils import AutoDict
+from scripts.utils import AutoDict, load_pickle
 
 
 class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
+    def __init__(self, config):
+        super().__init__(config)
+
     def setup(self):
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
@@ -19,22 +22,24 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def make_stats(self):
         print(f'make_stats.')
-        for self.metric in self.dataset_structure:
+        metric_list = list(self.dataset_structure)
+        for self.metric in metric_list:
             self.load_database()
+
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
-                    serie: pd.Series = self.get_chunk_data()
+                    serie_data_1 = self.database.loc[(self.tiling, self.quality)]['value']
                     self.stats_defaultdict['Metric'].append(self.metric)
                     self.stats_defaultdict['Tiling'].append(self.tiling)
                     self.stats_defaultdict['Quality'].append(self.quality)
-                    self.stats_defaultdict['n_arquivos'].append(len(serie))
-                    self.stats_defaultdict['Média'].append(serie.mean())
-                    self.stats_defaultdict['Desvio Padrão'].append(serie.std())
-                    self.stats_defaultdict['Mínimo'].append(serie.quantile(0.00))
-                    self.stats_defaultdict['1º Quartil'].append(serie.quantile(0.25))
-                    self.stats_defaultdict['Mediana'].append(serie.quantile(0.50))
-                    self.stats_defaultdict['3º Quartil'].append(serie.quantile(0.75))
-                    self.stats_defaultdict['Máximo'].append(serie.quantile(1.00))
+                    self.stats_defaultdict['n_arquivos'].append(len(serie_data_1))
+                    self.stats_defaultdict['Média'].append(serie_data_1.mean())
+                    self.stats_defaultdict['Desvio Padrão'].append(serie_data_1.std())
+                    self.stats_defaultdict['Mínimo'].append(serie_data_1.quantile(0.00))
+                    self.stats_defaultdict['1º Quartil'].append(serie_data_1.quantile(0.25))
+                    self.stats_defaultdict['Mediana'].append(serie_data_1.quantile(0.50))
+                    self.stats_defaultdict['3º Quartil'].append(serie_data_1.quantile(0.75))
+                    self.stats_defaultdict['Máximo'].append(serie_data_1.quantile(1.00))
 
     def get_chunk_data(self):
         chunk_data = self.database.loc[(self.tiling, self.quality)]['value']
@@ -52,7 +57,53 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         else:
             self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()
 
+    def load_database2(self, metric):
+        # print(f'\t{self.__class__.__name__} loading {metric} database...')
+        filename = self.dataset_structure[metric]['path']
+        database = load_pickle(filename)
+
+        # group by XXX - tiling - chunk (chunk is the temporal serie. Tiling compose the frame.)
+        database = database.groupby(['tiling', 'quality', 'tile', 'chunk']).mean()
+
+        # fix index order changing chunk index from str to int.
+        index_int = database.index.levels[3].astype(int)
+        database.index = database.index.set_levels(index_int, level=3)
+        database.sort_index(inplace=True)
+
+        if metric in ['dash_m4s', 'dectime_avg']:
+            database = database.groupby(['tiling', 'quality', 'chunk']).sum()
+        else:
+            database = database.groupby(['tiling', 'quality', 'chunk']).mean()
+        return database
+
+    def corr(self):
+        corr_default_dict = defaultdict(list)
+        metric_list = list(self.dataset_structure)
+        for self.metric in metric_list:
+            self.load_database()
+            database1 = self.database
+            for metric2 in metric_list:
+                database2 = self.load_database2(metric2)
+
+                for self.tiling in self.tiling_list:
+                    for self.quality in self.quality_list:
+                        print(f'\t{self.tiling}_qp{self.quality}')
+                        serie_data_1 = database1.loc[(self.tiling, self.quality)]['value']
+                        serie_data_2 = database2.loc[(self.tiling, self.quality)]['value']
+                        corr = serie_data_1.corr(serie_data_2, method='pearson')
+
+                        corr_default_dict['Metric1'].append(self.metric)
+                        corr_default_dict['Metric2'].append(metric2)
+                        corr_default_dict['Tiling'].append(self.tiling)
+                        corr_default_dict['Quality'].append(self.quality)
+                        corr_default_dict['corr'].append(corr)
+
+        pd.DataFrame(corr_default_dict).to_csv(self.corr_csv)
+
     def plots(self):
+        self.corr()
+
+
         self.make_plot_quality_tiling_frame()
         self.make_plot_tiling_quality_frame()
         self.make_boxplot_quality_tiling_frame()
