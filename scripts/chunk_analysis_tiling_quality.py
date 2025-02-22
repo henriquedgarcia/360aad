@@ -80,6 +80,9 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                     ax.set_ylim(bottom=mi + rg, top=ma + rg)
                 elif self.metric == 'ssim':
                     ax.set_ylim(bottom=0.8)
+                elif 'dectime' in self.metric:
+                    ax.ticklabel_format(axis='y', style='scientific',
+                                        scilimits=(-3, -3))
                 elif self.metric == 'dash_m4s':
                     ax.ticklabel_format(axis='y', style='scientific',
                                         scilimits=(6, 6))
@@ -241,7 +244,6 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
     def make_violinplot_tiling_quality(self):
         print(f'make_violinplot_tiling_quality.')
         for self.metric in self.dataset_structure:
-
             boxplot_path = self.violinplot_folder / f'violinplot_tiling_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
