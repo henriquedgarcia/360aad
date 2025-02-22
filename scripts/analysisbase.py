@@ -96,6 +96,10 @@ class AnalysisPaths(ConfigIf):
         return self.stats_workfolder / f'{self.__class__.__name__}_stats.csv'
 
     @property
+    def corr_csv(self):
+        return self.stats_workfolder / f'{self.__class__.__name__}_corr.csv'
+
+    @property
     def bucket_pickle(self):
         return self.bucket_workfolder / f'bucket_{self.metric}.pickle'
 
