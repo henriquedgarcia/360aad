@@ -5,8 +5,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.utils import AutoDict
+from scripts.utils.config import Config
+from scripts.utils.utils import AutoDict
 
 
 class ChunkAnalysisNameTilingQuality(AnalysisBase):
@@ -24,7 +24,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
             for self.name in self.name_list:
                 for self.tiling in self.tiling_list:
                     for self.quality in self.quality_list:
-                        chunk_data = self.get_chunk_data()
+                        chunk_data = self.get_chunk_data(levels=('name', 'tiling', 'quality'))
                         self.stats_defaultdict['Metric'].append(self.metric)
                         self.stats_defaultdict['Name'].append(self.name)
                         self.stats_defaultdict['Tiling'].append(self.tiling)
@@ -38,17 +38,11 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                         self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
                         self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
 
-    def get_chunk_data(self) -> pd.Series:
-        database = self.database
-        chunk_data: pd.Series = database.xs(key=(self.name, self.tiling, self.quality),
-                                            level=('name', 'tiling', 'quality'))['value']
-        return chunk_data
-
     def plots(self):
-        # self.make_boxplot_name_quality_tiling()
-        # self.make_boxplot_name_tiling_quality()
+        self.make_boxplot_name_quality_tiling()
+        self.make_boxplot_name_tiling_quality()
         self.make_barplot_quality_tiling_name()
-        # self.make_boxplot_tiling_quality_name()
+        self.make_barplot_tiling_quality_name()
         # self.make_boxplot_quality_name_tiling()
         # self.make_boxplot_tiling_name_quality()
         # self.make_violinplot_name_quality_tiling()
@@ -72,7 +66,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                     print(f'\r\tPlot {self.metric} {self.name}_{self.quality}', end='')
                     ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                    serie_list = [self.get_chunk_data()
+                    serie_list = [self.get_chunk_data(levels=('name', 'tiling', 'quality'))
                                   for self.tiling in self.tiling_list]
                     ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
 
@@ -107,7 +101,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                     print(f'\r\tPlot {self.metric} {self.name}_{self.tiling}', end='')
                     ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                    serie_list = [self.get_chunk_data()
+                    serie_list = [self.get_chunk_data(levels=('name', 'tiling', 'quality'))
                                   for self.quality in self.quality_list]
                     ax.boxplot(serie_list, tick_labels=list(self.quality_list))
 
@@ -145,11 +139,9 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                     print(f'\r\tPlot {self.metric} {self.name}_{self.tiling}', end='')
 
                     ax: plt.Axes = fig.add_subplot(3, 2, n)
-                    l = []
                     for pos, self.name in zip(ticks_position, self.name_list):
-                        chunk_data = self.get_chunk_data().mean()
+                        chunk_data = self.get_chunk_data(levels=('name', 'tiling', 'quality')).mean()
                         ax.bar(pos, chunk_data, color='#1f77b4')
-                        l += [f'{pos}-{self.name}']
 
                     ax.set_title(f'{self.tiling}')
                     ax.set_xticks(range(1, len(self.name_list) + 1))
@@ -160,13 +152,15 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
 
                 print(f'\n\tSaving.')
                 fig.suptitle(f'{self.metric}_{self.quality}')
-                a=fig.legend(l, loc='outside right center',handlelength=0, handletextpad=0)
-                a.legend_handles = []
+                legends_list = [f'{pos}-{name}' for pos, name in zip(ticks_position, self.name_list)]
+                leg = fig.legend(legends_list, loc='outside right center', handlelength=0, handletextpad=0)
+                for handler in leg.legend_handles:
+                    handler.set_visible(False)
                 fig.savefig(boxplot_path)
                 fig.clf()
                 plt.close()
 
-    def make_boxplot_quality_tiling_name2(self):
+    def make_barplot_tiling_quality_name(self):
         print(f'make_boxplot_tiling_quality.')
         for self.metric in self.dataset_structure:
             # Load Database
@@ -187,80 +181,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                     print(f'\r\tPlot {self.tiling}', end='')
                     ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                    serie_list = [self.get_chunk_data()
-                                  for self.quality in self.quality_list]
-                    ax.boxplot(serie_list, tick_labels=list(self.quality_list))
-
-                    ax.set_title(f'{self.tiling}')
-                    ax.set_xlabel(f'Quality')
-                    ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-
-                    if self.metric == 'dash_m4s':
-                        ax.ticklabel_format(axis='y', style='scientific',
-                                            scilimits=(6, 6))
-                print(f'\n\tSaving.')
-                fig.savefig(boxplot_path)
-                fig.clf()
-                plt.close()
-
-    def make_boxplot_tiling_name_quality(self):
-        print(f'make_boxplot_name_quality_tiling.')
-        for self.metric in self.dataset_structure:
-            self.load_database()
-            for self.name in self.name_list:
-                # Check files
-                boxplot_path = self.boxplot_folder / f'metric_name_tiling_quality' / f'boxplot_quality_tiling_{self.metric}_{self.name}.pdf'
-                try:
-                    boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-                except FileExistsError:
-                    print(f'\t{boxplot_path} exists.')
-                    continue
-
-                fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
-                fig.suptitle(f'{self.metric}_{self.name}')
-
-                for n, self.quality in enumerate(self.quality_list, 1):
-                    print(f'\r\tPlot qp{self.quality}', end='')
-                    ax: plt.Axes = fig.add_subplot(3, 2, n)
-
-                    serie_list = [self.get_chunk_data()
-                                  for self.tiling in self.tiling_list]
-                    ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
-
-                    ax.set_title(f'qp{self.quality}')
-                    ax.set_xlabel(f'Tiling')
-                    ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-
-                    if self.metric == 'dash_m4s':
-                        ax.ticklabel_format(axis='y', style='scientific',
-                                            scilimits=(6, 6))
-                print(f'\n\tSaving.')
-                fig.savefig(boxplot_path)
-                fig.clf()
-                plt.close()
-
-    def make_boxplot_tiling_quality_name(self):
-        print(f'make_boxplot_tiling_quality.')
-        for self.metric in self.dataset_structure:
-            # Load Database
-            self.load_database()
-            for self.name in self.name_list:
-                # Check files
-                boxplot_path = self.boxplot_folder / f'metric_name_tiling_quality' / f'boxplot_tiling_quality_{self.metric}_{self.name}.pdf'
-                try:
-                    boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-                except FileExistsError:
-                    print(f'\t{boxplot_path} exists.')
-                    continue
-
-                fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
-                fig.suptitle(f'{self.metric}_{self.name}')
-
-                for n, self.tiling in enumerate(self.tiling_list, 1):
-                    print(f'\r\tPlot {self.tiling}', end='')
-                    ax: plt.Axes = fig.add_subplot(3, 2, n)
-
-                    serie_list = [self.get_chunk_data()
+                    serie_list = [self.get_chunk_data(levels=('name', 'tiling', 'quality'))
                                   for self.quality in self.quality_list]
                     ax.boxplot(serie_list, tick_labels=list(self.quality_list))
 
@@ -296,7 +217,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                     print(f'Plot qp{self.quality}')
                     ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                    serie_list = [self.get_chunk_data() for self.tiling in self.tiling_list]
+                    serie_list = [self.get_chunk_data(levels=('name', 'tiling', 'quality')) for self.tiling in self.tiling_list]
                     ax.violinplot(serie_list, showmeans=False, showmedians=True)
                     ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
                                   list(self.tiling_list))
@@ -331,7 +252,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                     print(f'Plot {self.tiling}')
                     ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                    serie_list = [self.get_chunk_data() for self.quality in self.quality_list]
+                    serie_list = [self.get_chunk_data(levels=('name', 'tiling', 'quality')) for self.quality in self.quality_list]
                     ax.violinplot(serie_list, showmeans=False, showmedians=True)
                     ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
                                   list(self.quality_list))
