@@ -20,7 +20,7 @@ class SerieAnalysisTilingChunkFrame(AnalysisBase):
         for self.metric in self.dataset_structure:
             self.load_database()
             for self.tiling in self.tiling_list:
-                serie = self.get_chunk_data()
+                serie = self.get_chunk_data(('tiling',))
                 self.stats_defaultdict['Metric'].append(self.metric)
                 self.stats_defaultdict['Tiling'].append(self.tiling)
                 self.stats_defaultdict['Média'].append(serie.mean())
@@ -39,10 +39,6 @@ class SerieAnalysisTilingChunkFrame(AnalysisBase):
             self.database = self.database.groupby(['tiling', 'chunk'], sort=False).sum()
         else:
             self.database = self.database.groupby(['tiling', 'chunk'], sort=False).mean()
-
-    def get_chunk_data(self) -> pd.Series:
-        chunk_data = self.database.loc[(self.tiling,)]['value']
-        return chunk_data
 
     def plots(self):
         self.make_plot_tiling_frame()
@@ -64,7 +60,7 @@ class SerieAnalysisTilingChunkFrame(AnalysisBase):
 
             for n, self.tiling in enumerate(self.tiling_list, 1):
                 print(f'Plot {self.tiling}')
-                serie = self.get_chunk_data()
+                serie = self.get_chunk_data(('tiling',))
                 ax.plot(serie, label=f'{self.tiling}')
 
             ax.set_xlabel(f'Chunk')
@@ -93,7 +89,7 @@ class SerieAnalysisTilingChunkFrame(AnalysisBase):
             fig = plt.figure(figsize=(6, 2.4), layout='tight', dpi=300)
             ax: plt.Axes = fig.add_subplot(1, 1, 1)
 
-            serie_list = [self.get_chunk_data() for self.tiling in self.tiling_list]
+            serie_list = [self.get_chunk_data(('tiling',)) for self.tiling in self.tiling_list]
 
             ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
 
@@ -122,7 +118,7 @@ class SerieAnalysisTilingChunkFrame(AnalysisBase):
             fig = plt.figure(figsize=(6, 2.4), layout='tight', dpi=300)
             ax: plt.Axes = fig.add_subplot(1, 1, 1)
 
-            serie_list = [self.get_chunk_data() for self.tiling in self.tiling_list]
+            serie_list = [self.get_chunk_data(('tiling',)) for self.tiling in self.tiling_list]
             ax.violinplot(serie_list, showmeans=False, showmedians=True)
             ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
                           list(self.tiling_list))
