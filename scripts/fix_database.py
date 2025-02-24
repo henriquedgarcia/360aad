@@ -1,11 +1,13 @@
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from scripts.analysisbase import AnalysisPaths
-from scripts.progressbar import ProgressBar
-from scripts.utils import dict_to_tuples, AutoDict, save_pickle, load_json, load_pickle
+from scripts.utils.config import Config
+from scripts.utils.progressbar import ProgressBar
+from scripts.utils.utils import dict_to_tuples, AutoDict, save_pickle, load_json, load_pickle
 
 
 class FixDatabase(AnalysisPaths):
@@ -40,10 +42,14 @@ class FixDatabase(AnalysisPaths):
     bucket_keys_name = ['']
     bucket = {}
 
+    @property
+    def database_json(self):
+        database_path = Path(f'dataset/{self.metric}')
+        return database_path / f'{self.metric}_{self.name}.json'
+
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
-        # self.to_hfs()
         self.split_cat()
         self.to_dataframe()
 
@@ -207,3 +213,10 @@ class FixDatabase(AnalysisPaths):
 
     def update_ui(self, desc):
         self.ui.update(desc)
+
+
+if __name__ == '__main__':
+    os.chdir('../')
+
+    config = Config()
+    FixDatabase(config)
