@@ -5,8 +5,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.utils import AutoDict
+from scripts.utils.config import Config
+from scripts.utils.utils import AutoDict
 
 
 class SerieAnalysisTilingQualityChunk(AnalysisBase):
@@ -36,14 +36,8 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                     self.stats_defaultdict['3º Quartil'].append(serie.quantile(0.75))
                     self.stats_defaultdict['Máximo'].append(serie.quantile(1.00))
 
-    def load_database(self):
-        super(SerieAnalysisTilingQualityChunk, self).load_database()
-        index_int = self.database.index.levels[5].astype(int)
-        self.database.index = self.database.index.set_levels(index_int, level=5)
-        self.database.sort_index(inplace=True)
-
     def get_chunk_data(self) -> pd.Series:
-        database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()
+        database = self.database.groupby(['tiling', 'quality', 'chunk'], sort=False).mean()
         chunk_data: pd.Series = database.xs((self.tiling, self.quality), level=('tiling', 'quality'))['value']
         return chunk_data
 
