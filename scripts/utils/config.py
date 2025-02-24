@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from math import prod
 
-from scripts.utils import load_json, splitx
+from scripts.utils.utils import load_json, splitx
 
 
 @dataclass
@@ -27,6 +27,7 @@ class Config:
 
     chunk_list = list(map(str, range(1, 61)))
     quality_list = ["22", "28", "34", "40", "46", "50"]
+    # quality_list = ["16", "22", "28", "34", "40", "46"]
     tiling_list = {"1x1": list(map(str, range(1))),
                    "3x2": list(map(str, range(6))),
                    "6x4": list(map(str, range(24))),
