@@ -4,7 +4,7 @@ from collections import defaultdict
 import numpy as np
 
 from scripts.analysisbase import AnalysisBase
-from scripts.utils import AutoDict
+from scripts.utils.utils import AutoDict
 
 lock = asyncio.Lock()
 
