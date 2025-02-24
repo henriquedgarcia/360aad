@@ -1,4 +1,3 @@
-import asyncio
 import os
 from collections import defaultdict
 
@@ -7,10 +6,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.utils import AutoDict
-
-lock = asyncio.Lock()
+from scripts.utils.config import Config
+from scripts.utils.utils import AutoDict
 
 
 class ChunkAnalysisTiling(AnalysisBase):
