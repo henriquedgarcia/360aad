@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
+from contextlib import contextmanager
 
-import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
@@ -54,10 +54,11 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
             self.load_database()
             for self.name in self.name_list:
                 # Check files
-                boxplot_path = self.boxplot_folder / f'metric_name_tiling_quality' / f'boxplot_quality_tiling_{self.metric}_{self.name}.pdf'
+                boxplot_path = self.boxplot_folder / f'metric_name_quality_tiling' / f'boxplot_quality_tiling_{self.metric}_{self.name}.pdf'
                 if boxplot_path.exists():
                     print(f'\t{boxplot_path} exists.')
                     continue
+                boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
                 fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
                 fig.suptitle(f'{self.metric}_{self.name}')
@@ -93,6 +94,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                 if boxplot_path.exists():
                     print(f'\t{boxplot_path} exists.')
                     continue
+                boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
                 fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
                 fig.suptitle(f'{self.metric}_{self.name}')
@@ -118,84 +120,77 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                 plt.close()
 
     def make_barplot_quality_tiling_name(self):
-        print(f'make_boxplot_quality_tiling_name.')
+        print(f'make_barplot_quality_tiling_name.')
+
         ticks_position = list(range(1, len(self.name_list) + 1))
-        legend_list = [f'{n:02d}-{self.name}' for n, self.name in enumerate(self.name_list, 1)]
+        legends_list = [f'{pos}-{name}' for pos, name in zip(ticks_position, self.name_list)]
         for self.metric in self.dataset_structure:
             self.load_database()
             for self.quality in self.quality_list:
-                # Check files
-                boxplot_path = (self.barplot_folder / f'metric_quality_tiling_name' /
-                                f'barplot_tiling_name_{self.metric}_qp{self.quality}.pdf')
-                boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-                if boxplot_path.exists():
-                    print(f'\t{boxplot_path} exists.')
-                    continue
+                self.filename = (self.barplot_folder / f'metric_quality_tiling_name' /
+                                 f'barplot_tiling_name_{self.metric}_qp{self.quality}.pdf')
+                if self.check_filename(): continue
+                with self.make_figure(figsize=(14, 6), dpi=300, layout="constrained", legends_list=legends_list,
+                                      title=f'{self.metric}_{self.quality}') as fig:
+                    for n, self.tiling in enumerate(self.tiling_list, 1):
+                        print(f'\r\tPlot {self.metric} {self.quality}_{self.tiling}', end='')
+                        with self.make_subplot(fig, 3, 2, n, title=self.tiling) as ax:
+                            for pos, self.name in enumerate(self.name_list):
+                                chunk_data = self.get_chunk_data(levels=('name', 'tiling', 'quality')).mean()
+                                ax.bar(pos, chunk_data, color='#1f77b4')
 
-                fig = plt.figure(figsize=(14, 6), dpi=300,
-                                 layout="constrained"
-                                 )
-                for n, self.tiling in enumerate(self.tiling_list, 1):
-                    print(f'\r\tPlot {self.metric} {self.name}_{self.tiling}', end='')
-
-                    ax: plt.Axes = fig.add_subplot(3, 2, n)
-                    for pos, self.name in zip(ticks_position, self.name_list):
-                        chunk_data = self.get_chunk_data(levels=('name', 'tiling', 'quality')).mean()
-                        ax.bar(pos, chunk_data, color='#1f77b4')
-
-                    ax.set_title(f'{self.tiling}')
-                    ax.set_xticks(range(1, len(self.name_list) + 1))
-                    ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                    if self.metric == 'dash_m4s':
-                        ax.ticklabel_format(axis='y', style='scientific',
-                                            scilimits=(6, 6))
-
-                print(f'\n\tSaving.')
-                fig.suptitle(f'{self.metric}_{self.quality}')
-                legends_list = [f'{pos}-{name}' for pos, name in zip(ticks_position, self.name_list)]
+    @contextmanager
+    def make_figure(self, figsize=(14, 6), dpi=300, layout="constrained", legends_list=None,
+                    title=None):
+        fig = plt.figure(figsize=figsize, dpi=dpi, layout=layout)
+        try:
+            yield fig
+        finally:
+            print(f'\n\tSaving.')
+            if legends_list is not None and isinstance(legends_list, list):
                 leg = fig.legend(legends_list, loc='outside right center', handlelength=0, handletextpad=0)
                 for handler in leg.legend_handles:
                     handler.set_visible(False)
-                fig.savefig(boxplot_path)
-                fig.clf()
-                plt.close()
+            elif legends_list is not -1:
+                fig.legend()
+
+            if title is not None:
+                fig.suptitle(title)
+            fig.savefig(self.filename)
+            fig.clf()
+            plt.close()
+
+    @contextmanager
+    def make_subplot(self, fig, nrows: int, ncols: int, index: int,
+                     title):
+        ax: plt.Axes = fig.add_subplot(nrows, ncols, index)
+        try:
+            yield ax
+        finally:
+            ax.set_title(title)
+            ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+            ax.set_xticks(range(1, len(self.name_list) + 1))
+            if self.metric == 'dash_m4s':
+                ax.ticklabel_format(axis='y', style='scientific',
+                                    scilimits=(6, 6))
 
     def make_barplot_tiling_quality_name(self):
-        print(f'make_boxplot_tiling_quality.')
+        print(f'make_barplot_tiling_quality_name.')
+        ticks_position = list(range(1, len(self.name_list) + 1))
+        legends_list = [f'{pos}-{name}' for pos, name in zip(ticks_position, self.name_list)]
         for self.metric in self.dataset_structure:
-            # Load Database
             self.load_database()
-            for self.name in self.name_list:
-                # Check files
-                boxplot_path = self.boxplot_folder / f'metric_name_tiling_quality' / f'boxplot_tiling_quality_{self.metric}_{self.name}.pdf'
-                try:
-                    boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-                except FileExistsError:
-                    print(f'\t{boxplot_path} exists.')
-                    continue
-
-                fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
-                fig.suptitle(f'{self.metric}_{self.name}')
-
-                for n, self.tiling in enumerate(self.tiling_list, 1):
-                    print(f'\r\tPlot {self.tiling}', end='')
-                    ax: plt.Axes = fig.add_subplot(3, 2, n)
-
-                    serie_list = [self.get_chunk_data(levels=('name', 'tiling', 'quality'))
-                                  for self.quality in self.quality_list]
-                    ax.boxplot(serie_list, tick_labels=list(self.quality_list))
-
-                    ax.set_title(f'{self.tiling}')
-                    ax.set_xlabel(f'Quality')
-                    ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-
-                    if self.metric == 'dash_m4s':
-                        ax.ticklabel_format(axis='y', style='scientific',
-                                            scilimits=(6, 6))
-                print(f'\n\tSaving.')
-                fig.savefig(boxplot_path)
-                fig.clf()
-                plt.close()
+            for self.tiling in self.tiling_list:
+                self.filename = self.barplot_folder / f'metric_tiling_quality_name' / f'barplot_tiling_quality_{self.metric}_{self.name}.pdf'
+                if self.check_filename(): continue
+                with self.make_figure(figsize=(14, 6), dpi=300, layout="constrained", legends_list=legends_list,
+                                      title=f'{self.metric}_{self.quality}') as fig:
+                    for n, self.quality in enumerate(self.quality_list, 1):
+                        print(f'\r\tPlot {self.metric} {self.tiling}_{self.quality}', end='')
+                        with self.make_subplot(fig, 3, 2, n, title=self.tiling) as ax:
+                            for pos, self.name in enumerate(self.name_list):
+                                chunk_data = self.get_chunk_data(levels=('name', 'tiling', 'quality')).mean()
+                                ax.bar(pos, chunk_data, color='#1f77b4')
 
     def make_violinplot_name_quality_tiling(self):
         print(f'make_violinplot_quality_tiling_frame.')
@@ -209,6 +204,7 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                 if boxplot_path.exists():
                     print(f'\t{boxplot_path} exists.')
                     continue
+                boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
                 fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
                 fig.suptitle(f'{self.metric}_{self.name}')
@@ -245,6 +241,8 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
                 if boxplot_path.exists():
                     print(f'\t{boxplot_path} exists.')
                     continue
+                boxplot_path.parent.mkdir(parents=True, exist_ok=True)
+
                 fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
                 fig.suptitle(f'{self.metric}_{self.name}')
 
