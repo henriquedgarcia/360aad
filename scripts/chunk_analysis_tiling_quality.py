@@ -1,12 +1,13 @@
 import os
 from collections import defaultdict
+from typing import Callable
 
 import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.utils import AutoDict
+from scripts.utils.config import Config
+from scripts.utils.utils import AutoDict
 
 
 class ChunkAnalysisTilingQuality(AnalysisBase):
@@ -23,7 +24,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
             self.load_database()
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
-                    chunk_data = self.get_chunk_data()
+                    chunk_data = self.get_chunk_data(('tiling', 'quality'))
                     self.stats_defaultdict['Metric'].append(self.metric)
                     self.stats_defaultdict['Tiling'].append(self.tiling)
                     self.stats_defaultdict['Quality'].append(self.quality)
@@ -36,10 +37,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                     self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
                     self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
 
-    def get_chunk_data(self) -> pd.Series:
-        chunk_data: pd.Series = self.database.xs(key=(self.tiling, self.quality),
-                                                 level=('tiling', 'quality'))['value']
-        return chunk_data
+
 
     def plots(self):
         self.make_boxplot_quality_tiling()
@@ -49,8 +47,10 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         self.make_barplot_quality_tiling()
         self.make_barplot_tiling_quality()
 
+    plot_file: Callable
     def make_barplot_quality_tiling(self):
         print(f'make_barplot_quality_tiling.')
+        self.plot_file = lambda : self.barplot_folder / f'barplot_quality_tiling_{self.metric}.pdf'
         for self.metric in self.dataset_structure:
             barplot_path = self.barplot_folder / f'barplot_quality_tiling_{self.metric}.pdf'
             if barplot_path.exists():
@@ -64,7 +64,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 ax: plt.Axes = fig.add_subplot(3, 2, i)
                 data = []
                 for x, self.tiling in enumerate(self.tiling_list):
-                    data.append(self.get_chunk_data().mean())
+                    data.append(self.get_chunk_data(('tiling', 'quality')).mean())
                     ax.bar(x, data[-1])
 
                 ax.set_title(f'qp{self.quality}')
@@ -107,7 +107,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 ax: plt.Axes = fig.add_subplot(3, 2, i)
                 data = []
                 for x, self.quality in enumerate(self.quality_list):
-                    data.append(self.get_chunk_data().mean())
+                    data.append(self.get_chunk_data(('tiling', 'quality')).mean())
                     ax.bar(x, data[-1])
 
                 ax.set_title(f'{self.tiling}')
@@ -153,7 +153,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 print(f'\r\tPlot qp{self.quality}', end='')
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                serie_list = [self.get_chunk_data()
+                serie_list = [self.get_chunk_data(('tiling', 'quality'))
                               for self.tiling in self.tiling_list]
                 ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
 
@@ -187,7 +187,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 print(f'\r\tPlot {self.tiling}', end='')
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                serie_list = [self.get_chunk_data()
+                serie_list = [self.get_chunk_data(('tiling', 'quality'))
                               for self.quality in self.quality_list]
                 ax.boxplot(serie_list, tick_labels=list(self.quality_list))
 
@@ -223,7 +223,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 print(f'\r\tPlot qp{self.quality}', end='')
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                serie_list = [self.get_chunk_data()
+                serie_list = [self.get_chunk_data(('tiling', 'quality'))
                               for self.tiling in self.tiling_list]
                 ax.violinplot(serie_list, showmeans=False, showmedians=True)
                 ax.set_xticks(list(range(1, len(self.tiling_list) + 1)),
@@ -258,7 +258,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 print(f'\r\tPlot {self.tiling}', end='')
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                serie_list = [self.get_chunk_data()
+                serie_list = [self.get_chunk_data(('tiling', 'quality'))
                               for self.quality in self.quality_list]
                 ax.violinplot(serie_list, showmeans=False, showmedians=True)
                 ax.set_xticks(list(range(1, len(self.quality_list) + 1)),
