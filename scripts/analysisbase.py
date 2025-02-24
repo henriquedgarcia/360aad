@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from scripts.config import ConfigIf
-from scripts.progressbar import ProgressBar
-from scripts.utils import get_nested_value, get_bucket_value, set_bucket_value, load_pickle
+from scripts.utils.config import ConfigIf
+from scripts.utils.progressbar import ProgressBar
+from scripts.utils.utils import get_nested_value, get_bucket_value, set_bucket_value, load_pickle
 
 
 class AnalysisPaths(ConfigIf):
@@ -171,37 +171,25 @@ class AnalysisBase(AnalysisPaths, ABC):
         ...
 
     def load_database(self):
-        print(f'\t{self.__class__.__name__} loading {self.metric} database...')
-        filename = self.dataset_structure[self.metric]['path']
-        self.database = load_pickle(filename)
+        self.database = self.get_database(self.metric)
 
-    def get_database_value(self):
-        keys_name = self.dataset_structure[self.metric]['keys']
-        database_keys = [getattr(self, key) for key in keys_name]
-        value = get_nested_value(self.database, database_keys)
-        return value
+    def get_database(self, metric):
+        filename = self.dataset_structure[metric]['path']
+        database = load_pickle(filename)
+        level_of_chunk = 5
+        index_int = database.index.levels[level_of_chunk].astype(int)
+        database.index = database.index.set_levels(index_int, level=level_of_chunk)
+        return database
 
-    def load_bucket(self):
-        with open(self.bucket_pickle, 'rb') as f:
-            print(f'\t{self.__class__.__name__} loading bucket...')
-            self.bucket = pickle.load(f)
+    def get_chunk_data(self, levels: tuple[str, ...]) -> pd.Series:
+        key = tuple(getattr(self, level) for level in levels)
+        chunk_data: pd.Series = self.database.xs(key=key, level=levels)['value']
+        return chunk_data
 
-        # self.bucket = pickle.loads(self.bucket_pickle.read_bytes())
-
-    def save_bucket(self):
-        with open(self.bucket_pickle, 'wb') as f:
-            # noinspection PyTypeChecker
-            pickle.dump(self.bucket, f)
-
-    def get_bucket_keys(self, cat):
-        bucket_keys = [cat] + [getattr(self, key) for key in self.bucket_keys_name]
-        return bucket_keys
-
-    def get_bucket_value(self, bucket_keys: list):
-        return get_bucket_value(self.bucket, bucket_keys)
-
-    def set_bucket_value(self, bucket_keys: list, value):
-        set_bucket_value(self.bucket, bucket_keys, value)
+    def get_chunk_serie(self, keys):
+        labels = (getattr(self, a) for a in keys)
+        chunk_data = self.database.loc[labels]['value']
+        return chunk_data
 
     def start_ui(self, total, desc):
         self.ui = ProgressBar(total=total, desc=desc)
