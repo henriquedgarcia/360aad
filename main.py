@@ -6,7 +6,7 @@ from scripts.chunk_analysis_tiling import ChunkAnalysisTiling
 from scripts.chunk_analysis_quality import ChunkAnalysisQuality
 from scripts.chunk_analysis_tiling_quality import (ChunkAnalysisTilingQuality)
 from scripts.chunk_analysis_name_tiling_quality import ChunkAnalysisNameTilingQuality
-from scripts.config import Config
+from scripts.utils.config import Config
 from scripts.fix_database import FixDatabase
 from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQuality
 
