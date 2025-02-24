@@ -5,9 +5,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.serie_analysis_tiling_quality_chunk_frame import SerieAnalysisTilingQualityChunkFrame
-from scripts.utils import AutoDict
+from scripts.utils.config import Config
 
 
 class SerieAnalysisTilingChunkFrame(AnalysisBase):
@@ -35,15 +33,12 @@ class SerieAnalysisTilingChunkFrame(AnalysisBase):
 
     def load_database(self):
         super(SerieAnalysisTilingChunkFrame, self).load_database()
-        self.database = self.database.groupby(['tiling', 'tile', 'chunk']).mean()
-        index_int = self.database.index.levels[2].astype(int)
-        self.database.index = self.database.index.set_levels(index_int, level=2)
-        self.database.sort_index(inplace=True)
+        self.database = self.database.groupby(['tiling', 'tile', 'chunk'], sort=False).mean()
 
         if self.metric in ['dash_m4s', 'dectime_avg']:
-            self.database = self.database.groupby(['tiling', 'chunk']).sum()
+            self.database = self.database.groupby(['tiling', 'chunk'], sort=False).sum()
         else:
-            self.database = self.database.groupby(['tiling', 'chunk']).mean()
+            self.database = self.database.groupby(['tiling', 'chunk'], sort=False).mean()
 
     def get_chunk_data(self) -> pd.Series:
         chunk_data = self.database.loc[(self.tiling,)]['value']
