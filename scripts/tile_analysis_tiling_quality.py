@@ -9,8 +9,8 @@ from PIL.Image import Resampling
 from matplotlib import pyplot as plt, colors
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.utils import AutoDict, splitx
+from scripts.utils.config import Config
+from scripts.utils.utils import AutoDict, splitx
 
 
 class TileAnalysisTilingQuality(AnalysisBase):
@@ -80,7 +80,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
                 figure_list = []
                 for self.quality in self.quality_list, 1:
                     tiles_data = (self.database.xs((self.tiling, self.quality), level=('tiling', 'quality'))
-                                  .groupby(['tile']).mean())
+                                  .groupby(['tile'], sort=False).mean())
 
                     array = np.array(tiles_data).reshape((n, m))
                     img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
@@ -129,7 +129,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
 
     def load_database(self):
         super().load_database()
-        self.database = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality']).mean()
+        self.database = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality'], sort=False).mean()
 
     def get_bucket_list_by_quality(self):
         buckets = []
@@ -153,7 +153,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
                 for i, self.tiling in enumerate(self.tiling_list, 1):
                     m, n = splitx(self.tiling)
                     tiles_data = (self.database.xs((self.tiling, self.quality), level=('tiling', 'quality'))
-                                  .groupby(['tile']).mean())
+                                  .groupby(['tile'], sort=False).mean())
 
                     array = np.array(tiles_data).reshape((n, m))
                     img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
