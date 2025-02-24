@@ -7,8 +7,8 @@ from PIL.Image import Resampling
 from matplotlib import pyplot as plt, colors
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.utils import AutoDict, splitx
+from scripts.utils.config import Config
+from scripts.utils.utils import AutoDict, splitx
 
 
 class TileAnalysisNameTilingQuality(AnalysisBase):
@@ -27,7 +27,7 @@ class TileAnalysisNameTilingQuality(AnalysisBase):
 
         for self.metric in self.dataset_structure:
             self.load_database()
-            new_db = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality']).mean()
+            new_db = self.database.groupby(['name', 'projection', 'tiling', 'tile', 'quality'], sort=False).mean()
             for self.name in self.name_list:
                 for self.tiling in self.tiling_list:
                     for self.quality in self.quality_list:
@@ -74,7 +74,7 @@ class TileAnalysisNameTilingQuality(AnalysisBase):
                     figure_list = []
                     for i, self.quality in enumerate(self.quality_list, 1):
                         tiles_data = (self.database.xs((self.name, self.tiling, self.quality), level=('name', 'tiling', 'quality'))
-                                      .groupby(['tile']).mean())
+                                      .groupby(['tile'], sort=False).mean())
 
                         array = np.array(tiles_data).reshape((n, m))
                         img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
@@ -124,7 +124,7 @@ class TileAnalysisNameTilingQuality(AnalysisBase):
                     for i, self.tiling in enumerate(self.tiling_list, 1):
                         m, n = splitx(self.tiling)
                         tiles_data = (self.database.xs((self.name, self.tiling, self.quality), level=('name', 'tiling', 'quality'))
-                                      .groupby(['tile']).mean())
+                                      .groupby(['tile'], sort=False).mean())
 
                         array = np.array(tiles_data).reshape((n, m))
                         img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
