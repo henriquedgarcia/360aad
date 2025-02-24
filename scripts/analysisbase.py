@@ -1,4 +1,4 @@
-import pickle
+from abc import ABC, abstractmethod
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
@@ -7,7 +7,7 @@ import pandas as pd
 
 from scripts.utils.config import ConfigIf
 from scripts.utils.progressbar import ProgressBar
-from scripts.utils.utils import get_nested_value, get_bucket_value, set_bucket_value, load_pickle
+from scripts.utils.utils import load_pickle
 
 
 class AnalysisPaths(ConfigIf):
@@ -142,7 +142,7 @@ class AnalysisBase(AnalysisPaths, ABC):
                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                    'quantity': ''
                    },
-        }
+    }
 
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
@@ -199,3 +199,12 @@ class AnalysisBase(AnalysisPaths, ABC):
 
     def close_ui(self):
         del self.ui
+
+    filename: Path
+
+    def check_filename(self):
+        if self.filename.exists():
+            print(f'\t{self.filename} exists.')
+            return True
+        self.filename.parent.mkdir(parents=True, exist_ok=True)
+        return False
