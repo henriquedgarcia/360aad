@@ -5,8 +5,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
-from scripts.config import Config
-from scripts.utils import AutoDict
+from scripts.utils.config import Config
+from scripts.utils.utils import AutoDict
 
 
 class ChunkAnalysisTilingQualityGroupName(AnalysisBase):
