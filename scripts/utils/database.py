@@ -1,4 +1,4 @@
-from scripts.utils import get_nested_value, load_json
+from scripts.utils.utils import get_nested_value, load_json
 
 
 class Database:
