@@ -16,6 +16,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         self.projection = 'cmp'
         del self.dataset_structure['dash_mpd']
         del self.dataset_structure['dash_init']
+        del self.dataset_structure['dectime_std']
 
     def make_stats(self):
         print(f'make_stats.')
@@ -78,28 +79,57 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
         df_multi = df.set_index(['metric1', 'metric2', 'tiling', 'quality', ])
         l: plt.Line2D
+        quality_list = list(map(int, self.quality_list))
 
         for n, metric1 in enumerate(metric_list[:-1]):
             for metric2 in metric_list[n + 1:]:
-                fig = plt.figure(figsize=(6.4, 4.8), layout='tight', dpi=300)
-                ax = fig.add_subplot(1, 1, 1)
-                for self.tiling in self.tiling_list:
-                    serie = df_multi.xs((metric1, metric2, self.tiling), level=['metric1', 'metric2', 'tiling'])
-                    l, = ax.plot(serie.index, serie, label=f'{self.tiling}')
-                    ax.plot(serie.index, serie, 'o', color=l.get_color())
-                ax.set_xticks(list(map(int, self.quality_list)))
-                ax.set_ylim((0, 1))
-                ax.legend()
-                for qlt in self.quality_list:
-                    ax.axvline(x=int(qlt), color='gray', linestyle='--')
-                fig.show()
+                filename = self.graphs_workfolder / 'corr' / f'by_quality_{metric1}_x_{metric2}.pdf'
+                if not filename.exists():
+                    fig = plt.figure(figsize=(6.4, 4.8), layout='tight', dpi=300)
+                    ax: plt.Axes = fig.add_subplot(1, 1, 1)
+                    for self.tiling in self.tiling_list:
+                        serie = df_multi.xs((metric1, metric2, self.tiling), level=['metric1', 'metric2', 'tiling'])['pearson']
+                        l, = ax.plot(quality_list, serie.to_list(), label=f'{self.tiling}')
+                        ax.plot(quality_list, serie.to_list(), 'o', color=l.get_color())
+                    ax.set_xticks(quality_list)
+                    ax.set_ylim(top=1)
+                    if metric1 == 'ssim' or metric2 == 'ssim':
+                        ax.set_ylim((-1, 0))
+                    ax.set_title(f'Correlation {metric1} x {metric2}')
+                    ax.legend()
+                    for qlt in self.quality_list:
+                        ax.axvline(x=int(qlt), color='gray', linestyle='--')
+                    filename.parent.mkdir(parents=True, exist_ok=True)
+                    fig.savefig(filename)
+
+                filename = self.graphs_workfolder / 'corr' / f'by_tiling_{metric1}_x_{metric2}.pdf'
+                tiling_list = list(self.tiling_list)
+                tiling_pos_list = list(range(len(self.tiling_list)))
+
+                if not filename.exists():
+                    fig = plt.figure(figsize=(6.4, 4.8), layout='tight', dpi=300)
+                    ax: plt.Axes = fig.add_subplot(1, 1, 1)
+                    for self.quality in self.quality_list:
+                        serie = df_multi.xs((metric1, metric2, int(self.quality)), level=['metric1', 'metric2', 'quality'])['pearson']
+                        l, = ax.plot(tiling_pos_list, serie.to_list(), label=f'{self.quality}')
+                        ax.plot(tiling_pos_list, serie.to_list(), 'o', color=l.get_color())
+                    ax.set_xticks(tiling_pos_list, tiling_list)
+                    ax.set_ylim(top=1)
+                    if metric1 == 'ssim' or metric2 == 'ssim':
+                        ax.set_ylim((-1, 0))
+                    ax.set_title(f'Correlation {metric1} x {metric2}')
+                    ax.legend()
+                    for tiling_pos in tiling_pos_list:
+                        ax.axvline(x=tiling_pos, color='gray', linestyle='--')
+                    filename.parent.mkdir(parents=True, exist_ok=True)
+                    fig.savefig(filename)
 
     def make_plot_quality_tiling_frame(self):
         print(f'make_boxplot_quality_tiling.')
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
-            boxplot_path = self.series_plot_folder / f'plot_{self.metric}_quality.pdf'
+            boxplot_path = self.series_plot_folder / f'plot_quality_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
@@ -136,7 +166,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
-            boxplot_path = self.series_plot_folder / f'plot_{self.metric}_tiling.pdf'
+            boxplot_path = self.series_plot_folder / f'plot_tiling_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
@@ -172,7 +202,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         print(f'make_boxplot_quality_tiling.')
         for self.metric in self.dataset_structure:
             # Check files
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_quality.pdf'
+            boxplot_path = self.boxplot_folder / f'boxplot_quality_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
@@ -205,7 +235,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
-            boxplot_path = self.boxplot_folder / f'boxplot_{self.metric}_tiling.pdf'
+            boxplot_path = self.boxplot_folder / f'boxplot_tiling_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
@@ -239,7 +269,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
-            boxplot_path = self.violinplot_folder / f'violinplot_{self.metric}_quality.pdf'
+            boxplot_path = self.violinplot_folder / f'violinplot_quality_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
@@ -274,8 +304,8 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         print(f'make_boxplot_tiling_quality.')
         # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
-            # Check files
-            boxplot_path = self.violinplot_folder / f'violinplot_{self.metric}_tiling.pdf'
+            # Check files°
+            boxplot_path = self.violinplot_folder / f'violinplot_tiling_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
