@@ -246,17 +246,17 @@ class ChunkAnalysisNameTilingQuality(AnalysisBase):
 
     @contextmanager
     def make_figure(self, figsize=(14, 6), dpi=300, layout="constrained", legends_list=None,
-                    title=None, hide_legend_handles=True) -> plt.Figure:
-        fig = plt.figure(figsize=figsize, dpi=dpi, layout=layout)
+                    title=None):
+        fig: plt.Figure = plt.figure(figsize=figsize, dpi=dpi, layout=layout)
         try:
             yield fig
         finally:
             pass
         print(f'\n\tSaving.')
         if legends_list is not None:
-            legend=fig.legend(legends_list,
-                              loc='outside right center',
-                              handlelength=0, handletextpad=0)
+            legend = fig.legend(legends_list,
+                                loc='outside right center',
+                                handlelength=0, handletextpad=0)
 
             for handler in legend.legend_handles:
                 handler.set_visible(False)
