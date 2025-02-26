@@ -187,7 +187,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         return chunk_data
 
     def get_chunk_serie(self, keys):
-        labels = (getattr(self, a) for a in keys)
+        labels = tuple(getattr(self, a) for a in keys)
         chunk_data = self.database.loc[labels]['value']
         return chunk_data
 
