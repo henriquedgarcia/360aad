@@ -11,7 +11,9 @@ from scripts.utils.utils import dict_to_tuples, AutoDict, save_pickle, load_json
 
 
 class FixDatabase(AnalysisPaths):
-    dataset_structure = {'bitrate': {'dash_mpd': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
+    dataset_structure = {'get_tiles': {'get_tiles': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
+                                       },
+                         'bitrate': {'dash_mpd': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
                                      'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality', 'category', 'value', None],
                                      'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value']
                                      },
@@ -26,7 +28,9 @@ class FixDatabase(AnalysisPaths):
                          }
     metrics = list(dataset_structure)
     databases: dict
-    new_names = {'dash_mpd': 'dash_mpd',
+    new_names = {'get_tiles': 'get_tiles',
+
+                 'dash_mpd': 'dash_mpd',
                  'dash_init': 'dash_init',
                  'dash_m4s': 'bitrate',
 
@@ -54,6 +58,28 @@ class FixDatabase(AnalysisPaths):
         self.to_dataframe()
 
     def split_cat(self):
+        self.metric = 'get_tiles'
+        self.projection='cmp'
+        if work := True:
+            cat_db1 = AutoDict()
+            cat_db2 = AutoDict()
+            for self.name in self.name_list:
+                database_json = self.database_json.with_stem(self.database_json.stem + '_fov110x90')
+                self.database = load_json(database_json)
+
+                for self.tiling in self.tiling_list:
+                    for self.user in self.users_list:
+                        print(f'\r{self.name} {self.projection} {self.tiling}/frame', end='')
+                        for frame in range(1800):
+                            frame_tile_list = self.database[self.name][self.projection][self.tiling][self.user]['frames'][frame]
+                            cat_db1[int(self.user)][self.name][self.projection][self.tiling][frame] = frame_tile_list
+                        print(f'\r{self.name} {self.projection} {self.tiling}/chunk', end='')
+                        for self.chunk in self.chunk_list:
+                            chunk_tile_list = self.database[self.name][self.projection][self.tiling][self.user]['chunks'][self.chunk]
+                            cat_db2[int(self.user)][self.name][self.projection][self.tiling][int(self.chunk)] = chunk_tile_list
+            save_pickle(cat_db1, f'dataset/get_tiles_frame.pickle')
+            save_pickle(cat_db2, f'dataset/get_tiles_chunk.pickle')
+
         self.metric = 'bitrate'
         if work := False:
             cat_db1 = AutoDict()
