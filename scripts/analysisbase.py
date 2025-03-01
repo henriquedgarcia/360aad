@@ -142,6 +142,10 @@ class AnalysisBase(AnalysisPaths, ABC):
                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                    'quantity': ''
                    },
+        'get_tiles': {'path': f'dataset/df_ws-mse.pickle',
+                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                   'quantity': ''
+                   },
     }
 
     def __init__(self, config):
