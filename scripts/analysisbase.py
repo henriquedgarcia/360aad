@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
 
@@ -99,53 +98,53 @@ class AnalysisPaths(ConfigIf):
     def corr_csv(self):
         return self.stats_workfolder / f'{self.__class__.__name__}_corr.csv'
 
-    @property
-    def bucket_pickle(self):
-        return self.bucket_workfolder / f'bucket_{self.metric}.pickle'
-
 
 class AnalysisBase(AnalysisPaths, ABC):
     dataset_structure = {
-        'dash_mpd': {'path': f'dataset/df_dash_mpd.pickle',
+        'dash_mpd': {'path': f'dataset/dash_mpd.pickle',
                      'keys': ['name', 'projection', 'tiling', 'tile'],
                      'quantity': 'Bitrate (bps)'
                      },
-        'dash_init': {'path': f'dataset/df_dash_init.pickle',
+        'dash_init': {'path': f'dataset/dash_init.pickle',
                       'keys': ['name', 'projection', 'tiling', 'tile', 'quality'],
                       'quantity': 'Bitrate (bps)'
                       },
-        'dash_m4s': {'path': f'dataset/df_dash_m4s.pickle',
-                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                     'quantity': 'Bitrate (bps)'
-                     },
-        'dectime_avg': {'path': f'dataset/df_dectime_avg.pickle',
+        'bitrate': {'path': f'dataset/bitrate.pickle',
+                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                    'quantity': 'Bitrate (bps)'
+                    },
+        'dectime': {'path': f'dataset/dectime.pickle',
+                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                    'quantity': 'Time (s)'
+                    },
+        'dectime_std': {'path': f'dataset/dectime_std.pickle',
                         'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                         'quantity': 'Time (s)'
                         },
-        'dectime_std': {'path': f'dataset/df_dectime_std.pickle',
-                        'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                        'quantity': 'Time (s)'
-                        },
-        'ssim': {'path': f'dataset/df_ssim.pickle',
+        'ssim': {'path': f'dataset/ssim.pickle',
                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                  'quantity': ''
                  },
-        'mse': {'path': f'dataset/df_mse.pickle',
+        'mse': {'path': f'dataset/mse.pickle',
                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                 'quantity': ''
                 },
-        's-mse': {'path': f'dataset/df_s-mse.pickle',
+        's-mse': {'path': f'dataset/s_mse.pickle',
                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                   'quantity': ''
                   },
-        'ws-mse': {'path': f'dataset/df_ws-mse.pickle',
+        'ws-mse': {'path': f'dataset/ws_mse.pickle',
                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                    'quantity': ''
                    },
-        'get_tiles': {'path': f'dataset/df_ws-mse.pickle',
-                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                   'quantity': ''
-                   },
+        'get_tiles_chunk': {'path': f'dataset/get_tiles_chunk.pickle',
+                            'keys': ['user', 'name', 'projection', 'tiling', 'chunk'],
+                            'quantity': 'No. tiles'
+                            },
+        'get_tiles_frame': {'path': f'dataset/get_tiles_frame.pickle',
+                            'keys': ['user', 'name', 'projection', 'tiling', 'frame'],
+                            'quantity': 'No. tiles'
+                            },
     }
 
     def __init__(self, config):
