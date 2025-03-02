@@ -44,8 +44,10 @@ class FixDatabase(AnalysisPaths):
 
         self.metric = 'chunk_quality'
         if work := True:
-            index_quality = pd.MultiIndex.from_tuples([], names=["name", "projection", "tiling", "tile", "quality", "chunk"])
-            df = pd.DataFrame(index=index_quality, columns=["ssim", "mse", "smse", "wsmse"])
+            ssim_data = []
+            mse_data = []
+            s_mse_data = []
+            ws_mse_data = []
 
             for self.name in self.name_list:
                 self.database = load_json(self.database_json)
@@ -62,19 +64,27 @@ class FixDatabase(AnalysisPaths):
                                     data_smse = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['s-mse']
                                     data_wsmse = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['ws-mse']
 
-                                    df.loc[(self.name, self.projection, self.tiling, int(self.tile), int(self.quality), int(self.chunk))] = [
-                                        float(np.average(data_ssim)),
-                                        float(np.average(data_mse)),
-                                        float(np.average(data_smse)),
-                                        float(np.average(data_wsmse))
-                                    ]
-            df["ssim"].to_pickle(f'dataset/ssim.pickle')
-            df["mse"].to_pickle(f'dataset/mse.pickle')
-            df["smse"].to_pickle(f'dataset/s_mse.pickle')
-            df["wsmse"].to_pickle(f'dataset/ws_mse.pickle')
+                                    register = (self.name, self.projection, self.tiling, int(self.tile),
+                                                int(self.quality), int(self.chunk))
+
+                                    ssim_data.append(register + (float(np.average(data_ssim)),))
+                                    mse_data.append(register + (float(np.average(data_mse)),))
+                                    s_mse_data.append(register + (float(np.average(data_smse)),))
+                                    ws_mse_data.append(register + (float(np.average(data_wsmse)),))
+
+            columns = ["name", "projection", "tiling", "tile", "quality", "chunk", "value"]
+            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
+            df["value"].to_pickle(f'dataset/ssim.pickle')
+            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
+            df["value"].to_pickle(f'dataset/mse.pickle')
+            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
+            df["value"].to_pickle(f'dataset/smse.pickle')
+            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
+            df["value"].to_pickle(f'dataset/wsmse.pickle')
+
 
         self.metric = 'get_tiles'
-        if work := True:
+        if work := False:
             # chunk_data = []
             # for self.name in self.name_list:
             #     self.database = load_json(self.database_json.with_stem(self.database_json.stem + '_fov110x90'))
