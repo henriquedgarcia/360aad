@@ -27,7 +27,7 @@ class FixDatabase(AnalysisPaths):
                           's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
                           'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
                           }
-    }
+        }
 
     @property
     def database_json(self):
@@ -38,134 +38,128 @@ class FixDatabase(AnalysisPaths):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
         self.projection = 'cmp'
-        self.split_cat()
+        self.fix()
 
-    def split_cat(self):
+    def fix(self):
+        # self.fix_bitrate()
+        # self.fix_dectime()
+        # self.fix_seen_tiles()
+        self.fix_chunk_quality()
+        # self.join_metrics()
 
+    def fix_bitrate(self):
+        new_database = Path(f'dataset/bitrate.pickle')
+        if new_database.exists():
+            return
+
+        metric = 'bitrate'
+        bitrate_data = []
+
+        for name in self.name_list:
+            database = load_json(Path(f'dataset/{metric}/{metric}_{name}.json'))
+
+            for projection in self.projection_list:
+                for tiling in self.tiling_list:
+                    for tile in self.tiling_list[tiling]:
+                        for quality in self.quality_list:
+                            print(f'\r({metric}_{name}_{projection}_{tiling}_tile{tile}_qp{quality})', end='')
+                            for chunk in self.chunk_list:
+                                data = database[name][projection][tiling][tile][quality][chunk]['dash_m4s']
+                                bitrate_data.append((name, projection, tiling, int(tile), int(quality), int(chunk), int(data)))
+        print('\nSaving')
+        columns = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'value']
+        df = pd.DataFrame(bitrate_data, columns=columns).set_index(columns[:-1])
+        df['value'].to_pickle(new_database)
+
+    def fix_dectime(self):
+        new_database = Path(f'dataset/dectime.pickle')
+        if new_database.exists():
+            return
+
+        metric = 'time'
+        dectime_data = []
+
+        for name in self.name_list:
+            database = load_json(Path(f'dataset/{metric}/{metric}_{name}.json'))
+
+            for projection in self.projection_list:
+                for tiling in self.tiling_list:
+                    for tile in self.tiling_list[tiling]:
+                        for quality in self.quality_list:
+                            print(f'\r({metric}_{name}_{projection}_{tiling}_tile{tile}_qp{quality})', end='')
+                            for chunk in self.chunk_list:
+                                data_dectime = database[name][projection][tiling][tile][quality][chunk]['dectime_avg']
+                                data_dectime = float(data_dectime)
+                                register = (name, projection, tiling, int(tile),
+                                            int(quality), int(chunk), float(data_dectime))
+                                dectime_data.append(register)
+        print('\nSaving')
+        columns = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'value']
+        df = pd.DataFrame(dectime_data, columns=columns).set_index(columns[:-1])
+        df['value'].to_pickle(f'dataset/dectime.pickle')
+
+    def fix_seen_tiles(self):
+        new_database = Path(f'dataset/seen_tiles.pickle')
+        if new_database.exists():
+            return
+
+        def users_list(video_name):
+            users_str = self.config.hmd_dataset[video_name + '_nas'].keys()
+            sorted_users_int = sorted(map(int, users_str))
+            sorted_users_str = list(map(str, sorted_users_int))
+            return sorted_users_str
+
+        metric = 'get_tiles'
+        projection = 'cmp'
+        chunk_data = []
+        for name in self.name_list:
+            database = load_json(Path(f'dataset/{metric}/{metric}_{name}_fov110x90.json'))
+
+            for tiling in self.tiling_list:
+                for i, user in enumerate(users_list(name)):
+                    print(f'\r{name} {projection} {tiling} user{i}', end='')
+
+                    for chunk in self.chunk_list:
+                        chunk_tile_list = database[name][projection][tiling][user]['chunks'][chunk]
+                        chunk_tile_list = [int(i) for i in chunk_tile_list]
+                        register = (name, projection, int(user), tiling,
+                                    int(chunk), chunk_tile_list)
+                        chunk_data.append(register)
+
+        columns = ['name', 'projection', 'user', 'tiling', 'chunk', 'seen_tiles']
+        df = pd.DataFrame(chunk_data, columns=columns).set_index(columns[:-1])
+        df.to_pickle(new_database)
+
+    def fix_chunk_quality(self):
         self.metric = 'chunk_quality'
-        if work := True:
-            ssim_data = []
-            mse_data = []
-            s_mse_data = []
-            ws_mse_data = []
+        data_list = []
+        index = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
+
+        for metric in ['ssim', 'mse', 's_mse', 'ws_mse']:
+            filename = Path(f'dataset/{metric}.pickle')
+            if filename.exists(): continue
 
             for self.name in self.name_list:
                 self.database = load_json(self.database_json)
-
                 for self.projection in self.projection_list:
                     for self.tiling in self.tiling_list:
                         for self.tile in self.tile_list:
-                            print(f'\r{self.name} {self.projection} {self.tiling}/{self.tile}', end='')
-
+                            print(f'\r{metric} {self.name} {self.projection} {self.tiling}/{self.tile}', end='')
                             for self.quality in self.quality_list:
                                 for self.chunk in self.chunk_list:
-                                    data_ssim = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['ssim']
-                                    data_mse = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['mse']
-                                    data_smse = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['s-mse']
-                                    data_wsmse = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['ws-mse']
+                                    data = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk][metric.replace('_', '-')]
+                                    register = (self.name, self.projection, self.tiling, int(self.tile), int(self.quality), int(self.chunk))
+                                    data_list.append(register + (float(np.average(data)),))
+            pd.DataFrame(data_list, columns=index + [metric]).set_index(index)[f'{metric}'].to_pickle(filename)
 
-                                    register = (self.name, self.projection, self.tiling, int(self.tile),
-                                                int(self.quality), int(self.chunk))
-
-                                    ssim_data.append(register + (float(np.average(data_ssim)),))
-                                    mse_data.append(register + (float(np.average(data_mse)),))
-                                    s_mse_data.append(register + (float(np.average(data_smse)),))
-                                    ws_mse_data.append(register + (float(np.average(data_wsmse)),))
-
-            columns = ["name", "projection", "tiling", "tile", "quality", "chunk", "value"]
-            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
-            df["value"].to_pickle(f'dataset/ssim.pickle')
-            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
-            df["value"].to_pickle(f'dataset/mse.pickle')
-            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
-            df["value"].to_pickle(f'dataset/smse.pickle')
-            df = pd.DataFrame(ssim_data, columns=columns).set_index(columns[:-1])
-            df["value"].to_pickle(f'dataset/wsmse.pickle')
-
-
-        self.metric = 'get_tiles'
-        if work := False:
-            # chunk_data = []
-            # for self.name in self.name_list:
-            #     self.database = load_json(self.database_json.with_stem(self.database_json.stem + '_fov110x90'))
-            #
-            #     for self.tiling in self.tiling_list:
-            #         for i, self.user in enumerate(self.users_list):
-            #             print(f'\r{self.name} {self.projection} {self.tiling} user{i}', end='')
-            #
-            #             for self.chunk in self.chunk_list:
-            #                 chunk_tile_list = self.database[self.name][self.projection][self.tiling][self.user]['chunks'][self.chunk]
-            #                 chunk_tile_serie = pd.Series(chunk_tile_list).astype(int)
-            #                 register = (self.name, self.projection, self.tiling, int(self.user),
-            #                             int(self.chunk), chunk_tile_serie)
-            #                 chunk_data.append(register)
-            #
-            # columns = ["name", "projection", "tiling", "chunk", "user", "value"]
-            # df = pd.DataFrame(chunk_data, columns=columns).set_index(columns[:-1])
-            # df["value"].to_pickle(f'dataset/get_tiles_chunk.pickle')
-
-            frame_data = []
-            for self.name in self.name_list:
-                self.database = load_json(self.database_json.with_stem(self.database_json.stem + '_fov110x90'))
-
-                for self.tiling in self.tiling_list:
-                    for i, self.user in enumerate(self.users_list):
-                        print(f'\r{self.name} {self.projection} {self.tiling} user{i}', end='')
-
-                        for self.frame in range(1800):
-                            frame_tile_list = self.database[self.name][self.projection][self.tiling][self.user]['frames'][self.frame]
-                            frame_tile_serie = pd.Series(frame_tile_list).astype(int)
-                            register = (self.name, self.projection, self.tiling, int(self.user),
-                                        self.frame, frame_tile_serie)
-                            frame_data.append(register)
-
-            columns = ["user", "name", "projection", "tiling", "frame", "value"]
-            index = ["user", "name", "projection", "tiling", "frame"]
-            df = pd.DataFrame(frame_data, columns=columns).set_index(index)
-            df["value"].to_pickle(f'dataset/get_tiles_frame.pickle')
-
-        self.metric = 'bitrate'
-        if work := False:
-            bitrate_data = []
-
-            for self.name in self.name_list:
-                self.database = load_json(self.database_json)
-
-                for self.projection in self.projection_list:
-                    for self.tiling in self.tiling_list:
-                        for self.tile in self.tile_list:
-                            print(f'\r{self.name} {self.projection} {self.tiling}/{self.tile}', end='')
-
-                            for self.quality in self.quality_list:
-                                for self.chunk in self.chunk_list:
-                                    data = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['dash_m4s']
-                                    bitrate_data.append((self.name, self.projection, self.tiling, int(self.tile), int(self.quality), int(self.chunk), int(data)))
-
-            columns = ["name", "projection", "tiling", "tile", "quality", "chunk", "value"]
-            df = pd.DataFrame(bitrate_data, columns=columns).set_index(columns[:-1])
-            df["value"].to_pickle(f'dataset/bitrate.pickle')
-
-        self.metric = 'time'
-        if work := False:
-            chunk_data = []
-
-            for self.name in self.name_list:
-                self.database = load_json(self.database_json)
-
-                for self.projection in self.projection_list:
-                    for self.tiling in self.tiling_list:
-                        for self.tile in self.tile_list:
-                            print(f'\r{self.name} {self.projection} {self.tiling}/{self.tile}', end='')
-                            for self.quality in self.quality_list:
-                                for self.chunk in self.chunk_list:
-                                    data_dectime = self.database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['dectime_avg']
-                                    data_dectime = float(data_dectime)
-                                    register = (self.name, self.projection, self.tiling, int(self.tile),
-                                                int(self.quality), int(self.chunk), float(data_dectime))
-                                    chunk_data.append(register)
-            columns = ["name", "projection", "tiling", "tile", "quality", "chunk", "value"]
-            df = pd.DataFrame(chunk_data, columns=columns).set_index(columns[:-1])
-            df["value"].to_pickle(f'dataset/dectime.pickle')
+    def join_metrics(self):
+        series_dict = {}
+        for self.metric in ['bitrate', 'dectime', 'ssim', 'mse', 's_mse', 'ws_mse']:
+            serie = pd.read_pickle(f'dataset/{self.metric}.pickle')
+            series_dict[f'{self.metric}'] = serie
+        df = pd.DataFrame.from_dict(series_dict)
+        df.to_pickle(f'dataset/metrics.pickle')
+        # df = pd.read_pickle(f'dataset/metrics.pickle')
 
     def start_ui(self, total, desc):
         self.ui = ProgressBar(total=total, desc=desc)
