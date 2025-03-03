@@ -101,14 +101,6 @@ class AnalysisPaths(ConfigIf):
 
 class AnalysisBase(AnalysisPaths, ABC):
     dataset_structure = {
-        'dash_mpd': {'path': f'dataset/dash_mpd.pickle',
-                     'keys': ['name', 'projection', 'tiling', 'tile'],
-                     'quantity': 'Bitrate (bps)'
-                     },
-        'dash_init': {'path': f'dataset/dash_init.pickle',
-                      'keys': ['name', 'projection', 'tiling', 'tile', 'quality'],
-                      'quantity': 'Bitrate (bps)'
-                      },
         'bitrate': {'path': f'dataset/bitrate.pickle',
                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                     'quantity': 'Bitrate (bps)'
@@ -117,10 +109,6 @@ class AnalysisBase(AnalysisPaths, ABC):
                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                     'quantity': 'Time (s)'
                     },
-        'dectime_std': {'path': f'dataset/dectime_std.pickle',
-                        'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                        'quantity': 'Time (s)'
-                        },
         'ssim': {'path': f'dataset/ssim.pickle',
                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                  'quantity': ''
@@ -129,23 +117,19 @@ class AnalysisBase(AnalysisPaths, ABC):
                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                 'quantity': ''
                 },
-        's-mse': {'path': f'dataset/s_mse.pickle',
+        's_mse': {'path': f'dataset/s_mse.pickle',
                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                   'quantity': ''
                   },
-        'ws-mse': {'path': f'dataset/ws_mse.pickle',
+        'ws_mse': {'path': f'dataset/ws_mse.pickle',
                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                    'quantity': ''
                    },
-        'get_tiles_chunk': {'path': f'dataset/get_tiles_chunk.pickle',
-                            'keys': ['user', 'name', 'projection', 'tiling', 'chunk'],
-                            'quantity': 'No. tiles'
-                            },
-        'get_tiles_frame': {'path': f'dataset/get_tiles_frame.pickle',
-                            'keys': ['user', 'name', 'projection', 'tiling', 'frame'],
-                            'quantity': 'No. tiles'
-                            },
-    }
+        'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
+                       'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
+                       'quantity': 'Seen Tiles'
+                       },
+        }
 
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
