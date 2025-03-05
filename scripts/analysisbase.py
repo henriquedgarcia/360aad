@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
+from typing import Callable, Union
 
 import pandas as pd
 
@@ -22,7 +23,7 @@ class AnalysisPaths(ConfigIf):
     # containers
     bucket: dict
     stats_defaultdict: defaultdict
-    database: pd.DataFrame
+    database: Union[pd.DataFrame, pd.Series]
 
     # misc
     stats_df: pd.DataFrame
@@ -129,7 +130,7 @@ class AnalysisBase(AnalysisPaths, ABC):
                        'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
                        'quantity': 'Seen Tiles'
                        },
-        }
+    }
 
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
@@ -157,20 +158,17 @@ class AnalysisBase(AnalysisPaths, ABC):
     def plots(self):
         ...
 
-    def load_database(self):
-        self.database = self.get_database(self.metric)
-
-    def get_database(self, metric):
-        filename = self.dataset_structure[metric]['path']
-        database = load_pickle(filename)
-        level_of_chunk = 5
-        index_int = database.index.levels[level_of_chunk].astype(int)
-        database.index = database.index.set_levels(index_int, level=level_of_chunk)
-        return database
+    def load_database(self, callback: Callable = None):
+        filename = 'dataset/metrics.pickle'
+        self.database = load_pickle(filename)
+        if callback: callback()
 
     def get_chunk_data(self, levels: tuple[str, ...]) -> pd.Series:
+        if 'quality' in levels:
+            self.quality = int(self.quality)
+
         key = tuple(getattr(self, level) for level in levels)
-        chunk_data: pd.Series = self.database.xs(key=key, level=levels)['value']
+        chunk_data: pd.Series = self.database[self.metric].xs(key=key, level=levels)
         return chunk_data
 
     def get_chunk_serie(self, keys):
