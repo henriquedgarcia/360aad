@@ -14,15 +14,21 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
-        del self.dataset_structure['dash_mpd']
-        del self.dataset_structure['dash_init']
-        del self.dataset_structure['dectime_std']
+        del self.dataset_structure['seen_tiles']
 
     def make_stats(self):
         print(f'make_stats.')
         metric_list = list(self.dataset_structure)
         for self.metric in metric_list:
-            self.load_database()
+            def callback():
+                series = self.database[self.metric]
+                group1 = series.groupby(['tiling', 'quality', 'tile', 'chunk']).mean()
+                if self.metric in ['bitrate', 'dectime']:
+                    self.database = group1.groupby(['tiling', 'quality', 'chunk']).sum()
+                else:
+                    self.database = group1.groupby(['tiling', 'quality', 'chunk']).mean()
+
+            self.load_database(callback)
 
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
@@ -126,7 +132,6 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def make_plot_quality_tiling_frame(self):
         print(f'make_boxplot_quality_tiling.')
-        # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
             boxplot_path = self.series_plot_folder / f'plot_quality_{self.metric}.pdf'
@@ -153,7 +158,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 ax.legend(loc='upper right')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'dash_m4s':
+                if self.metric == 'bitrate':
                     ax.ticklabel_format(axis='y', style='scientific',
                                         scilimits=(6, 6))
 
@@ -163,7 +168,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def make_plot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
-        # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
+        # By metric ['bitrate', 'dectime', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
             boxplot_path = self.series_plot_folder / f'plot_tiling_{self.metric}.pdf'
@@ -190,7 +195,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 ax.legend(loc='upper right')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'dash_m4s':
+                if self.metric == 'bitrate':
                     ax.ticklabel_format(axis='y', style='scientific',
                                         scilimits=(6, 6))
 
@@ -223,7 +228,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 ax.set_xlabel(f'Tiling')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'dash_m4s':
+                if self.metric == 'bitrate':
                     ax.ticklabel_format(axis='y', style='scientific',
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
@@ -232,7 +237,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def make_boxplot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
-        # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
+        # By metric ['bitrate', 'dectime', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
             boxplot_path = self.boxplot_folder / f'boxplot_tiling_{self.metric}.pdf'
@@ -257,7 +262,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 ax.set_xlabel(f'Quality')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'dash_m4s':
+                if self.metric == 'bitrate':
                     ax.ticklabel_format(axis='y', style='scientific',
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
@@ -266,7 +271,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def make_violinplot_quality_tiling_frame(self):
         print(f'make_violinplot_quality_tiling_frame.')
-        # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
+        # By metric ['bitrate', 'dectime', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files
             boxplot_path = self.violinplot_folder / f'violinplot_quality_{self.metric}.pdf'
@@ -293,7 +298,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 ax.set_xlabel(f'Tiling')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'dash_m4s':
+                if self.metric == 'bitrate':
                     ax.ticklabel_format(axis='y', style='scientific',
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
@@ -302,7 +307,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def make_violinplot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
-        # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
+        # By metric ['bitrate', 'dectime', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
             # Check files°
             boxplot_path = self.violinplot_folder / f'violinplot_tiling_{self.metric}.pdf'
@@ -329,7 +334,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 ax.set_xlabel(f'Quality')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'dash_m4s':
+                if self.metric == 'bitrate':
                     ax.ticklabel_format(axis='y', style='scientific',
                                         scilimits=(6, 6))
             fig.savefig(boxplot_path)
@@ -340,7 +345,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         database = super(SerieAnalysisTilingQualityChunkFrame, self).get_database(metric)
         database = database.groupby(['tiling', 'quality', 'tile', 'chunk'], sort=False).mean()
 
-        if metric in ['dash_m4s', 'dectime_avg']:
+        if metric in ['bitrate', 'dectime']:
             database = database.groupby(['tiling', 'quality', 'chunk'], sort=False).sum()
         else:
             database = database.groupby(['tiling', 'quality', 'chunk'], sort=False).mean()
