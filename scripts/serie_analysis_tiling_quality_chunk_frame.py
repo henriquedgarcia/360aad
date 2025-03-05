@@ -32,7 +32,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
-                    serie_data = self.get_chunk_serie(('tiling', 'quality'))
+                    serie_data = self.get_chunk_data(('tiling', 'quality'))
                     self.stats_defaultdict['Metric'].append(self.metric)
                     self.stats_defaultdict['Tiling'].append(self.tiling)
                     self.stats_defaultdict['Quality'].append(self.quality)
@@ -70,8 +70,8 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                     for self.tiling in self.tiling_list:
                         for self.quality in self.quality_list:
                             print(f'\r\t({metric1}x{metric2}) {self.tiling}_qp{self.quality}', end='')
-                            serie_data_1 = database1.loc[(self.tiling, self.quality)]['value']
-                            serie_data_2 = database2.loc[(self.tiling, self.quality)]['value']
+                            serie_data_1 = database1.loc[(self.tiling, self.quality)]
+                            serie_data_2 = database2.loc[(self.tiling, self.quality)]
                             pearson = serie_data_1.corr(serie_data_2, method='pearson')
 
                             corr_default_dict['metric1'].append(metric1)
@@ -150,7 +150,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 for self.tiling in self.tiling_list:
-                    serie = self.get_chunk_serie(('tiling', 'quality'))
+                    serie = self.get_chunk_data(('tiling', 'quality'))
                     ax.plot(serie, label=f'{self.tiling}')
 
                 ax.set_title(f'qp{self.quality}')
@@ -187,7 +187,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 for self.quality in self.quality_list:
-                    serie = self.get_chunk_serie(('tiling', 'quality'))
+                    serie = self.get_chunk_data(('tiling', 'quality'))
                     ax.plot(serie, label=f'qp{self.quality}')
 
                 ax.set_title(f'{self.tiling}')
@@ -221,7 +221,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 print(f'Plot qp{self.quality}')
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
 
-                serie_list = [self.get_chunk_serie(('tiling', 'quality')) for self.tiling in self.tiling_list]
+                serie_list = [self.get_chunk_data(('tiling', 'quality')) for self.tiling in self.tiling_list]
                 ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
 
                 ax.set_title(f'qp{self.quality}')
