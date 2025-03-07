@@ -101,36 +101,6 @@ class AnalysisPaths(ConfigIf):
 
 
 class AnalysisBase(AnalysisPaths, ABC):
-    dataset_structure = {
-        'bitrate': {'path': f'dataset/bitrate.pickle',
-                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                    'quantity': 'Bitrate (bps)'
-                    },
-        'dectime': {'path': f'dataset/dectime.pickle',
-                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                    'quantity': 'Time (s)'
-                    },
-        'ssim': {'path': f'dataset/ssim.pickle',
-                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                 'quantity': ''
-                 },
-        'mse': {'path': f'dataset/mse.pickle',
-                'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                'quantity': ''
-                },
-        's_mse': {'path': f'dataset/s_mse.pickle',
-                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                  'quantity': ''
-                  },
-        'ws_mse': {'path': f'dataset/ws_mse.pickle',
-                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                   'quantity': ''
-                   },
-        'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
-                       'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
-                       'quantity': 'Seen Tiles'
-                       },
-    }
 
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
@@ -161,12 +131,9 @@ class AnalysisBase(AnalysisPaths, ABC):
     def load_database(self, callback: Callable = None):
         filename = 'dataset/metrics.pickle'
         self.database = load_pickle(filename)
-        if callback: callback()
+        if callback: callback(self)
 
     def get_chunk_data(self, levels: tuple[str, ...]) -> pd.Series:
-        if 'quality' in levels:
-            self.quality = int(self.quality)
-
         key = tuple(getattr(self, level) for level in levels)
         chunk_data: pd.Series = self.database[self.metric].xs(key=key, level=levels)
         return chunk_data
