@@ -10,26 +10,29 @@ from scripts.utils.utils import AutoDict
 
 
 class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
+
+    @staticmethod
+    def callback(self):
+        database = self.database.groupby(['tiling', 'quality', 'tile', 'chunk']).mean()
+        new_db1 = database.groupby(['tiling', 'quality', 'chunk'])[self.metric_list[:2]].sum()
+        new_db2 = database.groupby(['tiling', 'quality', 'chunk'])[self.metric_list[2:]].mean()
+        self.database = new_db1.merge(new_db2, on=['tiling', 'quality', 'chunk'])
+
     def setup(self):
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
         del self.dataset_structure['seen_tiles']
+        self.load_database(self.callback)
+
+    @property
+    def metric_list(self):
+        return list(self.dataset_structure)
 
     def make_stats(self):
         print(f'make_stats.')
-        metric_list = list(self.dataset_structure)
-        for self.metric in metric_list:
-            def callback():
-                series = self.database[self.metric]
-                group1 = series.groupby(['tiling', 'quality', 'tile', 'chunk']).mean()
-                if self.metric in ['bitrate', 'dectime']:
-                    self.database = group1.groupby(['tiling', 'quality', 'chunk']).sum()
-                else:
-                    self.database = group1.groupby(['tiling', 'quality', 'chunk']).mean()
 
-            self.load_database(callback)
-
+        for self.metric in self.metric_list:
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
                     serie_data = self.get_chunk_data(('tiling', 'quality'))
@@ -57,16 +60,14 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def corr(self):
         print(f'Make correlation')
-        metric_list = list(self.dataset_structure)
-
         try:
             df = pd.read_csv(self.corr_csv)
         except FileNotFoundError:
             corr_default_dict = defaultdict(list)
-            for metric1 in metric_list:
-                database1 = self.get_database(metric1)
-                for metric2 in metric_list:
-                    database2 = self.get_database(metric2)
+            for metric1 in self.metric_list:
+                database1 = self.database[metric1]
+                for metric2 in self.metric_list:
+                    database2 = self.database[metric2]
                     for self.tiling in self.tiling_list:
                         for self.quality in self.quality_list:
                             print(f'\r\t({metric1}x{metric2}) {self.tiling}_qp{self.quality}', end='')
@@ -87,8 +88,8 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         l: plt.Line2D
         quality_list = list(map(int, self.quality_list))
 
-        for n, metric1 in enumerate(metric_list[:-1]):
-            for metric2 in metric_list[n + 1:]:
+        for n, metric1 in enumerate(self.metric_list[:-1]):
+            for metric2 in self.metric_list[n + 1:]:
                 filename = self.graphs_workfolder / 'corr' / f'by_quality_{metric1}_x_{metric2}.pdf'
                 if not filename.exists():
                     fig = plt.figure(figsize=(6.4, 4.8), layout='tight', dpi=300)
@@ -139,9 +140,6 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
                 print(f'\t{boxplot_path} exists.')
                 continue
 
-            # Load Database
-            self.load_database()
-
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
@@ -168,16 +166,11 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
 
     def make_plot_tiling_quality_frame(self):
         print(f'make_boxplot_tiling_quality.')
-        # By metric ['bitrate', 'dectime', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
-            # Check files
             boxplot_path = self.series_plot_folder / f'plot_tiling_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
-
-            # Load Database
-            self.load_database()
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight')
             fig.suptitle(f'{self.metric}')
@@ -211,8 +204,6 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
-
-            self.load_database()
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight')
             fig.suptitle(f'{self.metric}')
@@ -340,16 +331,6 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
             fig.savefig(boxplot_path)
             fig.clf()
             plt.close()
-
-    def get_database(self, metric):
-        database = super(SerieAnalysisTilingQualityChunkFrame, self).get_database(metric)
-        database = database.groupby(['tiling', 'quality', 'tile', 'chunk'], sort=False).mean()
-
-        if metric in ['bitrate', 'dectime']:
-            database = database.groupby(['tiling', 'quality', 'chunk'], sort=False).sum()
-        else:
-            database = database.groupby(['tiling', 'quality', 'chunk'], sort=False).mean()
-        return database
 
 
 if __name__ == '__main__':
