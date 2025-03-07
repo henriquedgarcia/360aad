@@ -165,7 +165,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
     def make_boxplot_tiling_quality(self):
         print(f'make_boxplot_tiling_quality.')
-        for self.metric in self.dataset_structure:
+        for self.metric in self.metric_list:
             boxplot_path = self.boxplot_folder / 'tiling_quality' / f'boxplot_{self.metric}.png'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
