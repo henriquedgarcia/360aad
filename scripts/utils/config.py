@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from math import prod
 
-from scripts.utils.utils import load_json, splitx
+from scripts.utils.utils import splitx, load_pickle, LazyProperty
 
 
 @dataclass
 class Config:
-    dataset_file = "dataset/nasrabadi.json"
+    dataset_file = "dataset/head_movement.pickle"
 
     duration = 60
     fps = 30
@@ -25,153 +25,175 @@ class Config:
 
     fov = "110x90"
 
-    chunk_list = list(map(str, range(1, 61)))
-    quality_list = ["22", "28", "34", "40", "46", "50"]
+    chunk_list = list(range(1, 61))
+    quality_list = [22, 28, 34, 40, 46, 50]
     # quality_list = ["16", "22", "28", "34", "40", "46"]
-    tiling_list = {"1x1": list(map(str, range(1))),
-                   "3x2": list(map(str, range(6))),
-                   "6x4": list(map(str, range(24))),
-                   "9x6": list(map(str, range(54))),
-                   "12x8": list(map(str, range(96)))}
+    tiling_list = ["1x1", "3x2", "6x4", "9x6", "12x8"]
     projection_list = ['cmp']
     name_list = {
         "angel_falls": {
             "offset": "5:30",
             "group": "MN"
-            },
+        },
         "blue_angels": {
             "offset": "1:00",
             "group": "MM"
-            },
+        },
         "cable_cam": {
             "offset": "0:15",
             "group": "HS"
-            },
+        },
         "chariot_race": {
             "offset": "0:00",
             "group": "HM"
-            },
+        },
         "closet_tour": {
             "offset": "0:07",
             "group": "FS"
-            },
+        },
         "drone_chases_car": {
             "offset": "2:11",
             "group": "MS"
-            },
+        },
         "drone_footage": {
             "offset": "0:01",
             "group": "HN"
-            },
+        },
         "drone_video": {
             "offset": "0:15",
             "group": "VM"
-            },
+        },
         "drop_tower": {
             "offset": "1:11",
             "group": "VM"
-            },
+        },
         "dubstep_dance": {
             "offset": "0:05",
             "group": "FM"
-            },
+        },
         "elevator_lift": {
             "offset": "0:00",
             "group": "VN"
-            },
+        },
         "glass_elevator": {
             "offset": "0:14",
             "group": "VN"
-            },
+        },
         "montana": {
             "offset": "0:00",
             "group": "FN"
-            },
+        },
         "motorsports_park": {
             "offset": "0:15",
             "group": "HS"
-            },
+        },
         "nyc_drive": {
             "offset": "0:12",
             "group": "HM"
-            },
+        },
         "pac_man": {
             "offset": "0",
             "group": "MM"
-            },
+        },
         "penthouse": {
             "offset": "0:04",
             "group": "RS"
-            },
+        },
         "petite_anse": {
             "offset": "0:45",
             "group": "HN"
-            },
+        },
         "rhinos": {
             "offset": "0:18",
             "group": "FM"
-            },
+        },
         "sunset": {
             "offset": "0:40",
             "group": "FN"
-            },
+        },
         "three_peaks": {
             "offset": "0:00",
             "group": "MN"
-            },
+        },
         "video_04": {
             "offset": "0",
             "group": "FS"
-            },
+        },
         "video_19": {
             "offset": "0",
             "group": "RN"
-            },
+        },
         "video_20": {
             "offset": "0",
             "group": "RN"
-            },
+        },
         "video_22": {
             "offset": "0",
             "group": "RS"
-            },
+        },
         "video_23": {
             "offset": "0",
             "group": "RM"
-            },
+        },
         "video_24": {
             "offset": "0",
             "group": "RM"
-            },
+        },
         "wingsuit_dubai": {
             "offset": "0:00",
             "group": "MS"
-            }
         }
+    }
 
     name = projection = tiling = tile = quality = chunk = user = metric = group = frame = category = None
 
-    def get_tile_list(self, tiling):
-        return self.tiling_list[tiling]
+    dataset_structure = {
+        'bitrate': {'path': f'dataset/bitrate.pickle',
+                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                    'quantity': 'Bitrate (bps)'
+                    },
+        'dectime': {'path': f'dataset/dectime.pickle',
+                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                    'quantity': 'Time (s)'
+                    },
+        'ssim': {'path': f'dataset/ssim.pickle',
+                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                 'quantity': ''
+                 },
+        'mse': {'path': f'dataset/mse.pickle',
+                'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                'quantity': ''
+                },
+        's_mse': {'path': f'dataset/s_mse.pickle',
+                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                  'quantity': ''
+                  },
+        'ws_mse': {'path': f'dataset/ws_mse.pickle',
+                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                   'quantity': ''
+                   },
+        'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
+                       'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
+                       'quantity': 'Seen Tiles'
+                       },
+    }
 
     @property
     def tile_list(self):
-        return self.tiling_list[self.tiling]
-
-    _hmd_dataset = None
+        return list(range(self.n_tiles))
 
     @property
+    def n_tiles(self):
+        return prod(splitx(self.tiling))
+
+    @LazyProperty
     def hmd_dataset(self):
-        if self._hmd_dataset is None:
-            self._hmd_dataset = load_json(self.dataset_file)
-        return self._hmd_dataset
+        return load_pickle(self.dataset_file)
 
     @property
     def users_list(self):
-        users_str = self.hmd_dataset[self.name + '_nas'].keys()
-        sorted_users_int = sorted(map(int, users_str))
-        sorted_users_str = list(map(str, sorted_users_int))
-        return sorted_users_str
+        filtered_df = self.hmd_dataset.xs((self.name,), level=('name',))
+        return list(map(int, filtered_df.index.get_level_values('user').unique()))
 
     @property
     def groups_list(self):
@@ -299,9 +321,17 @@ class Lists:
     def groups_list(self):
         return self.config.groups_list
 
+    @property
+    def metric_list(self):
+        return list(self.config.dataset_structure)
+
 
 class ConfigIf(Factors, Lists):
     config = Config()
+
+    @property
+    def dataset_structure(self):
+        return self.config.dataset_structure
 
     @property
     def video_shape(self):
