@@ -1,28 +1,30 @@
 import os
 from collections import defaultdict
 
-import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
 from scripts.utils.config import Config
-from scripts.utils.utils import AutoDict
 
 
 class SerieAnalysisTilingQualityChunk(AnalysisBase):
+
+    @staticmethod
+    def callback(self):
+        self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()
+
     def setup(self):
-        self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
         del self.dataset_structure['seen_tiles']
+        self.load_database(self.callback)
 
     def make_stats(self):
         print(f'make_stats.')
         for self.metric in self.dataset_structure:
-            self.load_database()
             for self.tiling in self.tiling_list:
                 for self.quality in self.quality_list:
-                    serie = self.get_chunk_data(['tiling', 'quality', 'chunk'])
+                    serie = self.get_chunk_data(('tiling', 'quality'))
                     self.stats_defaultdict['Metric'].append(self.metric)
                     self.stats_defaultdict['Tiling'].append(self.tiling)
                     self.stats_defaultdict['Quality'].append(self.quality)
@@ -33,12 +35,6 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                     self.stats_defaultdict['Mediana'].append(serie.quantile(0.50))
                     self.stats_defaultdict['3º Quartil'].append(serie.quantile(0.75))
                     self.stats_defaultdict['Máximo'].append(serie.quantile(1.00))
-
-    def get_chunk_data(self, levels: list) -> pd.Series:
-        self.quality = int(self.quality)
-        key = tuple(getattr(self, level) for level in levels)
-        chunk_data: pd.Series = self.database.xs(key, level=levels)
-        return chunk_data
 
     def plots(self):
         self.make_plot_quality_tiling()
@@ -57,11 +53,6 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                 continue
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            def callback():
-                self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()[f'{self.metric}']
-
-            self.load_database(callback)
-
             fig = plt.figure(figsize=(6, 7.5), layout='tight')
             fig.suptitle(f'{self.metric}')
 
@@ -70,7 +61,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 for self.tiling in self.tiling_list:
-                    serie = self.get_chunk_data(['tiling', 'quality'])
+                    serie = self.get_chunk_data(('tiling', 'quality'))
                     ax.plot(serie, label=f'{self.tiling}')
 
                 ax.set_title(f'qp{self.quality}')
@@ -95,11 +86,6 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                 continue
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            def callback():
-                self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()[f'{self.metric}']
-
-            self.load_database(callback)
-
             fig = plt.figure(figsize=(6, 7.5), layout='tight')
             fig.suptitle(f'{self.metric}')
 
@@ -108,7 +94,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 for self.quality in self.quality_list:
-                    serie = self.get_chunk_data(['tiling', 'quality'])
+                    serie = self.get_chunk_data(('tiling', 'quality'))
                     ax.plot(serie, label=f'qp{self.quality}')
 
                 ax.set_title(f'{self.tiling}')
@@ -133,12 +119,6 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                 continue
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            def callback():
-                self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()[f'{self.metric}']
-
-            # Load Database
-            self.load_database(callback)
-
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
@@ -147,7 +127,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
                 serie_list = []
                 for self.tiling in self.tiling_list:
-                    serie_list.append(self.get_chunk_data(['tiling', 'quality']))
+                    serie_list.append(self.get_chunk_data(('tiling', 'quality')))
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
@@ -172,12 +152,6 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                 continue
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            def callback():
-                self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()[f'{self.metric}']
-
-            # Load Database
-            self.load_database(callback)
-
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
@@ -186,7 +160,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
                 serie_list = []
                 for self.quality in self.quality_list:
-                    serie_list.append(self.get_chunk_data(['tiling', 'quality']))
+                    serie_list.append(self.get_chunk_data(('tiling', 'quality')))
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 ax.boxplot(serie_list, tick_labels=list(self.quality_list))
@@ -211,12 +185,6 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                 continue
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            def callback():
-                self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()[f'{self.metric}']
-
-            # Load Database
-            self.load_database(callback)
-
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
@@ -225,7 +193,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
                 serie_list = []
                 for self.tiling in self.tiling_list:
-                    serie_list.append(self.get_chunk_data(['tiling', 'quality']))
+                    serie_list.append(self.get_chunk_data(('tiling', 'quality')))
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 ax.violinplot(serie_list, showmeans=False, showmedians=True)
@@ -252,12 +220,6 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                 continue
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            def callback():
-                self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()[f'{self.metric}']
-
-            # Load Database
-            self.load_database(callback)
-
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
@@ -266,7 +228,7 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
                 serie_list = []
                 for self.quality in self.quality_list:
-                    serie_list.append(self.get_chunk_data(['tiling', 'quality']))
+                    serie_list.append(self.get_chunk_data(('tiling', 'quality')))
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
                 ax.violinplot(serie_list, showmeans=False, showmedians=True)
