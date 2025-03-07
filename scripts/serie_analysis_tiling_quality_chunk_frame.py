@@ -199,7 +199,6 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
     def make_boxplot_quality_tiling_frame(self):
         print(f'make_boxplot_quality_tiling.')
         for self.metric in self.dataset_structure:
-            # Check files
             boxplot_path = self.boxplot_folder / f'boxplot_quality_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
@@ -300,7 +299,7 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         print(f'make_boxplot_tiling_quality.')
         # By metric ['bitrate', 'dectime', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
-            # Check files°
+            # Check files
             boxplot_path = self.violinplot_folder / f'violinplot_tiling_{self.metric}.pdf'
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
