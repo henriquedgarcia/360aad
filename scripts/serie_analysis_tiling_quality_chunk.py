@@ -39,10 +39,10 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
     def plots(self):
         self.make_plot_quality_tiling()
         self.make_plot_tiling_quality()
-        self.make_boxplot_quality_tiling()
-        self.make_boxplot_tiling_quality()
-        self.make_violinplot_quality_tiling()
-        self.make_violinplot_tiling_quality()
+        # self.make_boxplot_quality_tiling()
+        # self.make_boxplot_tiling_quality()
+        # self.make_violinplot_quality_tiling()
+        # self.make_violinplot_tiling_quality()
 
     def make_plot_quality_tiling(self):
         print(f'make_boxplot_quality_tiling.')
@@ -66,12 +66,13 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
 
                 ax.set_title(f'qp{self.quality}')
                 ax.set_xlabel(f'Chunk')
+                ax.set_yscale('log')
                 ax.legend(loc='upper right')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'bitrate':
-                    ax.ticklabel_format(axis='y', style='scientific',
-                                        scilimits=(6, 6))
+                # if self.metric == 'bitrate':
+                #     ax.ticklabel_format(axis='y', style='scientific',
+                #                         scilimits=(6, 6))
 
             fig.savefig(boxplot_path)
             fig.clf()
@@ -98,13 +99,14 @@ class SerieAnalysisTilingQualityChunk(AnalysisBase):
                     ax.plot(serie, label=f'qp{self.quality}')
 
                 ax.set_title(f'{self.tiling}')
+                ax.set_yscale('log')
                 ax.set_xlabel(f'Chunk')
                 ax.legend(loc='upper right')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
-                if self.metric == 'bitrate':
-                    ax.ticklabel_format(axis='y', style='scientific',
-                                        scilimits=(6, 6))
+                # if self.metric == 'bitrate':
+                #     ax.ticklabel_format(axis='y', style='scientific',
+                #                         scilimits=(6, 6))
 
             fig.savefig(boxplot_path)
             fig.clf()
