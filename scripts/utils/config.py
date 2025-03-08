@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from math import prod
 
-from scripts.utils.utils import splitx, load_pickle, LazyProperty
+from scripts.utils.utils import splitx, load_pd_pickle, LazyProperty
 
 
 @dataclass
@@ -188,7 +188,7 @@ class Config:
 
     @LazyProperty
     def hmd_dataset(self):
-        return load_pickle(self.dataset_file)
+        return load_pd_pickle(self.dataset_file)
 
     @property
     def users_list(self):
