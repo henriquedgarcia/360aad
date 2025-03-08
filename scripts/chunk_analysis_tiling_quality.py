@@ -18,6 +18,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
         del self.dataset_structure['seen_tiles']
+        self.load_database()
 
     def make_stats(self):
         print(f'make_stats.')
@@ -145,10 +146,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                                        ) as ax:
                     for index, self.tiling in enumerate(self.tiling_list, 1):
                         x = [i * (len(self.tiling_list) + 1) + index for i in range(len(self.quality_list))]
-                        data = []
-                        for self.quality in self.quality_list:
-                            self.quality = int(self.quality)
-                            data.append(self.get_chunk_data(('tiling', 'quality')).mean())
+                        data = [self.get_chunk_data(('tiling', 'quality')).mean() for self.quality in self.quality_list]
                         ax.bar(x, data, color=cor[index], label=f'{self.tiling}')
                         ax.legend(loc='upper right')
 
@@ -159,9 +157,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
-
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-            self.load_database()
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
@@ -197,7 +193,6 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 continue
 
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-            self.load_database()
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
@@ -224,17 +219,12 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_violinplot_quality_tiling(self):
         print(f'make_violinplot_quality_tiling_frame.')
-        # By metric ['dash_m4s', 'dectime_avg', 'ssim','mse', 's-mse', 'ws-mse']
         for self.metric in self.dataset_structure:
-            # Check files
             violinplot_path = self.violinplot_folder / 'quality_tiling' / f'violinplot_{self.metric}.pdf'
             if violinplot_path.exists():
                 print(f'\t{violinplot_path} exists.')
                 continue
             violinplot_path.parent.mkdir(parents=True, exist_ok=True)
-
-            # Load Database
-            self.load_database()
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
@@ -269,9 +259,6 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 print(f'\t{violinplot_path} exists.')
                 continue
             violinplot_path.parent.mkdir(parents=True, exist_ok=True)
-
-            # Load Database
-            self.load_database()
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
