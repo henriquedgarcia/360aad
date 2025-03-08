@@ -101,7 +101,6 @@ class AnalysisPaths(ConfigIf):
 
 
 class AnalysisBase(AnalysisPaths, ABC):
-
     def __init__(self, config):
         print(f'{self.__class__.__name__} initializing...')
         self.config = config
@@ -136,11 +135,6 @@ class AnalysisBase(AnalysisPaths, ABC):
     def get_chunk_data(self, levels: tuple[str, ...]) -> pd.Series:
         key = tuple(getattr(self, level) for level in levels)
         chunk_data: pd.Series = self.database[self.metric].xs(key=key, level=levels)
-        return chunk_data
-
-    def get_chunk_serie(self, keys):
-        labels = tuple(getattr(self, a) for a in keys)
-        chunk_data = self.database.loc[labels]['value']
         return chunk_data
 
     def start_ui(self, total, desc):
