@@ -7,7 +7,7 @@ import pandas as pd
 
 from scripts.utils.config import ConfigIf
 from scripts.utils.progressbar import ProgressBar
-from scripts.utils.utils import load_pickle
+from scripts.utils.utils import load_pd_pickle
 
 
 class AnalysisPaths(ConfigIf):
@@ -130,7 +130,7 @@ class AnalysisBase(AnalysisPaths, ABC):
 
     def load_database(self, callback: Callable = None):
         filename = 'dataset/metrics.pickle'
-        self.database = load_pickle(filename)
+        self.database = load_pd_pickle(filename)
         if callback: callback(self)
 
     def get_chunk_data(self, levels: tuple[str, ...]) -> pd.Series:
