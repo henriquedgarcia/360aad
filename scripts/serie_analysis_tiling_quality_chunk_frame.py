@@ -10,7 +10,6 @@ from scripts.utils.utils import AutoDict
 
 
 class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
-
     @staticmethod
     def callback(self):
         database = self.database.groupby(['tiling', 'quality', 'tile', 'chunk']).mean()
@@ -19,15 +18,10 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         self.database = new_db1.merge(new_db2, on=['tiling', 'quality', 'chunk'])
 
     def setup(self):
-        self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
         del self.dataset_structure['seen_tiles']
         self.load_database(self.callback)
-
-    @property
-    def metric_list(self):
-        return list(self.dataset_structure)
 
     def make_stats(self):
         print(f'make_stats.')
