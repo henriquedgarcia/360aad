@@ -6,6 +6,8 @@ from functools import reduce
 from pathlib import Path
 from typing import Callable, Any, Union
 
+import pandas as pd
+
 
 def get_nested_value_(data, keys) -> Any:
     """
@@ -80,9 +82,8 @@ def save_pickle(data: Any, filename: Union[str, Path]):
         pickle.dump(data, f)
 
 
-def load_pickle(filename: Union[str, Path]):
-    with open(filename, 'rb') as f:
-        results = pickle.load(f)
+def load_pd_pickle(filename: Union[str, Path]):
+    results = pd.read_pickle(filename)
     return results
 
 
