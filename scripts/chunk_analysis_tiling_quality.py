@@ -115,8 +115,6 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                                        ylabel=self.dataset_structure[self.metric]['quantity'],
                                        ) as ax:
                     for index, self.quality in enumerate(self.quality_list):
-                        self.quality = int(self.quality)
-
                         x = [i * (len(self.quality_list) + 1) + index for i in range(len(self.tiling_list))]
                         data = [self.get_chunk_data(('tiling', 'quality')).mean()
                                 for self.tiling in self.tiling_list]
