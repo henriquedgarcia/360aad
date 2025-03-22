@@ -14,15 +14,13 @@ cor = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
 
 
 class TileAnalysisTilingQuality(AnalysisBase):
-    @staticmethod
-    def callback(self):
-        self.database = self.database.groupby(['tiling', 'quality', 'tile']).mean()
-
     def setup(self):
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
         del self.dataset_structure['seen_tiles']
-        self.load_database(self.callback)
+
+        self.load_database()
+        self.database = self.database.groupby(level=['name', 'projection', 'tiling', 'tile', 'quality']).mean()
 
     def make_stats(self):
         print(f'make_stats.')
@@ -45,264 +43,77 @@ class TileAnalysisTilingQuality(AnalysisBase):
                     self.stats_defaultdict['Máximo'].append(quartis[1])
 
     def plots(self):
-        self.make_heatmap_tiling_quality_std()
-        self.make_heatmap_quality_tiling_std()
-        # self.make_heatmap_tiling_quality()
+        self.make_heatmap_tiling_quality()
         # self.make_heatmap_quality_tiling()
+        # self.make_heatmap_tiling_quality_std()
+        # self.make_heatmap_quality_tiling_std()
         # self.make_heatmap_both()
-        # self.make_barplot_quality_tiling()
         # self.make_barplot_tiling_quality()
-        # self.make_barplot_quality_tiling_frame()
+        # self.make_barplot_quality_tiling()
         # self.make_barplot_tiling_quality_frame()
+        # self.make_barplot_quality_tiling_frame()
 
         self.make_boxplot_quality_tiling()
         self.make_boxplot_tiling_quality()
 
-    def make_boxplot_quality_tiling(self):
-        boxplot_folder = self.boxplot_folder / 'quality_tiling'
-        for self.metric in self.dataset_structure:
-            barplot_path = boxplot_folder / f'boxplot_{self.metric}.pdf'
-            if barplot_path.exists():
-                print(f'\t{barplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
-            for index, self.quality in enumerate(self.quality_list, 1):
-                data = [self.get_chunk_data(('tiling', 'quality'))
-                        for self.tiling in self.tiling_list]
-
-                ax: plt.Axes = fig.add_subplot(3, 2, index)
-                ax.boxplot(data, tick_labels=list(self.tiling_list))
-                ax.set_title(f'qp{self.quality}')
-                #                 ax.legend(loc='upper right')
-                ax.set_xlabel('tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
-                # ax.set_yscale('log')
-                if self.metric == 'ssim':
-                    ax.set_ylim(top=1.0)
-                else:
-                    ax.set_ylim(bottom=0)
-
-            barplot_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(barplot_path)
-            fig.clf()
-            plt.close()
-
-    def make_boxplot_tiling_quality(self):
-        boxplot_folder = self.boxplot_folder / 'tiling_quality'
-        for self.metric in self.dataset_structure:
-            barplot_path = boxplot_folder / f'boxplot_{self.metric}.pdf'
-            if barplot_path.exists():
-                print(f'\t{barplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
-            for index, self.quality in enumerate(self.quality_list, 1):
-                data = [self.get_chunk_data(('tiling', 'quality'))
-                        for self.tiling in self.tiling_list]
-
-                ax: plt.Axes = fig.add_subplot(3, 2, index)
-                ax.boxplot(data, tick_labels=list(self.tiling_list))
-                ax.set_title(f'qp{self.quality}')
-                #                 ax.legend(loc='upper right')
-                ax.set_xlabel('tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
-                # ax.set_yscale('log')
-                if self.metric == 'ssim':
-                    ax.set_ylim(top=1.0)
-                else:
-                    ax.set_ylim(bottom=0)
-
-            barplot_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(barplot_path)
-            fig.clf()
-            plt.close()
-
-    def make_barplot_quality_tiling(self):
-        barplot_folder = self.barplot_folder / 'quality_tiling'
-        barplot_folder.mkdir(parents=True, exist_ok=True)
-        for self.metric in self.dataset_structure:
-            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
-            if barplot_path.exists():
-                print(f'\t{barplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
-            for index, self.quality in enumerate(self.quality_list, 1):
-                x = [i for i in range(len(self.tiling_list))]
-                data = [self.get_chunk_data(('tiling', 'quality')).mean().mean()
-                        for self.tiling in self.tiling_list]
-
-                ax: plt.Axes = fig.add_subplot(3, 2, index)
-                ax.bar(x, data)
-                ax.set_title(f'qp{self.quality}')
-                #                 ax.legend(loc='upper right')
-                ax.set_xlabel('tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
-                # ax.set_yscale('log')
-                if self.metric == 'ssim':
-                    ax.set_ylim(top=1.0)
-                else:
-                    ax.set_ylim(bottom=0)
-
-            barplot_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(barplot_path)
-            fig.clf()
-            plt.close()
-
-    def make_barplot_tiling_quality(self):
-        barplot_folder = self.barplot_folder / 'tiling_quality'
-        for self.metric in self.dataset_structure:
-            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
-            if barplot_path.exists():
-                print(f'\t{barplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
-            for index, self.quality in enumerate(self.quality_list, 1):
-                x = [i for i in range(len(self.tiling_list))]
-                data = [self.get_chunk_data(('tiling', 'quality')).mean().mean()
-                        for self.tiling in self.tiling_list]
-
-                ax: plt.Axes = fig.add_subplot(3, 2, index)
-                ax.bar(x, data)
-                ax.set_title(f'qp{self.quality}')
-                #                 ax.legend(loc='upper right')
-                ax.set_xlabel('tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
-                # ax.set_yscale('log')
-                if self.metric == 'ssim':
-                    ax.set_ylim(top=1.0)
-                else:
-                    ax.set_ylim(bottom=0)
-            barplot_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(barplot_path)
-            fig.clf()
-            plt.close()
-
-    def make_barplot_quality_tiling_frame(self):
-        barplot_folder = self.barplot_folder / 'quality_tiling_frame'
-        barplot_folder.mkdir(parents=True, exist_ok=True)
-        for self.metric in self.dataset_structure:
-            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
-            if barplot_path.exists():
-                print(f'\t{barplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
-            for index, self.quality in enumerate(self.quality_list, 1):
-                x = [i for i in range(len(self.tiling_list))]
-                if self.metric in ['dectime', 'bitrate']:
-                    data = [self.get_chunk_data(('tiling', 'quality')).sum()
-                            for self.tiling in self.tiling_list]
-                else:
-                    data = [self.get_chunk_data(('tiling', 'quality')).mean()
-                            for self.tiling in self.tiling_list]
-
-                ax: plt.Axes = fig.add_subplot(3, 2, index)
-                ax.bar(x, data)
-                ax.set_title(f'qp{self.quality}')
-                #                 ax.legend(loc='upper right')
-                ax.set_xlabel('tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
-                # ax.set_yscale('log')
-                if self.metric == 'ssim':
-                    ax.set_ylim(top=1.0)
-                else:
-                    ax.set_ylim(bottom=0)
-
-            barplot_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(barplot_path)
-            fig.clf()
-            plt.close()
-
-    def make_barplot_tiling_quality_frame(self):
-        barplot_folder = self.barplot_folder / 'tiling_quality_frame'
-        for self.metric in self.dataset_structure:
-            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
-            if barplot_path.exists():
-                print(f'\t{barplot_path} exists.')
-                continue
-
-            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
-            for index, self.quality in enumerate(self.quality_list, 1):
-                x = [i for i in range(len(self.tiling_list))]
-                if self.metric in ['dectime', 'bitrate']:
-                    data = [self.get_chunk_data(('tiling', 'quality')).mean().sum()
-                            for self.tiling in self.tiling_list]
-                else:
-                    data = [self.get_chunk_data(('tiling', 'quality')).mean().mean()
-                            for self.tiling in self.tiling_list]
-
-                ax: plt.Axes = fig.add_subplot(3, 2, index)
-                ax.bar(x, data)
-                ax.set_title(f'qp{self.quality}')
-                #                 ax.legend(loc='upper right')
-                ax.set_xlabel('tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
-                # ax.set_yscale('log')
-                if self.metric == 'ssim':
-                    ax.set_ylim(top=1.0)
-                else:
-                    ax.set_ylim(bottom=0)
-            barplot_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(barplot_path)
-            fig.clf()
-            plt.close()
-
     def make_heatmap_tiling_quality(self):
-        print(f'make_heatmap_tiling_quality.')
-        for self.metric in self.dataset_structure:
-            for self.tiling in self.tiling_list:
-                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.pdf'
-                if heatmap_path.exists():
-                    print(f'file {heatmap_path} exists.')
-                    continue
-                heatmap_path.parent.mkdir(parents=True, exist_ok=True)
+        def main():
+            print(f'make_heatmap_tiling_quality.')
+            for self.metric in self.dataset_structure:
+                for self.tiling in self.tiling_list:
+                    heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.pdf'
 
-                m, n = splitx(self.tiling)
-                figure_list = []
-                for i, self.quality in enumerate(self.quality_list, 1):
-                    tiles_data = self.get_chunk_data(('tiling', 'quality'))
+                    if file_is_ok(heatmap_path): continue
+                    img_list = make_image_list()
+                    fig = make_figure(img_list)
+                    fig.savefig(heatmap_path)
+                    fig.clf()
 
-                    array = np.array(tiles_data).reshape((n, m))
-                    img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
-                    figure_list.append(np.asarray(img))
+        def file_is_ok(heatmap_path):
+            if heatmap_path.exists():
+                print(f'file {heatmap_path} exists.')
+                return True
+            heatmap_path.parent.mkdir(parents=True, exist_ok=True)
+            return False
 
-                fig, axs = plt.subplots(3, 2, figsize=(6, 7.5), dpi=300, constrained_layout=True)
-                fig.suptitle(f'{self.metric}_{self.tiling}')
+        def make_image_list():
+            m, n = splitx(self.tiling)
+            img_list = []
+            for i, self.quality in enumerate(self.quality_list, 1):
+                tiles_data = self.get_chunk_data(('tiling', 'quality'))
+                tiles_data = tiles_data.groupby(level=['tile']).mean()
+                array = np.array(tiles_data).reshape((n, m))
+                img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
+                img_list.append(np.asarray(img))
+            return img_list
 
-                norm = colors.Normalize(vmin=float(np.min(figure_list)), vmax=float(np.max(figure_list)))
+        def make_figure(img_list):
+            fig, axs = plt.subplots(3, 2, figsize=(6, 7.5), dpi=300, constrained_layout=True)
+            norm = colors.Normalize(vmin=float(np.min(img_list)), vmax=float(np.max(img_list)))
+            images = []
 
-                images = []
-                for ax, figure, self.quality in zip(axs.flat, figure_list, self.quality_list):
-                    im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal', norm=norm)
-                    images.append(im)
+            for ax, figure, self.quality in zip(axs.flat, img_list, self.quality_list):
+                im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal', norm=norm)
+                images.append(im)
 
-                    ax.set_xticks([])
-                    ax.set_yticks([])
-                    ax.set_xticklabels([])
-                    ax.set_yticklabels([])
-                    ax.set_title(f'qp{self.quality}')
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
+                ax.set_title(f'qp{self.quality}')
 
-                cbr = fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
-                if self.metric == 'dash_m4s':
-                    cbr.ax.ticklabel_format(axis='x', style='scientific',
-                                            scilimits=(6, 6))
+            quantity = self.dataset_structure[self.metric]['quantity']
+            cbr = fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
+            cbr.ax.set_xlabel(quantity)
+            if self.metric == 'dash_m4s':
+                cbr.ax.ticklabel_format(axis='x', style='scientific', scilimits=(6, 6))
 
-                quantity = self.dataset_structure[self.metric]['quantity']
-                cbr.ax.set_xlabel(quantity)
+            # fig.show()
+            fig.suptitle(f'{self.metric}_{self.tiling}')
+            plt.close()
+            return fig
 
-                # fig.show()
-                fig.savefig(heatmap_path)
-                fig.clf()
-                plt.close()
+        main()
 
     def make_heatmap_quality_tiling(self):
         print(f'make_heatmap_quality_tiling.')
@@ -361,7 +172,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
         print(f'make_heatmap_tiling_quality.')
         for self.metric in self.dataset_structure:
             for self.tiling in self.tiling_list:
-                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.pdf'
+                heatmap_path = self.heatmap_folder / f'heatmap_std_{self.metric}_{self.tiling}.pdf'
                 if heatmap_path.exists():
                     print(f'file {heatmap_path} exists.')
                     continue
@@ -409,7 +220,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
         print(f'make_heatmap_quality_tiling.')
         for self.metric in self.dataset_structure:
             for self.quality in self.quality_list:
-                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_qp{self.quality}.pdf'
+                heatmap_path = self.heatmap_folder / f'heatmap_std_{self.metric}_qp{self.quality}.pdf'
                 if heatmap_path.exists():
                     print(f'file {heatmap_path} exists.')
                     continue
@@ -536,6 +347,204 @@ class TileAnalysisTilingQuality(AnalysisBase):
                 fig.savefig(heatmap_path)
                 fig.clf()
                 plt.close()
+
+    def make_boxplot_quality_tiling(self):
+        boxplot_folder = self.boxplot_folder / 'quality_tiling'
+        for self.metric in self.dataset_structure:
+            barplot_path = boxplot_folder / f'boxplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
+            for index, self.quality in enumerate(self.quality_list, 1):
+                data = [self.get_chunk_data(('tiling', 'quality'))
+                        for self.tiling in self.tiling_list]
+
+                ax: plt.Axes = fig.add_subplot(3, 2, index)
+                ax.boxplot(data, tick_labels=list(self.tiling_list))
+                ax.set_title(f'qp{self.quality}')
+                #                 ax.legend(loc='upper right')
+                ax.set_xlabel('tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
+                # ax.set_yscale('log')
+                if self.metric == 'ssim':
+                    ax.set_ylim(top=1.0)
+                else:
+                    ax.set_ylim(bottom=0)
+
+            barplot_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_boxplot_tiling_quality(self):
+        boxplot_folder = self.boxplot_folder / 'tiling_quality'
+        for self.metric in self.dataset_structure:
+            barplot_path = boxplot_folder / f'boxplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
+            for index, self.quality in enumerate(self.quality_list, 1):
+                data = [self.get_chunk_data(('tiling', 'quality'))
+                        for self.tiling in self.tiling_list]
+
+                ax: plt.Axes = fig.add_subplot(3, 2, index)
+                ax.boxplot(data, tick_labels=list(self.tiling_list))
+                ax.set_title(f'qp{self.quality}')
+                #                 ax.legend(loc='upper right')
+                ax.set_xlabel('tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
+                # ax.set_yscale('log')
+                if self.metric == 'ssim':
+                    ax.set_ylim(top=1.0)
+                else:
+                    ax.set_ylim(bottom=0)
+
+            barplot_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_barplot_tiling_quality(self):
+        barplot_folder = self.barplot_folder / 'tiling_quality'
+        for self.metric in self.dataset_structure:
+            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
+            for index, self.quality in enumerate(self.quality_list, 1):
+                x = [i for i in range(len(self.tiling_list))]
+                data = [self.get_chunk_data(('tiling', 'quality')).mean().mean()
+                        for self.tiling in self.tiling_list]
+
+                ax: plt.Axes = fig.add_subplot(3, 2, index)
+                ax.bar(x, data)
+                ax.set_title(f'qp{self.quality}')
+                #                 ax.legend(loc='upper right')
+                ax.set_xlabel('tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
+                # ax.set_yscale('log')
+                if self.metric == 'ssim':
+                    ax.set_ylim(top=1.0)
+                else:
+                    ax.set_ylim(bottom=0)
+            barplot_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_barplot_quality_tiling(self):
+        barplot_folder = self.barplot_folder / 'quality_tiling'
+        barplot_folder.mkdir(parents=True, exist_ok=True)
+        for self.metric in self.dataset_structure:
+            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
+            for index, self.quality in enumerate(self.quality_list, 1):
+                x = [i for i in range(len(self.tiling_list))]
+                data = [self.get_chunk_data(('tiling', 'quality')).mean().mean()
+                        for self.tiling in self.tiling_list]
+
+                ax: plt.Axes = fig.add_subplot(3, 2, index)
+                ax.bar(x, data)
+                ax.set_title(f'qp{self.quality}')
+                #                 ax.legend(loc='upper right')
+                ax.set_xlabel('tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
+                # ax.set_yscale('log')
+                if self.metric == 'ssim':
+                    ax.set_ylim(top=1.0)
+                else:
+                    ax.set_ylim(bottom=0)
+
+            barplot_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_barplot_tiling_quality_frame(self):
+        barplot_folder = self.barplot_folder / 'tiling_quality_frame'
+        for self.metric in self.dataset_structure:
+            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
+            for index, self.quality in enumerate(self.quality_list, 1):
+                x = [i for i in range(len(self.tiling_list))]
+                if self.metric in ['dectime', 'bitrate']:
+                    data = [self.get_chunk_data(('tiling', 'quality')).mean().sum()
+                            for self.tiling in self.tiling_list]
+                else:
+                    data = [self.get_chunk_data(('tiling', 'quality')).mean().mean()
+                            for self.tiling in self.tiling_list]
+
+                ax: plt.Axes = fig.add_subplot(3, 2, index)
+                ax.bar(x, data)
+                ax.set_title(f'qp{self.quality}')
+                #                 ax.legend(loc='upper right')
+                ax.set_xlabel('tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
+                # ax.set_yscale('log')
+                if self.metric == 'ssim':
+                    ax.set_ylim(top=1.0)
+                else:
+                    ax.set_ylim(bottom=0)
+            barplot_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_barplot_quality_tiling_frame(self):
+        barplot_folder = self.barplot_folder / 'quality_tiling_frame'
+        barplot_folder.mkdir(parents=True, exist_ok=True)
+        for self.metric in self.dataset_structure:
+            barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
+            if barplot_path.exists():
+                print(f'\t{barplot_path} exists.')
+                continue
+
+            fig = plt.figure(figsize=(7.5, 6), layout='tight', dpi=300)
+            for index, self.quality in enumerate(self.quality_list, 1):
+                x = [i for i in range(len(self.tiling_list))]
+                if self.metric in ['dectime', 'bitrate']:
+                    data = [self.get_chunk_data(('tiling', 'quality')).sum()
+                            for self.tiling in self.tiling_list]
+                else:
+                    data = [self.get_chunk_data(('tiling', 'quality')).mean()
+                            for self.tiling in self.tiling_list]
+
+                ax: plt.Axes = fig.add_subplot(3, 2, index)
+                ax.bar(x, data)
+                ax.set_title(f'qp{self.quality}')
+                #                 ax.legend(loc='upper right')
+                ax.set_xlabel('tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks(range(len(self.tiling_list)), list(self.tiling_list))
+                # ax.set_yscale('log')
+                if self.metric == 'ssim':
+                    ax.set_ylim(top=1.0)
+                else:
+                    ax.set_ylim(bottom=0)
+
+            barplot_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(barplot_path)
+            fig.clf()
+            plt.close()
 
 
 if __name__ == '__main__':
