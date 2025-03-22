@@ -44,7 +44,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
 
     def plots(self):
         self.make_heatmap_tiling_quality()
-        # self.make_heatmap_quality_tiling()
+        self.make_heatmap_quality_tiling()
         # self.make_heatmap_tiling_quality_std()
         # self.make_heatmap_quality_tiling_std()
         # self.make_heatmap_both()
@@ -61,7 +61,7 @@ class TileAnalysisTilingQuality(AnalysisBase):
             print(f'make_heatmap_tiling_quality.')
             for self.metric in self.dataset_structure:
                 for self.tiling in self.tiling_list:
-                    heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_{self.tiling}.pdf'
+                    heatmap_path = self.heatmap_folder / f'heatmap_tiling_{self.metric}_{self.tiling}.pdf'
 
                     if file_is_ok(heatmap_path): continue
                     img_list = make_image_list()
@@ -82,9 +82,24 @@ class TileAnalysisTilingQuality(AnalysisBase):
             for i, self.quality in enumerate(self.quality_list, 1):
                 tiles_data = self.get_chunk_data(('tiling', 'quality'))
                 tiles_data = tiles_data.groupby(level=['tile']).mean()
+
                 array = np.array(tiles_data).reshape((n, m))
-                img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
-                img_list.append(np.asarray(img))
+                img = Image.fromarray(array).resize((30, 20), resample=Resampling.NEAREST)
+
+                imagem_expandida = Image.new("RGB", (34, 23),
+                                             "black")  # Cor do padding (ajustável)
+                for linha in range(2):
+                    for coluna in range(3):
+                        # Cortar uma subimagem da original
+                        esquerda, superior = coluna * 10, linha * 10
+                        direita, inferior = esquerda + 10, superior + 10
+                        subimagem = img.crop((esquerda, superior, direita, inferior))
+
+                        x_offset = coluna * 11 + 1
+                        y_offset = linha * 11 + 1
+                        imagem_expandida.paste(subimagem,
+                                               (x_offset, y_offset))
+                img_list.append(np.asarray(imagem_expandida))
             return img_list
 
         def make_figure(img_list):
@@ -116,52 +131,62 @@ class TileAnalysisTilingQuality(AnalysisBase):
         main()
 
     def make_heatmap_quality_tiling(self):
-        print(f'make_heatmap_quality_tiling.')
-        for self.metric in self.dataset_structure:
-            for self.quality in self.quality_list:
-                heatmap_path = self.heatmap_folder / f'heatmap_{self.metric}_qp{self.quality}.pdf'
-                if heatmap_path.exists():
-                    print(f'file {heatmap_path} exists.')
-                    continue
-                heatmap_path.parent.mkdir(parents=True, exist_ok=True)
+        def main():
+            print(f'make_heatmap_quality_tiling.')
+            for self.metric in self.dataset_structure:
+                for self.quality in self.quality_list:
+                    heatmap_path = self.heatmap_folder / f'heatmap_quality_{self.metric}_qp{self.quality}.pdf'
+                    if file_is_ok(heatmap_path): continue
+                    img_list = make_image_list()
+                    fig = make_figure(img_list)
+                    fig.savefig(heatmap_path)
+                    fig.clf()
 
-                figure_list = []
-                for i, self.tiling in enumerate(self.tiling_list, 1):
-                    m, n = splitx(self.tiling)
-                    tiles_data = self.get_chunk_data(('tiling', 'quality'))
+        def make_image_list():
+            img_list = []
+            for i, self.tiling in enumerate(self.tiling_list, 1):
+                m, n = splitx(self.tiling)
+                tiles_data = self.get_chunk_data(('tiling', 'quality'))
+                tiles_data = tiles_data.groupby(level=['tile']).mean()
+                array = np.array(tiles_data).reshape((n, m))
+                img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
+                img_list.append(np.asarray(img))
+            return img_list
 
-                    array = np.array(tiles_data).reshape((n, m))
-                    img = Image.fromarray(array).resize((12, 8), resample=Resampling.NEAREST)
-                    figure_list.append(np.asarray(img))
+        def make_figure(img_list):
+            fig, axs = plt.subplots(3, 2, figsize=(6, 7.5), dpi=300, constrained_layout=True)
+            norm = colors.Normalize(vmin=float(np.min(img_list)), vmax=float(np.max(img_list)))
+            images = []
 
-                fig, axs = plt.subplots(3, 2, figsize=(6, 7.5), dpi=300, constrained_layout=True)
-                fig.suptitle(f'{self.metric}_{self.quality}')
+            for ax, figure, self.tiling in zip(axs.flat, img_list, self.tiling_list):
+                im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal', norm=norm)
+                images.append(im)
 
-                norm = colors.Normalize(vmin=float(np.min(figure_list)), vmax=float(np.max(figure_list)))
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
+                ax.set_title(f'{self.tiling}')
 
-                images = []
-                for ax, figure, self.tiling in zip(axs.flat, figure_list, self.tiling_list):
-                    im = ax.imshow(figure, cmap='jet', interpolation='none', aspect='equal', norm=norm)
-                    images.append(im)
+            quantity = self.dataset_structure[self.metric]['quantity']
+            cbr = fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
+            cbr.ax.set_xlabel(quantity)
+            if self.metric == 'dash_m4s':
+                cbr.ax.ticklabel_format(axis='x', style='scientific', scilimits=(6, 6))
 
-                    ax.set_xticks([])
-                    ax.set_yticks([])
-                    ax.set_xticklabels([])
-                    ax.set_yticklabels([])
-                    ax.set_title(f'{self.tiling}')
+            # fig.show()
+            fig.suptitle(f'{self.metric}_qp{self.quality}')
+            plt.close()
+            return fig
 
-                cbr = fig.colorbar(images[0], ax=axs, orientation='horizontal', fraction=.1)
-                if self.metric == 'dash_m4s':
-                    cbr.ax.ticklabel_format(axis='x', style='scientific',
-                                            scilimits=(6, 6))
+        def file_is_ok(heatmap_path):
+            if heatmap_path.exists():
+                print(f'file {heatmap_path} exists.')
+                return True
+            heatmap_path.parent.mkdir(parents=True, exist_ok=True)
+            return False
 
-                quantity = self.dataset_structure[self.metric]['quantity']
-                cbr.ax.set_xlabel(quantity)
-
-                # fig.show()
-                fig.savefig(heatmap_path)
-                fig.clf()
-                plt.close()
+        main()
 
     def make_heatmap_tiling_quality_std(self):
         def callback():
