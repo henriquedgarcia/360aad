@@ -41,12 +41,12 @@ class FixDatabase(AnalysisPaths):
         self.fix()
 
     def fix(self):
-        self.fix_head_movement()
+        self.join_metrics()
+        # self.fix_head_movement()
         # self.fix_bitrate()
         # self.fix_dectime()
         # self.fix_seen_tiles()
         # self.fix_chunk_quality()
-        # self.join_metrics()
 
     def fix_bitrate(self):
         new_database = Path(f'dataset/bitrate.pickle')
@@ -179,14 +179,18 @@ class FixDatabase(AnalysisPaths):
         index = ['name', 'projection', 'user', 'frame']
         df = pd.DataFrame(head_movement_by_frame, columns=index + ['yaw', 'pitch', 'roll'])
         df = df.set_index(index)
-        df.index
         df.to_pickle(new_database)
 
     def join_metrics(self):
         series_dict = {}
-        for self.metric in ['bitrate', 'dectime', 'ssim', 'mse', 's_mse', 'ws_mse']:
-            serie = pd.read_pickle(f'dataset/{self.metric}.pickle')
-            series_dict[f'{self.metric}'] = serie
+        for self.metric in ['bitrate', 'dectime', 'ssim', 'mse', 's-mse', 'ws-mse']:
+            merged = pd.DataFrame([], columns=[self.metric])
+            for self.name in self.name_list:
+                serie = pd.read_pickle(f'dataset/pickles/{self.metric}_{self.metric}.pickle')
+                flat_serie = serie.reset_index()
+                merged = pd.merge(merged, flat_serie, on=[self.metric], how='outer')
+
+            series_dict[f'{self.metric}'] = merged
         df = pd.DataFrame.from_dict(series_dict)
         df.to_pickle(f'dataset/metrics.pickle')
         # df = pd.read_pickle(f'dataset/metrics.pickle')
