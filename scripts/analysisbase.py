@@ -7,10 +7,10 @@ import pandas as pd
 
 from scripts.utils.config import ConfigIf
 from scripts.utils.progressbar import ProgressBar
-from scripts.utils.utils import load_pd_pickle
+from scripts.utils.utils import load_pd_pickle, LazyProperty
 
 
-class AnalysisPaths(ConfigIf):
+class AnalysisProps(ConfigIf, ABC):
     # constants
     categories: tuple
     bucket_keys_name: tuple
@@ -21,7 +21,6 @@ class AnalysisPaths(ConfigIf):
     category: str
 
     # containers
-    bucket: dict
     stats_defaultdict: defaultdict
     database: Union[pd.DataFrame, pd.Series]
 
@@ -32,6 +31,36 @@ class AnalysisPaths(ConfigIf):
     @property
     def class_name(self):
         return self.__class__.__name__
+
+
+class AnalysisPaths(AnalysisProps):
+    @property
+    def head_movement_path(self):
+        head_movement_pickle = self.dataset_structure['head_movement']['path']
+        return head_movement_pickle
+
+    @LazyProperty
+    def head_movement_db(self):
+        return load_pd_pickle(self.head_movement_path)
+
+    @LazyProperty
+    def users_by_name(self):
+        users_by_name = {}
+        for name in self.name_list:
+            key = (name, self.projection)
+            level = ['name', 'projection']
+            coss_section = self.head_movement_db.xs(key=key, level=level)
+            level_values = coss_section.index.get_level_values('user').unique()
+            users = list(level_values)
+            users_by_name[name] = users
+        return users_by_name
+
+    @LazyProperty
+    def name_by_users(self):
+        names_by_users = defaultdict(list)
+        for name, users_list in self.users_by_name.items():
+            for user in users_list:
+                names_by_users[user].append(name)
 
     @property
     def results_folder(self):
@@ -93,16 +122,16 @@ class AnalysisPaths(ConfigIf):
 
     @property
     def stats_csv(self):
-        return self.stats_workfolder / f'{self.__class__.__name__}_stats.csv'
+        return self.stats_workfolder / f'{self.class_name}_stats.csv'
 
     @property
     def corr_csv(self):
-        return self.stats_workfolder / f'{self.__class__.__name__}_corr.csv'
+        return self.stats_workfolder / f'{self.class_name}_corr.csv'
 
 
 class AnalysisBase(AnalysisPaths, ABC):
     def __init__(self, config):
-        print(f'{self.__class__.__name__} initializing...')
+        print(f'{self.class_name} initializing...')
         self.config = config
         self.setup()
 
@@ -128,7 +157,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         ...
 
     def load_database(self, callback: Callable = None):
-        filename = 'dataset/metrics.pickle'
+        filename = 'database/metrics.pickle'
         self.database = load_pd_pickle(filename)
         if callback: callback(self)
 
