@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 from math import prod
 
-from scripts.utils.utils import splitx, load_pd_pickle, LazyProperty
+from scripts.utils.utils import splitx
 
 
 @dataclass
 class Config:
-    dataset_file = "dataset/head_movement.pickle"
-
     duration = 60
     fps = 30
     gop = 30
@@ -27,173 +25,159 @@ class Config:
 
     chunk_list = list(range(1, 61))
     quality_list = [22, 28, 34, 40, 46, 50]
-    # quality_list = ["16", "22", "28", "34", "40", "46"]
     tiling_list = ["1x1", "3x2", "6x4", "9x6", "12x8"]
     projection_list = ['cmp']
     name_list = {
         "angel_falls": {
             "offset": "5:30",
             "group": "MN"
-        },
+            },
         "blue_angels": {
             "offset": "1:00",
             "group": "MM"
-        },
+            },
         "cable_cam": {
             "offset": "0:15",
             "group": "HS"
-        },
+            },
         "chariot_race": {
             "offset": "0:00",
             "group": "HM"
-        },
+            },
         "closet_tour": {
             "offset": "0:07",
             "group": "FS"
-        },
+            },
         "drone_chases_car": {
             "offset": "2:11",
             "group": "MS"
-        },
+            },
         "drone_footage": {
             "offset": "0:01",
             "group": "HN"
-        },
+            },
         "drone_video": {
             "offset": "0:15",
             "group": "VM"
-        },
+            },
         "drop_tower": {
             "offset": "1:11",
             "group": "VM"
-        },
+            },
         "dubstep_dance": {
             "offset": "0:05",
             "group": "FM"
-        },
+            },
         "elevator_lift": {
             "offset": "0:00",
             "group": "VN"
-        },
+            },
         "glass_elevator": {
             "offset": "0:14",
             "group": "VN"
-        },
+            },
         "montana": {
             "offset": "0:00",
             "group": "FN"
-        },
+            },
         "motorsports_park": {
             "offset": "0:15",
             "group": "HS"
-        },
+            },
         "nyc_drive": {
             "offset": "0:12",
             "group": "HM"
-        },
+            },
         "pac_man": {
             "offset": "0",
             "group": "MM"
-        },
+            },
         "penthouse": {
             "offset": "0:04",
             "group": "RS"
-        },
+            },
         "petite_anse": {
             "offset": "0:45",
             "group": "HN"
-        },
+            },
         "rhinos": {
             "offset": "0:18",
             "group": "FM"
-        },
+            },
         "sunset": {
             "offset": "0:40",
             "group": "FN"
-        },
+            },
         "three_peaks": {
             "offset": "0:00",
             "group": "MN"
-        },
+            },
         "video_04": {
             "offset": "0",
             "group": "FS"
-        },
+            },
         "video_19": {
             "offset": "0",
             "group": "RN"
-        },
+            },
         "video_20": {
             "offset": "0",
             "group": "RN"
-        },
+            },
         "video_22": {
             "offset": "0",
             "group": "RS"
-        },
+            },
         "video_23": {
             "offset": "0",
             "group": "RM"
-        },
+            },
         "video_24": {
             "offset": "0",
             "group": "RM"
-        },
+            },
         "wingsuit_dubai": {
             "offset": "0:00",
             "group": "MS"
+            }
         }
-    }
 
     name = projection = tiling = tile = quality = chunk = user = metric = group = frame = category = None
 
     dataset_structure = {
-        'bitrate': {'path': f'dataset/bitrate.pickle',
+        'head_movement': {'path': f'database/head_movement.pickle',
+                          'keys': ['name', 'projection', 'user', 'frame'],
+                          'quantity': 'Rads'
+                          },
+        'bitrate': {'path': f'database/bitrate.pickle',
                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                     'quantity': 'Bitrate (bps)'
                     },
-        'dectime': {'path': f'dataset/dectime.pickle',
+        'dectime': {'path': f'database/dectime.pickle',
                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                     'quantity': 'Time (s)'
                     },
-        'ssim': {'path': f'dataset/ssim.pickle',
+        'ssim': {'path': f'database/ssim.pickle',
                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                  'quantity': ''
                  },
-        'mse': {'path': f'dataset/mse.pickle',
+        'mse': {'path': f'database/mse.pickle',
                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                 'quantity': ''
                 },
-        's_mse': {'path': f'dataset/s_mse.pickle',
+        's_mse': {'path': f'database/s_mse.pickle',
                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                   'quantity': ''
                   },
-        'ws_mse': {'path': f'dataset/ws_mse.pickle',
+        'ws_mse': {'path': f'database/ws_mse.pickle',
                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                    'quantity': ''
                    },
-        'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
+        'seen_tiles': {'path': f'database/seen_tiles.pickle',
                        'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
                        'quantity': 'Seen Tiles'
                        },
-    }
-
-    @property
-    def tile_list(self):
-        return list(range(self.n_tiles))
-
-    @property
-    def n_tiles(self):
-        return prod(splitx(self.tiling))
-
-    @LazyProperty
-    def hmd_dataset(self):
-        return load_pd_pickle(self.dataset_file)
-
-    @property
-    def users_list(self):
-        filtered_df = self.hmd_dataset.xs((self.name,), level=('name',))
-        return list(map(int, filtered_df.index.get_level_values('user').unique()))
+        }
 
     @property
     def groups_list(self):
@@ -305,17 +289,15 @@ class Lists:
     def tiling_list(self):
         return self.config.tiling_list
 
+    n_tiles: int
+
     @property
     def tile_list(self):
-        return self.config.tile_list
+        return list(range(self.n_tiles))
 
     @property
     def chunk_list(self):
         return self.config.chunk_list
-
-    @property
-    def users_list(self):
-        return self.config.users_list
 
     @property
     def groups_list(self):
@@ -368,10 +350,6 @@ class ConfigIf(Factors, Lists):
     @property
     def decoding_num(self):
         return self.config.decoding_num
-
-    @property
-    def dataset_name(self):
-        return self.config.dataset_file
 
     @property
     def video_list_by_group(self) -> dict:
