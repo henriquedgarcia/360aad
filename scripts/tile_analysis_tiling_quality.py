@@ -53,8 +53,8 @@ class TileAnalysisTilingQuality(AnalysisBase):
         # self.make_barplot_tiling_quality_frame()
         # self.make_barplot_quality_tiling_frame()
 
-        self.make_boxplot_quality_tiling()
-        self.make_boxplot_tiling_quality()
+        # self.make_boxplot_quality_tiling()
+        # self.make_boxplot_tiling_quality()
 
     def make_heatmap_tiling_quality(self):
         def main():
