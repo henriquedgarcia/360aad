@@ -182,19 +182,56 @@ class FixDatabase(AnalysisPaths):
         df.to_pickle(new_database)
 
     def join_metrics(self):
-        series_dict = {}
-        for self.metric in ['bitrate', 'dectime', 'ssim', 'mse', 's-mse', 'ws-mse']:
-            merged = pd.DataFrame([], columns=[self.metric])
-            for self.name in self.name_list:
-                serie = pd.read_pickle(f'dataset/pickles/{self.metric}_{self.metric}.pickle')
-                flat_serie = serie.reset_index()
-                merged = pd.merge(merged, flat_serie, on=[self.metric], how='outer')
+        final_name = lambda: Path(f'dataset/metrics.pickle')
+        metric_name = lambda: Path(f'dataset/pickles/0_grouped_{self.metric}.pickle')
+        pickle_name = lambda: Path(f'dataset/pickles/{self.metric}_{self.name}.pickle')
+        seen_tiles_name = lambda: Path(f'dataset/seen_tiles/seen_tiles_{self.name}_fov110x90.pickle')
+        final_seen_tiles_name = lambda: Path(f'dataset/seen_tiles.pickle')
 
-            series_dict[f'{self.metric}'] = merged
-        df = pd.DataFrame.from_dict(series_dict)
-        df.to_pickle(f'dataset/metrics.pickle')
-        # df = pd.read_pickle(f'dataset/metrics.pickle')
-        # pd.options.display.max_columns=pd.options.display.max_colwidth = 999
+        def main():
+            group_data_by_metric()
+            group_data_total()
+            group_seen_tiles()
+
+        def group_data_by_metric():
+            metric_list = ['bitrate', 'dectime', 'ssim', 'mse', 's-mse', 'ws-mse']
+            p = ProgressBar(total=len(self.name_list) * len(metric_list), desc='join_metrics')
+
+            for self.metric in metric_list:
+                if metric_name().exists(): continue
+                merged = None
+                for self.name in self.name_list:
+                    p.update(f'{self.metric} {self.name}')
+                    serie = pd.read_pickle(pickle_name())
+                    merged = (serie if merged is None
+                              else pd.concat([merged, serie], axis=0))
+                merged = merged.apply(np.mean)
+                merged.to_pickle(metric_name())
+
+        def group_data_total():
+            if final_name().exists(): return
+            series_dict = {}
+            for self.metric in ['bitrate', 'dectime', 'ssim', 'mse', 's-mse', 'ws-mse']:
+                serie = pd.read_pickle(metric_name())
+                series_dict[f'{self.metric}'] = serie
+
+            df = pd.DataFrame.from_dict(series_dict)
+            df.to_pickle(final_name())
+            # df = pd.read_pickle(f'dataset/metrics.pickle')
+            # pd.options.display.max_columns=pd.options.display.max_colwidth = 999
+
+        def group_seen_tiles():
+            p = ProgressBar(total=len(self.name_list), desc='join_metrics')
+            merged = None
+            if seen_tiles_name().exists(): return
+            for self.name in self.name_list:
+                p.update(f'{self.name}')
+                serie = pd.read_pickle(seen_tiles_name())
+                merged = (serie if merged is None
+                          else pd.concat([merged, serie], axis=0))
+            merged.to_pickle(final_seen_tiles_name())
+
+        main()
 
     def start_ui(self, total, desc):
         self.ui = ProgressBar(total=total, desc=desc)
