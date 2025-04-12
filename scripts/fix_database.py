@@ -42,11 +42,19 @@ class FixDatabase(AnalysisPaths):
 
     def fix(self):
         self.join_metrics()
-        # self.fix_head_movement()
+        self.fix_head_movement()
+        self.fix_seen_tiles()
+        self.fix_siti()
+        self.fix_viewport_quality()
         # self.fix_bitrate()
         # self.fix_dectime()
-        # self.fix_seen_tiles()
         # self.fix_chunk_quality()
+
+    def fix_siti(self):
+        pass
+
+    def fix_viewport_quality(self):
+        pass
 
     def fix_bitrate(self):
         new_database = Path(f'dataset/bitrate.pickle')
