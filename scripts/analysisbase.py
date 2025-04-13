@@ -43,7 +43,7 @@ class AnalysisPaths(AnalysisProps):
     def head_movement_db(self):
         return load_pd_pickle(self.head_movement_path)
 
-    @LazyProperty
+    @property
     def users_by_name(self):
         users_by_name = {}
         for name in self.name_list:
