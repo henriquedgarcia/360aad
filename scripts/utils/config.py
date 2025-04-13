@@ -289,12 +289,6 @@ class Lists:
     def tiling_list(self):
         return self.config.tiling_list
 
-    n_tiles: int
-
-    @property
-    def tile_list(self):
-        return list(range(self.n_tiles))
-
     @property
     def chunk_list(self):
         return self.config.chunk_list
@@ -310,10 +304,12 @@ class Lists:
 
 class ConfigIf(Factors, Lists):
     config = Config()
+    _dataset_structure: dict
 
     @property
     def dataset_structure(self):
-        return self.config.dataset_structure
+        self._dataset_structure = self.config.dataset_structure
+        return self._dataset_structure
 
     @property
     def video_shape(self):
@@ -330,6 +326,10 @@ class ConfigIf(Factors, Lists):
     @property
     def n_tiles(self):
         return prod(splitx(self.tiling))
+
+    @property
+    def tile_list(self):
+        return list(range(self.n_tiles))
 
     @property
     def n_frames(self):
