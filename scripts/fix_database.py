@@ -7,27 +7,10 @@ import pandas as pd
 from scripts.analysisbase import AnalysisPaths
 from scripts.utils.config import Config
 from scripts.utils.progressbar import ProgressBar
-from scripts.utils.utils import load_json
+from scripts.utils.utils import load_json, load_pd_pickle
 
 
 class FixDatabase(AnalysisPaths):
-    dataset_structure = {
-        'get_tiles': {'get_tiles_chunk': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
-                      'get_tiles_frame': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
-                      },
-        'bitrate': {'dash_mpd': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
-                    'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality', 'category', 'value', None],
-                    'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value']
-                    },
-        'time': {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
-                 'dectime_std': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
-                 },
-        'chunk_quality': {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
-                          'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
-                          's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
-                          'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
-                          }
-    }
 
     @property
     def database_json(self):
@@ -39,19 +22,63 @@ class FixDatabase(AnalysisPaths):
         self.config = config
         self.projection = 'cmp'
         self.fix()
+        self.dataset_structure = {
+            'get_tiles': {'get_tiles_chunk': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
+                          'get_tiles_frame': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
+                          },
+            'bitrate': {'dash_mpd': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
+                        'dash_init': ['name', 'projection', 'tiling', 'tile', 'quality', 'category', 'value', None],
+                        'dash_m4s': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value']
+                        },
+            'time': {'dectime_avg': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
+                     'dectime_std': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'value'],
+                     },
+            'chunk_quality': {'ssim': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
+                              'mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
+                              's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
+                              'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
+                              }
+        }
 
     def fix(self):
-        self.join_metrics()
-        self.fix_head_movement()
-        self.fix_seen_tiles()
         self.fix_siti()
-        self.fix_viewport_quality()
+
+        # self.fix_head_movement()
+
+        # self.fix_seen_tiles()
+
+        # self.fix_viewport_quality()
+
         # self.fix_bitrate()
         # self.fix_dectime()
         # self.fix_chunk_quality()
+        # self.join_metrics()
 
     def fix_siti(self):
-        pass
+        metric = 'siti'
+        new_database = Path(f'dataset/{metric}.pickle')
+        if new_database.exists():
+            return
+
+        siti = []
+
+        for self.name in self.name_list:
+            database = load_pd_pickle(Path(f'dataset/{metric}/{metric}_{self.name}.pickle'))
+
+            for self.projection in self.projection_list:
+                for self.tiling in self.tiling_list:
+                    for self.user in self.users_by_name:
+                        for self.quality in self.quality_list:
+                            print(f'\r({metric}_{self.name}_{self.projection}_{self.tiling}_self.tile{self.tile}_qp{self.quality})', end='')
+                            for self.chunk in self.chunk_list:
+                                data = database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['dash_m4s']
+                                siti.append((self.name, self.projection, self.tiling, int(self.tile), int(self.quality), int(self.chunk), int(data)))
+        print('\nSaving')
+        columns = ['name', 'self.projection', 'self.tiling', 'self.tile', 'self.quality', 'chunk']
+        df = pd.DataFrame(siti, columns=columns + [metric])
+        df = df.set_index(columns)
+        serie = df[metric]
+        serie.to_pickle(new_database)
 
     def fix_viewport_quality(self):
         pass
@@ -175,7 +202,7 @@ class FixDatabase(AnalysisPaths):
 
         head_movement_by_frame = []
         for self.name in self.name_list:
-            for self.user in self.users_list:
+            for self.user in self.users_by_name:
                 print(f'\r{self.name} {self.projection} user{self.user}', end='')
 
                 head_movement = self.config.hmd_dataset[self.name + '_nas'][self.user]
@@ -246,6 +273,14 @@ class FixDatabase(AnalysisPaths):
 
     def update_ui(self, desc: str):
         self.ui.update(desc)
+
+    @property
+    def dataset_structure(self):
+        return self._dataset_structure
+
+    @dataset_structure.setter
+    def dataset_structure(self, value):
+        self._dataset_structure = value
 
 
 if __name__ == '__main__':
