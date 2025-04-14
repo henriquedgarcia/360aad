@@ -6,6 +6,7 @@ from functools import reduce
 from pathlib import Path
 from typing import Callable, Any, Union
 
+import numpy as np
 import pandas as pd
 
 
@@ -67,7 +68,7 @@ def save_json(data: Union[dict, list], filename: Union[str, Path], separators=('
     filename = Path(filename)
     filename.parent.mkdir(parents=True, exist_ok=True)
     with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=indent)
+        json.dump(data, f, ensure_ascii=False, indent=indent, separators=separators)
 
 
 def load_json(filename: Union[str, Path], object_hook: type[dict] = None):
@@ -266,3 +267,29 @@ def dict_to_tuples(d, parent_key=()):
             yield from dict_to_tuples(v, parent_key + (k,))
     else:
         yield parent_key + (d,)
+
+
+def angle_between_vectors(a, b):
+    """
+    calcula o ângulo entre dois vetores 3D usando o produto escalar.
+
+    ex:
+        vector_a = (1, 2, 3)
+        vector_b = (4, 5, 6)
+
+        angle = angle_between_vectors(vector_a, vector_b)
+
+        print(f"O ângulo entre os vetores é {angle:.2f} graus")
+
+    :param a: Um vetor N-dimensional com shape (N,)
+    :type a: tuple | np.ndarray
+    :param b:Um vetor N-dimensional com mesmo shape de "a"
+    :type b: tuple | np.ndarray
+    :return:
+    """
+    dot_product = np.dot(a, b)
+    norm_a = np.linalg.norm(a)
+    norm_b = np.linalg.norm(b)
+
+    theta = np.arccos(dot_product / (norm_a * norm_b))
+    return theta
