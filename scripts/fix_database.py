@@ -23,6 +23,8 @@ class FixDatabase(AnalysisPaths):
         self.projection = 'cmp'
         self.fix()
         self.dataset_structure = {
+            'siti': {'get_tiles_chunk': ['name', 'projection', 'tiling', 'tile', 'value'],
+                     },
             'get_tiles': {'get_tiles_chunk': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
                           'get_tiles_frame': ['name', 'projection', 'tiling', 'tile', 'category', 'value', None, None],
                           },
@@ -38,7 +40,7 @@ class FixDatabase(AnalysisPaths):
                               's-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
                               'ws-mse': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'category', 'frame', 'value'],
                               }
-        }
+            }
 
     def fix(self):
         self.fix_siti()
@@ -56,29 +58,24 @@ class FixDatabase(AnalysisPaths):
 
     def fix_siti(self):
         metric = 'siti'
+        self.dataset_structure[metric] = {'keys':
+                                              ['name', 'projection', 'tiling', 'tile', 'quality', 'si', 'ti'],
+                                          'path': Path(f'dataset/{metric}.pickle')
+                                          }
         new_database = Path(f'dataset/{metric}.pickle')
+
         if new_database.exists():
             return
 
-        siti = []
+        columns = list(self.dataset_structure[metric]['keys'])
 
-        for self.name in self.name_list:
-            database = load_pd_pickle(Path(f'dataset/{metric}/{metric}_{self.name}.pickle'))
+        for self.name in ['wingsuit_dubai']:
+            print(self.name)
+            data_full = load_pd_pickle(Path(f'dataset/{metric}/{metric}_{self.name}.pickle'))
 
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.user in self.users_by_name:
-                        for self.quality in self.quality_list:
-                            print(f'\r({metric}_{self.name}_{self.projection}_{self.tiling}_self.tile{self.tile}_qp{self.quality})', end='')
-                            for self.chunk in self.chunk_list:
-                                data = database[self.name][self.projection][self.tiling][self.tile][self.quality][self.chunk]['dash_m4s']
-                                siti.append((self.name, self.projection, self.tiling, int(self.tile), int(self.quality), int(self.chunk), int(data)))
         print('\nSaving')
-        columns = ['name', 'self.projection', 'self.tiling', 'self.tile', 'self.quality', 'chunk']
-        df = pd.DataFrame(siti, columns=columns + [metric])
-        df = df.set_index(columns)
-        serie = df[metric]
-        serie.to_pickle(new_database)
+        data_full.sort_index(inplace=True)
+        data_full.to_pickle(new_database)
 
     def fix_viewport_quality(self):
         pass
@@ -274,6 +271,7 @@ class FixDatabase(AnalysisPaths):
     def update_ui(self, desc: str):
         self.ui.update(desc)
 
+    _dataset_structure = {}
     @property
     def dataset_structure(self):
         return self._dataset_structure
