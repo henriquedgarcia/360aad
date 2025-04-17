@@ -206,11 +206,11 @@ class Factors:
         self.config.projection = value
 
     @property
-    def quality(self):
+    def quality(self)-> int:
         return self.config.quality
 
     @quality.setter
-    def quality(self, value):
+    def quality(self, value: int):
         self.config.quality = value
 
     @property
@@ -222,19 +222,19 @@ class Factors:
         self.config.tiling = value
 
     @property
-    def tile(self) -> str:
+    def tile(self) -> int:
         return self.config.tile
 
     @tile.setter
-    def tile(self, value: str):
+    def tile(self, value: int):
         self.config.tile = value
 
     @property
-    def chunk(self):
+    def chunk(self) -> 30:
         return self.config.chunk
 
     @chunk.setter
-    def chunk(self, value):
+    def chunk(self, value: int):
         self.config.chunk = value
 
     @property
@@ -285,9 +285,17 @@ class Lists:
     def quality_list(self):
         return self.config.quality_list
 
+    _tiling_list = None
+
     @property
     def tiling_list(self):
-        return self.config.tiling_list
+        if self._tiling_list is None:
+            self._tiling_list = self.config.tiling_list
+        return self._tiling_list
+
+    @tiling_list.setter
+    def tiling_list(self, value):
+        self._tiling_list = value
 
     @property
     def chunk_list(self):
@@ -304,7 +312,17 @@ class Lists:
 
 class ConfigIf(Factors, Lists):
     config = Config()
-    _dataset_structure: dict
+    _dataset_structure: dict = None
+
+    @property
+    def dataset_structure(self):
+        if self._dataset_structure is None:
+            self._dataset_structure = {}
+        return self._dataset_structure
+
+    @dataset_structure.setter
+    def dataset_structure(self, value):
+        self._dataset_structure = value
 
     @property
     def dataset_structure(self):
