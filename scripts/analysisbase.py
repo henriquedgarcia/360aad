@@ -35,6 +35,10 @@ class AnalysisProps(ConfigIf, ABC):
 
 class AnalysisPaths(AnalysisProps):
     @property
+    def siti_path(self):
+        siti_pickle = self.dataset_structure['siti']['path']
+        return siti_pickle
+    @property
     def head_movement_path(self):
         head_movement_pickle = self.dataset_structure['head_movement']['path']
         return head_movement_pickle
