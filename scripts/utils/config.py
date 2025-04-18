@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from math import prod
+from typing import Union, Any
 
 from scripts.utils.utils import splitx
 
@@ -254,14 +255,6 @@ class Factors:
         self.config.user = value
 
     @property
-    def group(self):
-        return self.config.group
-
-    @group.setter
-    def group(self, value):
-        self.config.group = value
-
-    @property
     def frame(self):
         return self.config.frame
 
@@ -274,7 +267,9 @@ class Lists:
     config: Config
 
     @property
-    def name_list(self):
+    def name_list(self) -> dict[Union[str, Any],
+                                Union[dict[str, str], Any]
+                                ]:
         return self.config.name_list
 
     @property
@@ -368,6 +363,16 @@ class ConfigIf(Factors, Lists):
     @property
     def decoding_num(self):
         return self.config.decoding_num
+
+    @property
+    def group(self):
+        if self.config.group is None and self.name is not None:
+            self.config.group = self.name_list[self.name]["group"]
+        return self.config.group
+
+    @group.setter
+    def group(self, value):
+        self.config.group = value
 
     @property
     def video_list_by_group(self) -> dict:
