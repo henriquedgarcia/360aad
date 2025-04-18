@@ -64,8 +64,8 @@ class FixDatabase(AnalysisPaths):
                                           }
         new_database = Path(f'dataset/{metric}.pickle')
 
-        if new_database.exists():
-            return
+        # if new_database.exists():
+        #     return
 
         columns = list(self.dataset_structure[metric]['keys'])
 
