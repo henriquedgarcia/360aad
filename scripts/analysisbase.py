@@ -139,9 +139,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         self.config = config
         self.setup()
 
-        if not self.stats_csv.exists():
-            self.make_stats()
-            self.save_stats()
+        self.make_stats()
 
         self.plots()
 
