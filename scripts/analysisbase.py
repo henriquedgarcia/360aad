@@ -3,7 +3,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Union
 
+import matplotlib as mpl
 import pandas as pd
+from cycler import cycler
+from matplotlib import pyplot as plt
 
 from scripts.utils.config import ConfigIf
 from scripts.utils.progressbar import ProgressBar
@@ -38,6 +41,7 @@ class AnalysisPaths(AnalysisProps):
     def siti_path(self):
         siti_pickle = self.dataset_structure['siti']['path']
         return siti_pickle
+
     @property
     def head_movement_path(self):
         head_movement_pickle = self.dataset_structure['head_movement']['path']
@@ -136,12 +140,36 @@ class AnalysisPaths(AnalysisProps):
 class AnalysisBase(AnalysisPaths, ABC):
     def __init__(self, config):
         print(f'{self.class_name} initializing...')
+        # self.rc_config()
         self.config = config
         self.setup()
 
         self.make_stats()
 
         self.plots()
+
+    @staticmethod
+    def rc_config():
+        rc_param = {"figure": {'figsize': (7.0, 1.2), 'dpi': 300, 'autolayout': True},
+                    "axes": {'linewidth': 1, 'titlesize': 8, 'labelsize': 7,
+                             'prop_cycle': cycler(color=[plt.get_cmap('tab20')(i) for i in range(20)])},
+                    "xtick": {'labelsize': 6},
+                    "ytick": {'labelsize': 6},
+                    "legend": {'fontsize': 6},
+                    "font": {'size': 6},
+                    "patch": {'linewidth': 0.5, 'edgecolor': 'black', 'facecolor': '#3297c9'},
+                    "lines": {'linewidth': 1, 'markersize': 2},
+                    "errorbar": {'capsize': 4},
+                    "boxplot": {'flierprops.marker': '+', 'flierprops.markersize': 1, 'flierprops.linewidth': 0.5,
+                                'boxprops.linewidth': 0.0,
+                                'capprops.linewidth': 1,
+                                'medianprops.linewidth': 0.5,
+                                'whiskerprops.linewidth': 0.5,
+                                }
+                    }
+
+        for group in rc_param:
+            mpl.rc(group, **rc_param[group])
 
     def save_stats(self):
         self.stats_df: pd.DataFrame = pd.DataFrame(self.stats_defaultdict)
