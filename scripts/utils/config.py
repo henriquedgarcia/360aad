@@ -28,7 +28,7 @@ class Config:
     quality_list = [22, 28, 34, 40, 46, 50]
     tiling_list = ["1x1", "3x2", "6x4", "9x6", "12x8"]
     projection_list = ['cmp']
-    name_list = {
+    name_list_2 = {
         "angel_falls": {
             "offset": "5:30",
             "group": "MN"
@@ -132,6 +132,60 @@ class Config:
         "video_23": {
             "offset": "0",
             "group": "RM"
+            },
+        "video_24": {
+            "offset": "0",
+            "group": "RM"
+            },
+        "wingsuit_dubai": {
+            "offset": "0:00",
+            "group": "MS"
+            }
+        }
+    name_list = {
+        "angel_falls": {
+            "offset": "5:30",
+            "group": "MN"
+            },
+        "cable_cam": {
+            "offset": "0:15",
+            "group": "HS"
+            },
+        "chariot_race": {
+            "offset": "0:00",
+            "group": "HM"
+            },
+        "drone_video": {
+            "offset": "0:15",
+            "group": "VM"
+            },
+        "glass_elevator": {
+            "offset": "0:14",
+            "group": "VN"
+            },
+        "montana": {
+            "offset": "0:00",
+            "group": "FN"
+            },
+        "nyc_drive": {
+            "offset": "0:12",
+            "group": "HM"
+            },
+        "pac_man": {
+            "offset": "0",
+            "group": "MM"
+            },
+        "rhinos": {
+            "offset": "0:18",
+            "group": "FM"
+            },
+        "sunset": {
+            "offset": "0:40",
+            "group": "FN"
+            },
+        "video_04": {
+            "offset": "0",
+            "group": "FS"
             },
         "video_24": {
             "offset": "0",
