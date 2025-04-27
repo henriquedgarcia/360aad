@@ -43,6 +43,36 @@ class SitiData:
         grouped = self.data.groupby(level=level)
         return grouped.apply(operation)
 
+class MetricsData:
+    def __init__(self, filename, context: AnalysisBase):
+        self.level = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
+        self.columns = ['bitrate', 'dectime', 'ssim', 'mse', 's-mse', 'ws-mse']
+        self.context = context
+        self.data: pd.DataFrame = load_pd_pickle(Path(filename))
+
+    def __getitem__(self, column) -> Union[int, float]:
+        """
+        if str, search colum, full index
+        if tuple, search index using cross-section
+        :param column:
+        :return:
+        """
+        levels = self.level
+        key = tuple(getattr(self.context, level) for level in levels)
+
+        if key[-1] is None:
+            levels = self.level[:-1]
+            key = key[:-1]
+        return self.data.xs(key=key, level=levels)[column]
+
+    def xs(self, levels):
+        key = tuple(getattr(self.context, level) for level in levels)
+        return self.data.xs(key=key, level=levels)
+
+    def group_by(self, level: list[str], operation) -> pd.DataFrame:
+        grouped = self.data.groupby(level=level)
+        return grouped.apply(operation)
+
 
 def frame_to_chunk(frame_serie):
     filtered = []
@@ -64,25 +94,40 @@ class AnalysisSiti(AnalysisBase):
 
         self.tile_map = {0: 'left', 1: 'front', 2: 'right', 3: 'down', 4: 'back', 5: 'top'}
         self.siti = SitiData(f'dataset/siti.pickle', self)
+        self.siti.data = self.siti.data.xs(key=('cmp', '3x2', 28), level=['projection', 'tiling', 'quality'])
+
+        self.metrics = MetricsData(f'dataset/metrics.pickle', self)
+        self.metrics.data = self.metrics.data.xs(key=('cmp', '3x2', 28), level=['projection', 'tiling', 'quality'])
 
     def make_stats(self):
         # if self.stats_csv.exists(): return
 
         for self.group, video_list in self.video_list_by_group.items():
             for self.name in video_list:
-                data = self.siti.xs(('name',))
-                data_mean = data.groupby(['tile']).mean().mean()
-                data_std = data.groupby(['tile']).std().mean()
+                siti = self.siti.xs(('name',))
+                siti_mean = siti.groupby(['tile']).mean().mean()
+                siti_std = siti.groupby(['tile']).std().mean()
+
+                metrics = self.metrics.xs(('name',))
+                metrics_mean = metrics.groupby(['tile']).mean().mean()
+                metrics_std = metrics.groupby(['tile']).std().mean()
 
                 self.stats_defaultdict['Group'].append(self.group)
                 self.stats_defaultdict['Name'].append(self.name)
                 self.stats_defaultdict['Tiling'].append(self.tiling)
                 self.stats_defaultdict['Quality'].append(self.quality)
 
-                self.stats_defaultdict['si_mean'].append(data_mean['si'])
-                self.stats_defaultdict['si_std_mean'].append(data_std['si'])
-                self.stats_defaultdict['ti_Media'].append(data_mean['ti'])
-                self.stats_defaultdict['ti_std_mean'].append(data_std['ti'])
+                self.stats_defaultdict['bitrate_mean'].append(metrics_mean['bitrate'])
+                self.stats_defaultdict['bitrate_std'].append(metrics_std['bitrate'])
+                self.stats_defaultdict['dectime_mean'].append(metrics_mean['dectime'])
+                self.stats_defaultdict['dectime_std'].append(metrics_std['dectime'])
+                self.stats_defaultdict['mse_mean'].append(metrics_mean['mse'])
+                self.stats_defaultdict['mse_std'].append(metrics_std['mse'])
+
+                self.stats_defaultdict['si_mean'].append(siti_mean['si'])
+                self.stats_defaultdict['si_std_mean'].append(siti_std['si'])
+                self.stats_defaultdict['ti_Media'].append(siti_mean['ti'])
+                self.stats_defaultdict['ti_std_mean'].append(siti_std['ti'])
         self.save_stats()
 
     def plots(self):
