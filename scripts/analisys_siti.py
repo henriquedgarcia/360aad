@@ -43,6 +43,7 @@ class SitiData:
         grouped = self.data.groupby(level=level)
         return grouped.apply(operation)
 
+
 class MetricsData:
     def __init__(self, filename, context: AnalysisBase):
         self.level = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
@@ -85,6 +86,7 @@ def frame_to_chunk(frame_serie):
 class AnalysisSiti(AnalysisBase):
     siti: SitiData
     tile_map: dict
+    metrics: MetricsData
 
     def setup(self):
         self.stats_defaultdict = defaultdict(list)
