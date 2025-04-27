@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from math import prod
-from typing import Union, Any
+from typing import Union
 
 from scripts.utils.utils import splitx
 
@@ -25,7 +25,7 @@ class Config:
     fov = "110x90"
 
     chunk_list = list(range(1, 61))
-    quality_list = [22, 28, 34, 40, 46, 50]
+    quality_list = [16, 22, 28, 34, 40]
     tiling_list = ["1x1", "3x2", "6x4", "9x6", "12x8"]
     projection_list = ['cmp']
 
@@ -33,151 +33,151 @@ class Config:
         "cable_cam": {
             "offset": "0:15",
             "group": "HS"
-            },
+        },
         "closet_tour": {
             "offset": "0:07",
             "group": "FS"
-            },
+        },
         "drop_tower": {
             "offset": "1:11",
             "group": "VM"
-            },
+        },
         "glass_elevator": {
             "offset": "0:14",
             "group": "VN"
-            },
+        },
         "pac_man": {
             "offset": "0",
             "group": "MM"
-            },
+        },
         "penthouse": {
             "offset": "0:04",
             "group": "RS"
-            },
+        },
         "sunset": {
             "offset": "0:40",
             "group": "FN"
-            },
+        },
         "wingsuit_dubai": {
             "offset": "0:00",
             "group": "MS"
-            }
         }
+    }
 
     name_list_original = {
         "angel_falls": {
             "offset": "5:30",
             "group": "MN"
-            },
+        },
         "blue_angels": {
             "offset": "1:00",
             "group": "MM"
-            },
+        },
         "cable_cam": {
             "offset": "0:15",
             "group": "HS"
-            },
+        },
         "chariot_race": {
             "offset": "0:00",
             "group": "HM"
-            },
+        },
         "closet_tour": {
             "offset": "0:07",
             "group": "FS"
-            },
+        },
         "drone_chases_car": {
             "offset": "2:11",
             "group": "MS"
-            },
+        },
         "drone_footage": {
             "offset": "0:01",
             "group": "HN"
-            },
+        },
         "drone_video": {
             "offset": "0:15",
             "group": "VM"
-            },
+        },
         "drop_tower": {
             "offset": "1:11",
             "group": "VM"
-            },
+        },
         "dubstep_dance": {
             "offset": "0:05",
             "group": "FM"
-            },
+        },
         "elevator_lift": {
             "offset": "0:00",
             "group": "VN"
-            },
+        },
         "glass_elevator": {
             "offset": "0:14",
             "group": "VN"
-            },
+        },
         "montana": {
             "offset": "0:00",
             "group": "FN"
-            },
+        },
         "motorsports_park": {
             "offset": "0:15",
             "group": "HS"
-            },
+        },
         "nyc_drive": {
             "offset": "0:12",
             "group": "HM"
-            },
+        },
         "pac_man": {
             "offset": "0",
             "group": "MM"
-            },
+        },
         "penthouse": {
             "offset": "0:04",
             "group": "RS"
-            },
+        },
         "petite_anse": {
             "offset": "0:45",
             "group": "HN"
-            },
+        },
         "rhinos": {
             "offset": "0:18",
             "group": "FM"
-            },
+        },
         "sunset": {
             "offset": "0:40",
             "group": "FN"
-            },
+        },
         "three_peaks": {
             "offset": "0:00",
             "group": "MN"
-            },
+        },
         "video_04": {
             "offset": "0",
             "group": "FS"
-            },
+        },
         "video_19": {
             "offset": "0",
             "group": "RN"
-            },
+        },
         "video_20": {
             "offset": "0",
             "group": "RN"
-            },
+        },
         "video_22": {
             "offset": "0",
             "group": "RS"
-            },
+        },
         "video_23": {
             "offset": "0",
             "group": "RM"
-            },
+        },
         "video_24": {
             "offset": "0",
             "group": "RM"
-            },
+        },
         "wingsuit_dubai": {
             "offset": "0:00",
             "group": "MS"
-            }
         }
+    }
 
     name = projection = tiling = tile = quality = chunk = user = metric = group = frame = category = None
 
@@ -214,7 +214,7 @@ class Config:
                        'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
                        'quantity': 'Seen Tiles'
                        },
-        }
+    }
 
     @property
     def groups_list(self):
@@ -243,7 +243,7 @@ class Factors:
         self.config.projection = value
 
     @property
-    def quality(self)-> int:
+    def quality(self) -> int:
         return self.config.quality
 
     @quality.setter
@@ -303,9 +303,7 @@ class Lists:
     config: Config
 
     @property
-    def name_list(self) -> dict[Union[str, Any],
-                                Union[dict[str, str], Any]
-                                ]:
+    def name_list(self) -> dict[str, Union[dict[str, str], dict[str, str], dict[str, str], dict[str, str], dict[str, str], dict[str, str], dict[str, str], dict[str, str]]]:
         return self.config.name_list
 
     @property
@@ -348,17 +346,12 @@ class ConfigIf(Factors, Lists):
     @property
     def dataset_structure(self):
         if self._dataset_structure is None:
-            self._dataset_structure = {}
+            self._dataset_structure = self.config.dataset_structure
         return self._dataset_structure
 
     @dataset_structure.setter
     def dataset_structure(self, value):
         self._dataset_structure = value
-
-    @property
-    def dataset_structure(self):
-        self._dataset_structure = self.config.dataset_structure
-        return self._dataset_structure
 
     @property
     def video_shape(self):
