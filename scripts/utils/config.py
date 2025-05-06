@@ -202,30 +202,30 @@ class Config:
                     'columns_types': [int],
                     'quantity': 'Bitrate (bps)'
                     },
-        'dectime': {'path': f'dataset/dectime.pickle',
-                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                    'quantity': 'Time (s)'
-                    },
-        'ssim': {'path': f'dataset/ssim.pickle',
-                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                 'quantity': ''
-                 },
-        'mse': {'path': f'dataset/mse.pickle',
-                'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                'quantity': ''
-                },
-        's_mse': {'path': f'dataset/s_mse.pickle',
-                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                  'quantity': ''
-                  },
-        'ws_mse': {'path': f'dataset/ws_mse.pickle',
-                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-                   'quantity': ''
-                   },
-        'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
-                       'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
-                       'quantity': 'Seen Tiles'
-                       },
+        # 'dectime': {'path': f'dataset/dectime.pickle',
+        #             'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+        #             'quantity': 'Time (s)'
+        #             },
+        # 'ssim': {'path': f'dataset/ssim.pickle',
+        #          'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+        #          'quantity': ''
+        #          },
+        # 'mse': {'path': f'dataset/mse.pickle',
+        #         'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+        #         'quantity': ''
+        #         },
+        # 's_mse': {'path': f'dataset/s_mse.pickle',
+        #           'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+        #           'quantity': ''
+        #           },
+        # 'ws_mse': {'path': f'dataset/ws_mse.pickle',
+        #            'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+        #            'quantity': ''
+        #            },
+        # 'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
+        #                'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
+        #                'quantity': 'Seen Tiles'
+        #                },
     }
 
     @property
