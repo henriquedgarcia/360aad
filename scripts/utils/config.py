@@ -182,35 +182,47 @@ class Config:
     name = projection = tiling = tile = quality = chunk = user = metric = group = frame = category = None
 
     dataset_structure = {
-        'head_movement': {'path': f'database/head_movement.pickle',
+        'siti': {'path': f'dataset/siti.pickle',
+                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'frame'],
+                 'columns': ['si', 'ti'],
+                 'quantity': ''
+                 },
+        'head_movement': {'path': f'dataset/head_movement.pickle',
                           'keys': ['name', 'projection', 'user', 'frame'],
+                          'key_types': [str, str, str, int, int, int],
+                          'columns': ['yaw', 'pitch', 'roll'],
+                          'columns_types': [float, float, float],
                           'quantity': 'Rads'
                           },
-        'bitrate': {'path': f'database/bitrate.pickle',
+
+        'bitrate': {'path': f'dataset/bitrate.pickle',
                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                    'key_types': [str, str, str, int, int, int],
+                    'columns': ['bitrate'],
+                    'columns_types': [int],
                     'quantity': 'Bitrate (bps)'
                     },
-        'dectime': {'path': f'database/dectime.pickle',
+        'dectime': {'path': f'dataset/dectime.pickle',
                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                     'quantity': 'Time (s)'
                     },
-        'ssim': {'path': f'database/ssim.pickle',
+        'ssim': {'path': f'dataset/ssim.pickle',
                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                  'quantity': ''
                  },
-        'mse': {'path': f'database/mse.pickle',
+        'mse': {'path': f'dataset/mse.pickle',
                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                 'quantity': ''
                 },
-        's_mse': {'path': f'database/s_mse.pickle',
+        's_mse': {'path': f'dataset/s_mse.pickle',
                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                   'quantity': ''
                   },
-        'ws_mse': {'path': f'database/ws_mse.pickle',
+        'ws_mse': {'path': f'dataset/ws_mse.pickle',
                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                    'quantity': ''
                    },
-        'seen_tiles': {'path': f'database/seen_tiles.pickle',
+        'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
                        'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
                        'quantity': 'Seen Tiles'
                        },
