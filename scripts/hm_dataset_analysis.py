@@ -38,17 +38,32 @@ def main():
                 self.make_stats_df()
 
             df_user_mean = self.stats_df.groupby('user').mean()
+            df_user_mean.columns=['vel_avg', 'dist_avg']
             df_user_std = self.stats_df.groupby('user').std()
-            df_user_mean.join(df_user_std)
+            df_user_std.columns=['vel_std', 'dist_std']
+            df_user: pd.DataFrame = df_user_mean.join(df_user_std)
+            df_user.sort_values('vel_avg')
 
             df_name_mean = self.stats_df.groupby('name').mean()
+            df_name_mean.columns=['vel_avg', 'dist_avg']
             df_name_std = self.stats_df.groupby('name').std()
-            df_name_mean.join(df_name_std)
+            df_name_std.columns=['vel_std', 'dist_std']
+            df_name = df_name_mean.join(df_name_std)
+            df_name.sort_values('vel_avg')
 
         def make_stats_df(self):
+            users_by_name = {}
+            for name in self.config.name_list_original:
+                key = (name, self.projection)
+                level = ['name', 'projection']
+                coss_section = self.head_movement_db.xs(key=key, level=level)
+                level_values = coss_section.index.get_level_values('user').unique()
+                users = list(level_values)
+                users_by_name[name] = users
+
             data = []
-            for self.name in self.name_list:
-                for self.user in self.users_by_name[self.name]:
+            for self.name in self.config.name_list_original:
+                for self.user in users_by_name[self.name]:
                     levels = ['name', 'projection', 'user']
                     database = self.data.xs(levels=levels)
                     ea = database[['pitch', 'yaw']].to_numpy().T
