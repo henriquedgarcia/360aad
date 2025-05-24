@@ -130,7 +130,7 @@ class AnalysisPaths(AnalysisProps):
 
     @property
     def stats_csv(self):
-        return self.stats_workfolder / f'{self.class_name}_stats.csv'
+        return self.stats_workfolder / f'{self.class_name}_{self.projection}_{self.rate_control}_stats.csv'
 
     @property
     def corr_csv(self):
@@ -186,14 +186,20 @@ class AnalysisBase(AnalysisPaths, ABC):
     def plots(self):
         ...
 
+    keys: list
+    column: list
+
     def load_database(self, callback: Callable = None):
-        filename = 'database/metrics.pickle'
+        filename = self.dataset_structure[self.metric]['path']
         self.database = load_pd_pickle(filename)
+        self.keys = self.dataset_structure[self.metric]['keys']
+        self.column = self.dataset_structure[self.metric]['columns'][0]
+
         if callback: callback(self)
 
-    def get_chunk_data(self, levels: tuple[str, ...]) -> pd.Series:
-        key = tuple(getattr(self, level) for level in levels)
-        chunk_data: pd.Series = self.database[self.metric].xs(key=key, level=levels)
+    def get_chunk_data(self, level: tuple[str, ...]) -> pd.Series:
+        key = tuple(getattr(self, lv) for lv in level)
+        chunk_data: pd.Series = self.database.xs(key=key, level=level)[self.column]
         return chunk_data
 
     def start_ui(self, total, desc):
