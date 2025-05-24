@@ -14,16 +14,16 @@ class UserSerieAnalysisNameTilingQualityFrame(AnalysisBase):
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
-        del self.dataset_structure['dash_mpd']
-        del self.dataset_structure['dash_init']
-        del self.dataset_structure['dectime_std']
+        del self.dataset_structure['siti']
+        del self.dataset_structure['head_movement']
+        del self.dataset_structure['seen_tiles']
 
     def make_stats(self):
         print(f'make_stats.')
         metric_list = list(self.dataset_structure)
         for self.metric in metric_list:
             self.load_database()
-            for self.user in self.users_list:
+            for self.user in self.users_by_name:
                 self.load_get_tiles()
 
                 for self.name in self.name_list:
