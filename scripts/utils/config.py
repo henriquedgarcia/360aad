@@ -182,50 +182,71 @@ class Config:
     name = projection = tiling = tile = quality = chunk = user = metric = group = frame = category = None
 
     dataset_structure = {
-        'siti': {'path': f'dataset/siti.pickle',
+        'siti': {'path': f'dataset/siti_qp.pickle',
                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'frame'],
+                 'key_types': [str, str, str, int, int, int],
                  'columns': ['si', 'ti'],
+                 'columns_types': [float, float],
                  'quantity': ''
                  },
         'head_movement': {'path': f'dataset/head_movement.pickle',
                           'keys': ['name', 'projection', 'user', 'frame'],
-                          'key_types': [str, str, str, int, int, int],
+                          'key_types': [str, str, int, int],
                           'columns': ['yaw', 'pitch', 'roll'],
                           'columns_types': [float, float, float],
                           'quantity': 'Rads'
                           },
+        'seen_tiles': {'path': f'dataset/seen_tiles_cmp_fov110x90.pickle',
+                       'keys': ['name', 'projection', 'tiling', 'user', 'chunk'],
+                       'key_types': [str, str, str, int, int],
+                       'columns': ['seen_tiles'],
+                       'columns_types': [list[int]],
+                       'quantity': 'Tiles Seen'
+                       },
 
-        'bitrate': {'path': f'dataset/bitrate.pickle',
+        'bitrate': {'path': f'dataset/bitrate_qp.pickle',
                     'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
                     'key_types': [str, str, str, int, int, int],
                     'columns': ['bitrate'],
                     'columns_types': [int],
                     'quantity': 'Bitrate (bps)'
                     },
-        # 'dectime': {'path': f'dataset/dectime.pickle',
-        #             'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-        #             'quantity': 'Time (s)'
-        #             },
-        # 'ssim': {'path': f'dataset/ssim.pickle',
-        #          'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-        #          'quantity': ''
-        #          },
-        # 'mse': {'path': f'dataset/mse.pickle',
-        #         'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-        #         'quantity': ''
-        #         },
-        # 's_mse': {'path': f'dataset/s_mse.pickle',
-        #           'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-        #           'quantity': ''
-        #           },
-        # 'ws_mse': {'path': f'dataset/ws_mse.pickle',
-        #            'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
-        #            'quantity': ''
-        #            },
-        # 'seen_tiles': {'path': f'dataset/seen_tiles.pickle',
-        #                'keys': ['name', 'projection', 'user', 'tiling', 'chunk'],
-        #                'quantity': 'Seen Tiles'
-        #                },
+        'dectime': {'path': f'dataset/dectime_cmp_qp.pickle',
+                    'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                    'key_types': [str, str, str, int, int, int],
+                    'columns': ['dectime'],
+                    'columns_types': [float],
+                    'quantity': 'Time (s)'
+                    },
+        'ssim': {'path': f'dataset/chunk_quality_ssim_cmp_qp.pickle',
+                 'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                 'key_types': [str, str, str, int, int, int],
+                 'columns': ['ssim'],
+                 'columns_types': [float],
+                 'quantity': ''
+                 },
+        'mse': {'path': f'dataset/chunk_quality_mse_cmp_qp.pickle',
+                'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                'key_types': [str, str, str, int, int, int],
+                'columns': ['mse'],
+                'columns_types': [float],
+                'quantity': ''
+                },
+        's-mse': {'path': f'dataset/chunk_quality_s-mse_cmp_qp.pickle',
+                  'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                  'key_types': [str, str, str, int, int, int],
+                  'columns': ['s-mse'],
+                  'columns_types': [float],
+                  'quantity': ''
+                  },
+        'ws-mse': {'path': f'dataset/chunk_quality_ws-mse_cmp_qp.pickle',
+                   'keys': ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'],
+                   'key_types': [str, str, str, int, int, int],
+                   'columns': ['ws-mse'],
+                   'columns_types': [float],
+                   'quantity': ''
+                   },
+
     }
 
     @property
