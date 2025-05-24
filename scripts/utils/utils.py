@@ -4,7 +4,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from functools import reduce
 from pathlib import Path
-from typing import Callable, Any, Union
+from typing import Callable, Any, Union, TextIO
 
 import numpy as np
 import pandas as pd
@@ -26,9 +26,9 @@ def get_nested_value_(data, keys) -> Any:
     try:
         return reduce(func, keys, data)
     except KeyError as e:
-        raise KeyError(f"Key not found: {e}")
+        raise KeyError("Key not found: {e}")
     except TypeError as e:
-        raise TypeError(f"Invalid structure: {e}")
+        raise TypeError("Invalid structure: {e}")
 
 
 def get_nested_value(data, keys) -> Any:
@@ -67,6 +67,7 @@ class AutoDict(dict):
 def save_json(data: Union[dict, list], filename: Union[str, Path], separators=(',', ':'), indent=None):
     filename = Path(filename)
     filename.parent.mkdir(parents=True, exist_ok=True)
+    f: TextIO
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=indent, separators=separators)
 
@@ -279,7 +280,7 @@ def angle_between_vectors(a, b):
 
         angle = angle_between_vectors(vector_a, vector_b)
 
-        print(f"O ângulo entre os vetores é {angle:.2f} graus")
+        print(files"O ângulo entre os vetores é {angle:.2f} graus")
 
     :param a: Um vetor N-dimensional com shape (N,)
     :type a: tuple | np.ndarray
