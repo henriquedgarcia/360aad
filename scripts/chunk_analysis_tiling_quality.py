@@ -3,41 +3,61 @@ from collections import defaultdict
 from contextlib import contextmanager
 from typing import Any, Generator
 
+import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
 from scripts.utils.config import Config
+from scripts.utils.database import DectimeData, Data, BitrateData, ChunkQualityData, ChunkQualitySSIMData, ChunkQualityMSEData, ChunkQualityWSMSEData, ChunkQualitySMSEData
 from scripts.utils.utils import AutoDict
 
 cor = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
 
 
 class ChunkAnalysisTilingQuality(AnalysisBase):
+    bucket: AutoDict
+    metric_list: list
+    metrics_datasets: dict[str, Data]
+
     def setup(self):
         self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
-        self.projection = 'cmp'
-        del self.dataset_structure['seen_tiles']
-        self.load_database()
+        self.metrics_datasets = {'dectime': DectimeData(self),
+                                 'bitrate': BitrateData(self),
+                                 'ssim': ChunkQualitySSIMData(self),
+                                 'mse': ChunkQualityMSEData(self),
+                                 's-mse': ChunkQualitySMSEData(self),
+                                 'ws-mse': ChunkQualityWSMSEData(self)}
+
+    def get_chunk_data(self, level: tuple[str, ...]) -> pd.Series:
+        dataset = self.metrics_datasets[self.metric]
+        data = dataset.xs(level)
+
+        key = tuple(getattr(self, lv) for lv in level)
+        chunk_data: pd.Series = self.database.xs(key=key, level=level)[self.column]
+        return chunk_data
 
     def make_stats(self):
         print(f'make_stats.')
-        for self.metric in self.dataset_structure:
-            self.load_database()
-            for self.tiling in self.tiling_list:
-                for self.quality in self.quality_list:
-                    chunk_data = self.get_chunk_data(('tiling', 'quality'))
-                    self.stats_defaultdict['Metric'].append(self.metric)
-                    self.stats_defaultdict['Tiling'].append(self.tiling)
-                    self.stats_defaultdict['Quality'].append(self.quality)
-                    self.stats_defaultdict['n_arquivos'].append(len(chunk_data))
-                    self.stats_defaultdict['Média'].append(chunk_data.mean())
-                    self.stats_defaultdict['Desvio Padrão'].append(chunk_data.std())
-                    self.stats_defaultdict['Mínimo'].append(chunk_data.quantile(0.00))
-                    self.stats_defaultdict['1º Quartil'].append(chunk_data.quantile(0.25))
-                    self.stats_defaultdict['Mediana'].append(chunk_data.quantile(0.50))
-                    self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
-                    self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
+        if self.stats_csv.exists(): return
+        for self.projection in self.projection_list:
+            for self.metric in self.metrics_datasets:
+                for self.tiling in self.tiling_list:
+                    for self.quality in self.quality_list:
+                        chunk_data = self.get_chunk_data(level=('tiling', 'quality'))
+                        self.stats_defaultdict['Metric'].append(self.metric)
+                        self.stats_defaultdict['Projection'].append(self.projection)
+                        self.stats_defaultdict['Tiling'].append(self.tiling)
+                        self.stats_defaultdict['Quality'].append(self.quality)
+                        self.stats_defaultdict['n_arquivos'].append(len(chunk_data))
+                        self.stats_defaultdict['Média'].append(chunk_data.mean())
+                        self.stats_defaultdict['Desvio Padrão'].append(chunk_data.std())
+                        self.stats_defaultdict['Mínimo'].append(chunk_data.quantile(0.00))
+                        self.stats_defaultdict['1º Quartil'].append(chunk_data.quantile(0.25))
+                        self.stats_defaultdict['Mediana'].append(chunk_data.quantile(0.50))
+                        self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
+                        self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
+        self.save_stats()
 
     def plots(self):
         self.make_boxplot_quality_tiling()
