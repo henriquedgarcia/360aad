@@ -228,7 +228,7 @@ class FixDatabase(AnalysisPaths):
 
             df = pd.DataFrame.from_dict(series_dict)
             df.to_pickle(final_name())
-            # df = pd.read_pickle(f'dataset/metrics.pickle')
+            # df = pd.read_pickle(files'dataset/metrics.pickle')
             # pd.options.display.max_columns=pd.options.display.max_colwidth = 999
 
         def group_seen_tiles():
