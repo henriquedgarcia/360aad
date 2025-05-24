@@ -133,11 +133,12 @@ class AnalysisSiti(AnalysisBase):
         self.save_stats()
 
     def plots(self):
+        pass
         # self.plot_by_frame()
         # self.plot_by_chunk()
         # self.boxplot_mean()
         # self.boxplot2()
-        self.scatter_mean_x_std()
+        # self.scatter_mean_x_std()
 
     def plot_by_frame(self):
 
