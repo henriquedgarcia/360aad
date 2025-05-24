@@ -1,93 +1,100 @@
-from scripts.utils.utils import get_nested_value, load_json
+from abc import ABC
+from pathlib import Path
+from typing import Union
+
+import pandas as pd
+
+from scripts.utils.config import ConfigIf
 
 
-class Database:
-    database: dict = None
+class Data(ABC):
+    level: list
+    config: ConfigIf
+    data: pd.Dataframe
 
-    def __init__(self, config):
+    def __init__(self, filename: Union[str, Path], config: ConfigIf):
         self.config = config
+        self.filename = filename
+        self.data: pd.DataFrame = pd.read_pickle(filename)
 
-    def get_value(self):
-        value = get_nested_value(self.database, self.get_keys())
-        return value
+        self.level = list(self.data.index.names)
+        self.columns = list(self.data.columns)
 
-    def get_aggregates_chunks(self):
-        value = []
-        for self.config.chunk in self.config.chunk_list:
-            value = get_nested_value(self.database, self.get_keys())
-        return value
+    def __getitem__(self, column) -> Union[int, float]:
+        """
+        if str, search colum, full index
+        if tuple, search index using cross-section
+        :param column:
+        :return:
+        """
+        levels = self.level
+        key = tuple(getattr(self.config, level) for level in levels)
+        return self.data.xs(key=key, level=levels)[column]
 
-    def load(self, filename):
-        self.database = load_json(filename)
+    def xs(self, levels):
+        key = tuple(getattr(self.config, level) for level in levels)
+        return self.data.xs(key=key, level=levels)
 
-    def get_keys(self) -> list:
-        ...
-
-
-class TimeDatabase(Database):
-    categories = ['dectime', 'dectime_avg', 'dectime_med', 'dectime_std']
-
-    def get_keys(self):
-        # assert self.config.category in self.categories
-        return [self.config.name, self.config.projection, self.config.tiling,
-                self.config.tile, self.config.quality, self.config.chunk,
-                self.config.category]
+    def group_by(self, level: list[str], operation) -> pd.DataFrame:
+        grouped = self.data.groupby(level=level)
+        return grouped.apply(operation)
 
 
-class BitrateDatabase(Database):
-    categories = ['dash_mpd', 'dash_init', 'dash_m4s']
-
-    def get_keys(self):
-        # assert self.config.category in self.categories
-        keys = [self.config.name, self.config.projection, self.config.tiling, self.config.tile]
-        if self.config.category == 'dash_mpd':
-            keys.append(self.config.category)
-            return keys
-
-        keys.append(self.config.quality)
-        if self.config.category == 'dash_init':
-            keys.append(self.config.category)
-            return keys
-
-        keys.append(self.config.chunk)
-        if self.config.category == 'dash_m4s':
-            keys.append(self.config.category)
-            return keys
-        raise ValueError('metric not supported')
+class SitiData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/siti_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
 
 
-class QualityDatabase(Database):
-    categories = ['ssim', 'mse', 's-mse', 'ws-mse']
-
-    def get_keys(self):
-        # assert self.config.category in self.categories
-        return [self.config.name, self.config.projection, self.config.tiling,
-                self.config.tile, self.config.quality, self.config.chunk,
-                self.config.category]
+class TilesSeenData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/seen_tiles_fov110x90.pickle" if filename is not None else filename
+        super().__init__(filename, config)
 
 
-class GetTilesDatabase(Database):
-    categories = ['frame', 'chunk']
-
-    def get_keys(self):
-        # assert self.config.category in self.categories
-        keys = [self.config.name, self.config.projection, self.config.tiling,
-                self.config.user, self.config.category]
-
-        if self.config.category == 'chunks':
-            keys.append(self.config.chunk)
-        return keys
+class DectimeData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/dectime_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
 
 
-def database_factory(metric, config):
-    config.metric = metric
-    if metric == 'time':
-        return TimeDatabase(config)
-    elif metric == 'bitrate':
-        return BitrateDatabase(config)
-    elif metric == 'chunk_quality':
-        return QualityDatabase(config)
-    elif metric == 'get_tiles':
-        return GetTilesDatabase(config)
-    else:
-        return None
+class BitrateData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/bitrate_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
+
+
+class ChunkQualitySSIMData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/chunk_quality_ssim_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
+
+
+class ChunkQualityMSEData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/chunk_quality_mse_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
+
+
+class ChunkQualitySMSEData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/chunk_quality_s-mse_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
+
+
+class ChunkQualityWSMSEData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/chunk_quality_ws-mse_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
+
+
+class UserViewportData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/user_viewport_quality_qp.pickle" if filename is not None else filename
+        super().__init__(filename, config)
+
+
+class HeadMovementData(Data):
+    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/head_movement.pickle" if filename is not None else filename
+        super().__init__(filename, config)
