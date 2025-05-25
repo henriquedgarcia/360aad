@@ -1,7 +1,12 @@
 import argparse
 import json
 
-from scripts import *
+from scripts.chunk_analysis_general import ChunkAnalysisGeneral
+from scripts.chunk_analysis_tiling_quality import ChunkAnalysisTilingQuality
+from scripts.fix_database import FixDatabase
+from scripts.serie_analysis_tiling_quality_chunk import SerieAnalysisTilingQualityChunk
+from scripts.serie_analysis_tiling_quality_chunk_frame import SerieAnalysisTilingQualityChunkFrame
+from scripts.tile_analysis_tiling_quality import TileAnalysisTilingQuality
 from scripts.utils.config import Config
 
 workers = {0: FixDatabase.__name__,
