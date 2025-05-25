@@ -2,92 +2,16 @@ from collections import defaultdict
 from typing import Union
 
 import numpy as np
-import pandas as pd
+from PIL.Image import Image
 from matplotlib import pyplot as plt
-from py360tools import ERP, CMP, ProjectionBase
+from py360tools import ERP, CMP, ProjectionBase, compose
 from py360tools.draw import draw
+from skvideo.io import FFmpegReader
 
-from lib.assets.autodict import AutoDict
-from lib.assets.errors import GetTilesOkError, HMDDatasetError
-from lib.assets.worker import Worker
-from lib.make_tiles_seen import MakeTilesSeen
-from lib.utils.context_utils import task
-from lib.utils.util import print_error, save_json, load_json, splitx, get_nested_value, save_pickle, load_pickle
+from scripts.utils.utils import load_json, splitx
 
 
-class HmAnalysisPaths:
-    def __init__(self, ctx):
-        self.ctx = ctx
-
-    pass
-
-
-class HmAnalysis(Worker):
-    projection_dict: dict['str', dict['str', ProjectionBase]]
-    get_tiles_paths: HmAnalysisPaths
-
-    def main(self):
-        self.init()
-        self.process()
-
-    def init(self):
-        self.get_tiles_paths = HmAnalysisPaths(self.ctx)
-        # self.create_projections_dict()
-
-    def process(self):
-        for _ in self.iterate_name_user():
-            with task(self):
-                self.work()
-
-    def work(self):
-        for frame, yaw_pitch_roll in enumerate(self.user_hmd_data, 1):
-            print(f'\r\tframe {frame:04d}/{self.n_frames}', end='')
-            yaw_pitch_roll = yaw_pitch_roll
-
-    def save_tiles_seen(self):
-        save_json(self.tiles_seen, self.get_tiles_paths.user_tiles_seen_json)
-
-    @property
-    def results(self):
-        keys = [self.ctx.name, self.ctx.projection, self.ctx.tiling, self.ctx.user]
-        try:
-            value = get_nested_value(self._results, keys)
-        except KeyError:
-            value = None
-        return value
-
-    _results: dict
-
-    @results.setter
-    def results(self, value):
-        keys = [self.ctx.name, self.ctx.projection, self.ctx.tiling, self.ctx.user]
-        get_nested_value(self._results, keys).update(value)
-
-
-class CreateJson(MakeTilesSeen):
-    def process(self):
-        for self.name in self.name_list:
-            self.reset_results(AutoDict)
-            for self.projection in self.projection_list:
-                for self.tiling in self.tiling_list:
-                    for self.user in self.users_list:
-                        self.for_each_user()
-            save_pickle(self.results, self.get_tiles_paths.seen_tiles_result)
-
-    def for_each_user(self):
-        print(f'==== CreateJson {self.ctx} ====')
-        tiles_seen = load_json(self.get_tiles_paths.user_seen_tiles_json)
-        self.results.update(tiles_seen)
-
-
-class HeatMap(GetTiles):
-    def for_each_user(self):
-        print(f'==== GetTiles {self.ctx} ====')
-        try:
-            self.heatmap()
-        except (HMDDatasetError, GetTilesOkError) as e:
-            print_error(f'\t{e.args[0]}')
-
+class HeatMap:
     def heatmap(self):
         results = load_json(self.get_tiles_paths.counter_tiles_json)
 
@@ -113,23 +37,6 @@ class HeatMap(GetTiles):
 
         # fig.show()
         fig.savefig(f'{heatmap_tiling}')
-
-
-class TestGetTiles(GetTiles):
-    def for_each_user(self):
-        print(f'==== GetTiles {self.ctx} ====')
-        try:
-            self.plot_stats()
-        except (HMDDatasetError, GetTilesOkError) as e:
-            print_error(f'\t{e.args[0]}')
-
-    results: pd.DataFrame
-    def init(self):
-        super().init()
-        self.results = load_pickle(self.get_tiles_paths.seen_tiles_result)
-        pass
-
-    seen_tiles_metric: dict
 
     def plot_stats(self):
         fig: plt.Figure
@@ -189,14 +96,8 @@ class TestGetTiles(GetTiles):
         plt.close(fig)
 
 
-def build_projection(proj_name, proj_res, tiling, vp_res, fov_res) -> ProjectionBase:
-    if proj_name == 'erp':
-        projection = ERP(tiling=tiling, proj_res=proj_res, vp_res=vp_res, fov_res=fov_res)
-    elif proj_name == 'cmp':
-        projection = CMP(tiling=tiling, proj_res=proj_res, vp_res=vp_res, fov_res=fov_res)
-    else:
-        raise TypeError(f'Unknown projection name: {proj_name}')
-    return projection
+def idx2xy(param, param1):
+    pass
 
 
 def print_tiles(proj: ProjectionBase, vptiles: list,
@@ -225,87 +126,60 @@ def print_tiles(proj: ProjectionBase, vptiles: list,
     fig_final = draw.compose(fig_final, vp, (0, 0, 255))
     draw.show(fig_final)
 
-# class TestMakeTilesSeen(MakeTilesSeen):
-#     def init(self):
-#         ctx.tiling_list.remove('1x1')
-#         self.quality = '28'
-#         self._get_tiles_data = {}
-#         self.make_projections()
-#
-#     def main(self):
-#         self.init()
-#
-#         for ctx.proj in [ctx.proj_list[1]]:
-#             for ctx.name in ctx.name_list:
-#                 for ctx.tiling in ctx.tiling_list:
-#                     for ctx.user in [ctx.users_list[0]]:
-#                         self.worker()
-#
-#     frame_n: int
-#
-#     def worker(self, overwrite=False):
-#         print(files'{ctx.proj}, {ctx.name}, {ctx.tiling}, {ctx.user}')
-#         yaw_pitch_roll_iter = iter(ctx.hmd_dataset[ctx.name+'_nas'][ctx.user])
-#         ctx.frame_n = 0
-#         for ctx.chunk in ctx.chunk_list:
-#             for proj_frame in self.mount_chunk_frames():
-#                 if self.output_video.exists():
-#                     print(files' Exist. Skipping.')
-#                     ctx.frame_n += 1
-#                     next(yaw_pitch_roll_iter)
-#                     continue
-#
-#                 ctx.projection_obj.yaw_pitch_roll = next(yaw_pitch_roll_iter)
-#
-#                 all_tiles_borders = ctx.projection_obj.draw_all_tiles_borders()
-#                 vp_tiles = ctx.projection_obj.draw_vp_tiles()
-#                 vp_mask = ctx.projection_obj.draw_vp_mask()
-#                 try:
-#                     vp_borders = ctx.projection_obj.draw_vp_borders()
-#                 except IndexError:
-#                     vp_borders = ctx.projection_obj.draw_vp_borders()
-#
-#                 viewport_array = ctx.projection_obj.get_vp_image(proj_frame)
-#
-#                 frame = compose(proj_frame_image=Image.fromarray(proj_frame),
-#                                 all_tiles_borders_image=Image.fromarray(all_tiles_borders),
-#                                 vp_tiles_image=Image.fromarray(vp_tiles),
-#                                 vp_mask_image=Image.fromarray(vp_mask),
-#                                 vp_borders_image=Image.fromarray(vp_borders),
-#                                 vp_image=Image.fromarray(viewport_array),
-#                                 )
-#                 frame.save(self.output_video)
-#                 ctx.frame_n += 1
-#
-#         print('')
-#
-#     def mount_chunk_frames(self, proj_shape=None, tile_shape=None,
-#                            tiling_shape=None, chunk=None, seen_tiles=None
-#                            ):
-#         proj_h, proj_w = ctx.projection_obj.proj_shape
-#         frame_proj = np.zeros((proj_h, proj_w, 3), dtype='uint8')
-#         seen_tiles = self.get_user_samples()['chunks'][ctx.chunk]
-#         tiles_reader = {ctx.tile: FFmpegReader(files'{paths.segment_video}').nextFrame()
-#                         for ctx.tile in seen_tiles}
-#         # seen_tiles = projection.get_vptiles()  # by frame
-#
-#         for frame in range(30):
-#             for ctx.tile in seen_tiles:
-#                 tile_h, tile_w = ctx.projection_obj.tile_shape
-#                 tile_m, tile_n = idx2xy(int(ctx.tile), (ctx.projection_obj.tiling_h, ctx.projection_obj.tiling_w))
-#                 tile_x, tile_y = tile_m * tile_w, tile_n * tile_h
-#
-#                 tile_frame = next(tiles_reader[ctx.tile])
-#
-#                 tile_resized = Image.fromarray(tile_frame).resize((tile_w, tile_h))
-#                 tile_resized_array = np.asarray(tile_resized)
-#                 frame_proj[tile_y:tile_y + tile_h, tile_x:tile_x + tile_w, :] = tile_resized_array
-#             yield frame_proj
-#
-#     @property
-#     def output_video(self):
-#         folder = paths.get_tiles_folder / 'videos' / files'{ctx.proj}_{ctx.name}_{ctx.tiling}'
-#         folder.mkdir(parents=True, exist_ok=True)
-#         output = folder / files"user{ctx.user}_{ctx.frame_n}.png"
-#
-#         return output
+    def TestMakeTilesSeen(self, overwrite=False):
+        print('{proj}, {name}, {tiling}, {user}')
+        yaw_pitch_roll_iter = iter(self.hmd_dataset[self.name+'_nas'][self.user])
+        frame_n = 0
+        for chunk in self.chunk_list:
+            for proj_frame in self.mount_chunk_frames():
+                if self.output_video.exists():
+                    print(' Exist. Skipping.')
+                    frame_n += 1
+                    next(yaw_pitch_roll_iter)
+                    continue
+
+                self.projection_obj.yaw_pitch_roll = next(yaw_pitch_roll_iter)
+
+                all_tiles_borders = self.projection_obj.draw_all_tiles_borders()
+                vp_tiles = self.projection_obj.draw_vp_tiles()
+                vp_mask = self.projection_obj.draw_vp_mask()
+                try:
+                    vp_borders = self.projection_obj.draw_vp_borders()
+                except IndexError:
+                    vp_borders = self.projection_obj.draw_vp_borders()
+
+                viewport_array = self.projection_obj.get_vp_image(proj_frame)
+                frame = compose(proj_frame_image=Image.fromarray(proj_frame),
+                                all_tiles_borders_image=Image.fromarray(all_tiles_borders),
+                                vp_tiles_image=Image.fromarray(vp_tiles),
+                                vp_mask_image=Image.fromarray(vp_mask),
+                                vp_borders_image=Image.fromarray(vp_borders),
+                                vp_image=Image.fromarray(viewport_array),
+                                )
+                frame.save(self.output_video)
+                frame_n += 1
+
+        print('')
+
+    def mount_chunk_frames(self, proj_shape=None, tile_shape=None,
+                           tiling_shape=None, chunk=None, seen_tiles=None
+                           ):
+        proj_h, proj_w = self.projection_obj.proj_shape
+        frame_proj = np.zeros((proj_h, proj_w, 3), dtype='uint8')
+        seen_tiles = self.get_user_samples()['chunks'][chunk]
+        tiles_reader = {self.tile: FFmpegReader('{paths.segment_video}').nextFrame()
+                        for tile in seen_tiles}
+        # seen_tiles = projection.get_vptiles()  # by frame
+
+        for frame in range(30):
+            for tile in seen_tiles:
+                tile_h, tile_w = self.projection_obj.tile_shape
+                tile_m, tile_n = idx2xy(int(tile), (self.projection_obj.tiling_h, self.projection_obj.tiling_w))
+                tile_x, tile_y = tile_m * tile_w, tile_n * tile_h
+
+                tile_frame = next(tiles_reader[tile])
+
+                tile_resized = Image.fromarray(tile_frame).resize((tile_w, tile_h))
+                tile_resized_array = np.asarray(tile_resized)
+                frame_proj[tile_y:tile_y + tile_h, tile_x:tile_x + tile_w, :] = tile_resized_array
+            yield frame_proj
