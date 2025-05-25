@@ -13,3 +13,5 @@
 /.imagens artigo gdoc
 *.pdf
 /scripts/discart
+/results
+dataset/test.py
