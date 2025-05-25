@@ -8,19 +8,18 @@ from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
 from scripts.utils.config import Config
-from scripts.utils.database import DectimeData, Data, BitrateData, ChunkQualityData, ChunkQualitySSIMData, ChunkQualityMSEData, ChunkQualityWSMSEData, ChunkQualitySMSEData
-from scripts.utils.utils import AutoDict
+from scripts.utils.database import (Data, DectimeData, BitrateData,
+                                    ChunkQualitySSIMData, ChunkQualityMSEData,
+                                    ChunkQualityWSMSEData, ChunkQualitySMSEData)
 
 cor = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
 
 
 class ChunkAnalysisTilingQuality(AnalysisBase):
-    bucket: AutoDict
-    metric_list: list
     metrics_datasets: dict[str, Data]
+    metric_list: list = None
 
     def setup(self):
-        self.bucket = AutoDict()
         self.stats_defaultdict = defaultdict(list)
         self.metrics_datasets = {'dectime': DectimeData(self),
                                  'bitrate': BitrateData(self),
@@ -28,25 +27,19 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                                  'mse': ChunkQualityMSEData(self),
                                  's-mse': ChunkQualitySMSEData(self),
                                  'ws-mse': ChunkQualityWSMSEData(self)}
-
-    def get_chunk_data(self, level: tuple[str, ...]) -> pd.Series:
-        dataset = self.metrics_datasets[self.metric]
-        data = dataset.xs(level)
-
-        key = tuple(getattr(self, lv) for lv in level)
-        chunk_data: pd.Series = self.database.xs(key=key, level=level)[self.column]
-        return chunk_data
+        self.metric_list = list(self.metrics_datasets.keys())
 
     def make_stats(self):
         print(f'make_stats.')
         if self.stats_csv.exists(): return
         for self.projection in self.projection_list:
-            for self.metric in self.metrics_datasets:
+            for self.metric in self.metric_list:
                 for self.tiling in self.tiling_list:
                     for self.quality in self.quality_list:
                         chunk_data = self.get_chunk_data(level=('tiling', 'quality'))
-                        self.stats_defaultdict['Metric'].append(self.metric)
+
                         self.stats_defaultdict['Projection'].append(self.projection)
+                        self.stats_defaultdict['Metric'].append(self.metric)
                         self.stats_defaultdict['Tiling'].append(self.tiling)
                         self.stats_defaultdict['Quality'].append(self.quality)
                         self.stats_defaultdict['n_arquivos'].append(len(chunk_data))
@@ -57,7 +50,14 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                         self.stats_defaultdict['Mediana'].append(chunk_data.quantile(0.50))
                         self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
                         self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
+
         self.save_stats()
+
+    def get_chunk_data(self, level: tuple[str, ...]) -> pd.Series:
+        dataset = self.metrics_datasets[self.metric]
+        filtered = dataset.xs(level)
+        series = filtered[dataset.columns[0]]
+        return series
 
     def plots(self):
         self.make_boxplot_quality_tiling()
@@ -66,6 +66,39 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         self.make_violinplot_tiling_quality()
         self.make_barplot_quality_tiling()
         self.make_barplot_tiling_quality()
+
+    def make_boxplot_quality_tiling(self):
+        print(f'make_boxplot_quality_tiling.')
+        for self.metric in self.metric_list:
+            boxplot_path = self.boxplot_folder / 'quality_tiling' / f'boxplot_{self.metric}.png'
+            if boxplot_path.exists():
+                print(f'\t{boxplot_path} exists.')
+                continue
+            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
+
+            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
+            fig.suptitle(f'{self.metric}')
+
+            for n, self.quality in enumerate(self.quality_list, 1):
+
+                print(f'\r\tPlot qp{self.quality}', end='')
+                ax: plt.Axes = fig.add_subplot(3, 2, n)
+
+                serie_list = [self.get_chunk_data(('tiling', 'quality'))
+                              for self.tiling in self.tiling_list]
+                ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
+
+                ax.set_title(f'qp{self.quality}')
+                ax.set_xlabel(f'Tiling')
+                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+
+                if self.metric == 'dash_m4s':
+                    ax.ticklabel_format(axis='y', style='scientific',
+                                        scilimits=(6, 6))
+            print(f'\n\tSaving.')
+            fig.savefig(boxplot_path)
+            fig.clf()
+            plt.close()
 
     @contextmanager
     def barplot_context(self, barplot_path) -> plt.figure():
@@ -114,10 +147,10 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_barplot_quality_tiling(self):
         print(f'make_barplot_quality_tiling.')
-        self.load_database()
+        
         barplot_folder = self.barplot_folder / 'quality_tiling'
 
-        for self.metric in self.dataset_structure:
+        for self.metric in self.metric_list:
             barplot_path = barplot_folder / f'boxplot_{self.metric}.pdf'
             if barplot_path.exists():
                 print(f'\t{barplot_path} exists.')
@@ -143,10 +176,10 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_barplot_tiling_quality(self):
         print(f'make_barplot_tiling_quality.')
-        self.load_database()
+        
         barplot_folder = self.barplot_folder / 'tiling_quality'
 
-        for self.metric in self.dataset_structure:
+        for self.metric in self.metric_list:
             barplot_path = barplot_folder / f'barplot_{self.metric}.pdf'
             if barplot_path.exists():
                 print(f'\t{barplot_path} exists.')
@@ -168,42 +201,9 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                         ax.bar(x, data, color=cor[index], label=f'{self.tiling}')
                         ax.legend(loc='upper right')
 
-    def make_boxplot_quality_tiling(self):
-        print(f'make_boxplot_quality_tiling.')
-        for self.metric in self.dataset_structure:
-            boxplot_path = self.boxplot_folder / 'quality_tiling' / f'boxplot_{self.metric}.png'
-            if boxplot_path.exists():
-                print(f'\t{boxplot_path} exists.')
-                continue
-            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-
-            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
-            fig.suptitle(f'{self.metric}')
-
-            for n, self.quality in enumerate(self.quality_list, 1):
-                self.quality = int(self.quality)
-                print(f'\r\tPlot qp{self.quality}', end='')
-                ax: plt.Axes = fig.add_subplot(3, 2, n)
-
-                serie_list = [self.get_chunk_data(('tiling', 'quality'))
-                              for self.tiling in self.tiling_list]
-                ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
-
-                ax.set_title(f'qp{self.quality}')
-                ax.set_xlabel(f'Tiling')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-
-                if self.metric == 'dash_m4s':
-                    ax.ticklabel_format(axis='y', style='scientific',
-                                        scilimits=(6, 6))
-            print(f'\n\tSaving.')
-            fig.savefig(boxplot_path)
-            fig.clf()
-            plt.close()
-
     def make_boxplot_tiling_quality(self):
         print(f'make_boxplot_tiling_quality.')
-        for self.metric in self.dataset_structure:
+        for self.metric in self.metric_list:
             # Check files
             boxplot_path = self.boxplot_folder / 'tiling_quality' / f'boxplot_{self.metric}.png'
             if boxplot_path.exists():
@@ -237,7 +237,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_violinplot_quality_tiling(self):
         print(f'make_violinplot_quality_tiling_frame.')
-        for self.metric in self.dataset_structure:
+        for self.metric in self.metric_list:
             violinplot_path = self.violinplot_folder / 'quality_tiling' / f'violinplot_{self.metric}.pdf'
             if violinplot_path.exists():
                 print(f'\t{violinplot_path} exists.')
@@ -271,7 +271,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_violinplot_tiling_quality(self):
         print(f'make_violinplot_tiling_quality.')
-        for self.metric in self.dataset_structure:
+        for self.metric in self.metric_list:
             violinplot_path = self.violinplot_folder / 'tiling_quality' / f'violinplot_{self.metric}.pdf'
             if violinplot_path.exists():
                 print(f'\t{violinplot_path} exists.')
