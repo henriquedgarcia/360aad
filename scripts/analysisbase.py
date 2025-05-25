@@ -52,25 +52,6 @@ class AnalysisPaths(AnalysisProps):
         return load_pd_pickle(self.head_movement_path)
 
     @property
-    def users_by_name(self):
-        users_by_name = {}
-        for name in self.name_list:
-            key = (name, self.projection)
-            level = ['name', 'projection']
-            coss_section = self.head_movement_db.xs(key=key, level=level)
-            level_values = coss_section.index.get_level_values('user').unique()
-            users = list(level_values)
-            users_by_name[name] = users
-        return users_by_name
-
-    @LazyProperty
-    def name_by_users(self):
-        names_by_users = defaultdict(list)
-        for name, users_list in self.users_by_name.items():
-            for user in users_list:
-                names_by_users[user].append(name)
-
-    @property
     def results_folder(self):
         folder = Path('results') / f'{self.class_name}'
         return folder
@@ -131,6 +112,10 @@ class AnalysisPaths(AnalysisProps):
     @property
     def stats_csv(self):
         return self.stats_workfolder / f'{self.class_name}_{self.projection}_{self.rate_control}_stats.csv'
+
+    @property
+    def stats_pickle(self):
+        return self.stats_workfolder / f'{self.class_name}_{self.projection}_{self.rate_control}_stats.pickle'
 
     @property
     def corr_csv(self):
