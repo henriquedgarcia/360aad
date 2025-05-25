@@ -95,6 +95,11 @@ class UserViewportData(Data):
 
 
 class HeadMovementData(Data):
+    """
+    df.index.names ['name', 'projection', 'user', 'frame']
+    df.columns ['yaw', 'pitch', 'roll']
+    """
+
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/head_movement.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename=filename, config=config)
