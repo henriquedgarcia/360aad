@@ -10,7 +10,7 @@ from scripts.utils.config import ConfigIf
 class Data(ABC):
     level: list
     config: ConfigIf
-    data: pd.Dataframe
+    data: pd.DataFrame
 
     def __init__(self, filename: Union[str, Path], config: ConfigIf):
         self.config = config
@@ -42,59 +42,59 @@ class Data(ABC):
 
 class SitiData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/siti_qp.pickle" if filename is not None else filename
+        filename = "dataset/siti_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class TilesSeenData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/seen_tiles_fov110x90.pickle" if filename is not None else filename
+        filename = "dataset/seen_tiles_fov110x90.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class DectimeData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/dectime_qp.pickle" if filename is not None else filename
+        filename = "dataset/dectime_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class BitrateData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/bitrate_qp.pickle" if filename is not None else filename
+        filename = "dataset/bitrate_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class ChunkQualitySSIMData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_ssim_qp.pickle" if filename is not None else filename
+        filename = "dataset/chunk_quality_ssim_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class ChunkQualityMSEData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_mse_qp.pickle" if filename is not None else filename
+        filename = "dataset/chunk_quality_mse_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class ChunkQualitySMSEData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_s-mse_qp.pickle" if filename is not None else filename
+        filename = "dataset/chunk_quality_s-mse_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class ChunkQualityWSMSEData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_ws-mse_qp.pickle" if filename is not None else filename
+        filename = "dataset/chunk_quality_ws-mse_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class UserViewportData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/user_viewport_quality_qp.pickle" if filename is not None else filename
+        filename = "dataset/user_viewport_quality_qp.pickle" if filename is None else filename
         super().__init__(filename, config)
 
 
 class HeadMovementData(Data):
     def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/head_movement.pickle" if filename is not None else filename
+        filename = "dataset/head_movement.pickle" if filename is None else filename
         super().__init__(filename, config)
