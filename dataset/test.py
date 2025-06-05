@@ -7,33 +7,18 @@ import pandas as pd
 # %%
 
 file_names = [
-    'dataset/bitrate_qp.pickle',
-    'dataset/dectime_qp.pickle',
-    'dataset/chunk_quality_mse_qp.pickle',
-    'dataset/chunk_quality_qp.pickle',
-    'dataset/chunk_quality_s-mse_qp.pickle',
-    'dataset/chunk_quality_ssim_qp.pickle',
-    'dataset/chunk_quality_ws-mse_qp.pickle',
-    # 'head_movement.pickle',
-    # 'seen_tiles_fov110x90.pickle',
-    # 'siti_qp.pickle',
-    # 'user_viewport_quality_qp.pickle',
+    # 'dataset/bitrate_qp.pickle',
+    # 'dataset/dectime_qp.pickle',
+    # 'dataset/chunk_quality_qp.pickle',
+    # 'dataset/head_movement.pickle',
+    # 'dataset/seen_tiles_fov110x90.pickle',
+    # 'dataset/siti_qp.pickle',
 ]
 files = list(map(Path, file_names))
 dfs = [pickle.loads(file.read_bytes()) for file in files]
 
-
-def func(x):
-    frame_level_values = x.index.get_level_values('frame')
-    chunk_level_values = frame_level_values // 30  # 0, 30, 60,
-    return x['bitrate'].groupby(chunk_level_values).mean()
-
-
-df_grouped = df.groupby(['name', 'projection', 'tiling', 'tile', 'quality'])
-df_grouped = df_grouped.apply()
-
-df_final = pd.concat(dfs, axis=1)
-df_final.to_pickle('dataset/user_viewport_quality_qp.pickle')
+# df_final = pd.concat(dfs, axis=1)
+# df_final.to_pickle('dataset/chunk_metrics.pickle')
 # %%
 # "dataset/siti_qp.pickle"
 # "dataset/user_viewport_quality_qp.pickle"
