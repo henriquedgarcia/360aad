@@ -1,55 +1,61 @@
 # %%
+import os
 import pickle
 from pathlib import Path
 
 import pandas as pd
 
+local_path = Path().absolute() / 'dataset'
+os.chdir(local_path)
 # %%
+bitrate_file = Path('bitrate_qp.pickle', )
+dectime_file = Path('dectime_qp.pickle', )
+chunk_quality_file = Path('chunk_quality_qp.pickle', )
+head_movement_file = Path('head_movement.pickle', )
+seen_tiles_file = Path('seen_tiles_fov110x90.pickle', )
+siti_file = Path('siti_qp.pickle', )
 
-file_names = [
-    'dataset/bitrate_qp.pickle',
-    'dataset/dectime_qp.pickle',
-    'dataset/chunk_quality_mse_qp.pickle',
-    'dataset/chunk_quality_qp.pickle',
-    'dataset/chunk_quality_s-mse_qp.pickle',
-    'dataset/chunk_quality_ssim_qp.pickle',
-    'dataset/chunk_quality_ws-mse_qp.pickle',
-    # 'head_movement.pickle',
-    # 'seen_tiles_fov110x90.pickle',
-    # 'siti_qp.pickle',
-    # 'user_viewport_quality_qp.pickle',
-]
-files = list(map(Path, file_names))
-dfs = [pickle.loads(file.read_bytes()) for file in files]
+bitrate_df = pickle.loads(bitrate_file.read_bytes())
+    # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
+    # columns = ['bitrate']
+dectime_df = pickle.loads(dectime_file.read_bytes())
+    # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
+    # columns = ['dectime']
+chunk_quality_df = pickle.loads(chunk_quality_file.read_bytes())
+    # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'frame']
+    # columns = ['ssim', 'mse', 'ws-mse', 's-mse']
 
+head_movement_df = pickle.loads(head_movement_file.read_bytes())
+    # index.names = ['name', 'projection', 'user', 'frame']
+    # columns = ['yaw', 'pitch', 'roll']
+seen_tiles_df = pickle.loads(seen_tiles_file.read_bytes())
+    # index.names = ['name', 'projection', 'tiling', 'user', 'chunk']
+    # columns = ['seen_tiles']
+siti_df = pickle.loads(siti_file.read_bytes())
+    # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'frame']
+    # columns = ['si', 'ti']
 
-def func(x):
-    frame_level_values = x.index.get_level_values('frame')
-    chunk_level_values = frame_level_values // 30  # 0, 30, 60,
-    return x['bitrate'].groupby(chunk_level_values).mean()
+# %% Show df info
+df = bitrate_df
+df = dectime_df
+df = chunk_quality_df
+df = head_movement_df
+df = seen_tiles_df
+df = siti_df
 
+print(df.index.names)
+print(df.columns)
 
-df_grouped = df.groupby(['name', 'projection', 'tiling', 'tile', 'quality'])
-df_grouped = df_grouped.apply()
+for name in df.index.names:
+    print(df.index.unique(name))
+print(df.columns)
+print(df.index.names)
+# %%  concat df
+chunk_quality_df_grouped = chunk_quality_df.groupby(['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']).mean()
 
-df_final = pd.concat(dfs, axis=1)
-df_final.to_pickle('dataset/user_viewport_quality_qp.pickle')
-# %%
-# "dataset/siti_qp.pickle"
-# "dataset/user_viewport_quality_qp.pickle"
-# "dataset/bitrate_qp.pickle"
-# "dataset/chunk_quality_qp.pickle"
-# "dataset/dectime_qp.pickle"
-# "dataset/head_movement.pickle"
-# file = "dataset/siti_qp.pickle"
-# df = pd.read_pickle(file)
-# df
-# df.index.names
-# df.columns
-# for name in df.index.names:
-#     print(df.index.unique(name))
-# print(df.columns)
-# print(df.index.names)
+df_final = pd.concat([bitrate_df, dectime_df, chunk_quality_df_grouped], axis=1)
+df_final.to_pickle('chunk_data_qp.pickle')
+
 # %%
 f2 = Path('dataset/seen_tiles_fov110x90.pickle')
 df2 = pickle.loads(f2.read_bytes())
