@@ -8,6 +8,7 @@ import pandas as pd
 local_path = Path().absolute() / 'dataset'
 os.chdir(local_path)
 # %%
+chunk_data_file = Path('chunk_data_qp.pickle', )
 bitrate_file = Path('bitrate_qp.pickle', )
 dectime_file = Path('dectime_qp.pickle', )
 chunk_quality_file = Path('chunk_quality_qp.pickle', )
@@ -15,13 +16,17 @@ head_movement_file = Path('head_movement.pickle', )
 seen_tiles_file = Path('seen_tiles_fov110x90.pickle', )
 siti_file = Path('siti_qp.pickle', )
 
-bitrate_df = pickle.loads(bitrate_file.read_bytes())
+chunk_data_df = pickle.loads(chunk_data_file.read_bytes())
+    # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
+    # columns = ['bitrate', 'dectime', 'ssim', 'mse', 'ws-mse', 's-mse']
+
+# bitrate_df = pickle.loads(bitrate_file.read_bytes())
     # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
     # columns = ['bitrate']
-dectime_df = pickle.loads(dectime_file.read_bytes())
+# dectime_df = pickle.loads(dectime_file.read_bytes())
     # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']
     # columns = ['dectime']
-chunk_quality_df = pickle.loads(chunk_quality_file.read_bytes())
+# chunk_quality_df = pickle.loads(chunk_quality_file.read_bytes())
     # index.names = ['name', 'projection', 'tiling', 'tile', 'quality', 'chunk', 'frame']
     # columns = ['ssim', 'mse', 'ws-mse', 's-mse']
 
@@ -36,6 +41,7 @@ siti_df = pickle.loads(siti_file.read_bytes())
     # columns = ['si', 'ti']
 
 # %% Show df info
+df = chunk_data_df
 df = bitrate_df
 df = dectime_df
 df = chunk_quality_df
