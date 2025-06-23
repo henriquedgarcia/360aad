@@ -294,3 +294,19 @@ def angle_between_vectors(a, b):
 
     theta = np.arccos(dot_product / (norm_a * norm_b))
     return theta
+
+
+def ea2xyz(*, ea: np.ndarray) -> np.ndarray:
+    """
+    Convert from horizontal coordinate system  in radians to cartesian system.
+    ISO/IEC JTC1/SC29/WG11/N17197l: Algorithm descriptions of projection format conversion and video quality metrics in
+    360Lib Version 5
+    :param np.ndarray ea: In Rad. Shape == (2, ...)
+    :return: (x, y, z)
+    """
+    new_shape = (3,) + ea.shape[1:]
+    xyz = np.zeros(new_shape)
+    xyz[0] = np.cos(ea[0]) * np.sin(ea[1])
+    xyz[1] = -np.sin(ea[0])
+    xyz[2] = np.cos(ea[0]) * np.cos(ea[1])
+    return xyz

@@ -7,12 +7,11 @@ import numpy as np
 import pandas as pd
 from fitter import Fitter
 from matplotlib import pyplot as plt
-from py360tools.transform import ea2xyz
 
 from scripts.analysisbase import AnalysisBase
 from scripts.utils.config import Config
 from scripts.utils.database import HeadMovementData
-from scripts.utils.utils import load_pd_pickle
+from scripts.utils.utils import load_pd_pickle, ea2xyz
 
 cor = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
 os.chdir('../')
