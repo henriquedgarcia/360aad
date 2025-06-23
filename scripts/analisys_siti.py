@@ -130,7 +130,7 @@ class AnalysisSiti(AnalysisBase):
                 self.stats_defaultdict['si_std_mean'].append(siti_std['si'])
                 self.stats_defaultdict['ti_Media'].append(siti_mean['ti'])
                 self.stats_defaultdict['ti_std_mean'].append(siti_std['ti'])
-        self.save_stats()
+        self.save_stats_csv()
 
     def plots(self):
         pass
