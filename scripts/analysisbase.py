@@ -156,7 +156,7 @@ class AnalysisBase(AnalysisPaths, ABC):
         for group in rc_param:
             mpl.rc(group, **rc_param[group])
 
-    def save_stats(self):
+    def save_stats_csv(self):
         self.stats_df: pd.DataFrame = pd.DataFrame(self.stats_defaultdict)
         self.stats_df.to_csv(self.stats_csv, index=False)
 
