@@ -51,7 +51,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                         self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
                         self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
 
-        self.save_stats()
+        self.save_stats_csv()
 
     def get_chunk_data(self, level: tuple[str, ...]) -> pd.Series:
         dataset = self.metrics_datasets[self.metric]
