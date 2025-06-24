@@ -296,7 +296,7 @@ def angle_between_vectors(a, b):
     return theta
 
 
-def ea2xyz(*, ea: np.ndarray) -> np.ndarray:
+def ea2xyz(ea: np.ndarray) -> np.ndarray:
     """
     Convert from horizontal coordinate system  in radians to cartesian system.
     ISO/IEC JTC1/SC29/WG11/N17197l: Algorithm descriptions of projection format conversion and video quality metrics in
