@@ -26,9 +26,9 @@ def get_nested_value_(data, keys) -> Any:
     try:
         return reduce(func, keys, data)
     except KeyError as e:
-        raise KeyError("Key not found: {e}")
+        raise KeyError(f"Key not found: {e}")
     except TypeError as e:
-        raise TypeError("Invalid structure: {e}")
+        raise TypeError(f"Invalid structure: {e}")
 
 
 def get_nested_value(data, keys) -> Any:
