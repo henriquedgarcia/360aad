@@ -4,7 +4,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from functools import reduce
 from pathlib import Path
-from typing import Callable, Any, Union, TextIO
+from typing import Callable, Any, Union
 
 import numpy as np
 import pandas as pd
@@ -67,9 +67,8 @@ class AutoDict(dict):
 def save_json(data: Union[dict, list], filename: Union[str, Path], separators=(',', ':'), indent=None):
     filename = Path(filename)
     filename.parent.mkdir(parents=True, exist_ok=True)
-    f: TextIO
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=indent, separators=separators)
+    dump = json.dumps(data, ensure_ascii=False, indent=indent, separators=separators)
+    filename.write_text(dump)
 
 
 def load_json(filename: Union[str, Path], object_hook: type[dict] = None):
@@ -80,8 +79,8 @@ def load_json(filename: Union[str, Path], object_hook: type[dict] = None):
 
 def save_pickle(data: Any, filename: Union[str, Path]):
     Path(filename).parent.mkdir(parents=True, exist_ok=True)
-    with open(filename, 'wb') as f:
-        pickle.dump(data, f)
+    dump = pickle.dumps(data)
+    filename.write_bytes(dump)
 
 
 def load_pd_pickle(filename: Union[str, Path]):
