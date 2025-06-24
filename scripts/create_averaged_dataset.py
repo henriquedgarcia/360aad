@@ -89,7 +89,7 @@ class CreateAveragedDataset(AnalysisPaths):
                                                          'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
                                                          'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
                 df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
-                df.to_hdf(f'dataset/chunk_data_qp_{name}_{projection}.hd5', key='df')
+                df.to_hdf(f'dataset/user_session_qp_{name}_{projection}.hd5', key='df')
 
             print(f'\r{name=}, {projection=}, {tiling=}, {quality=}, {user=}, {chunk=}', end='')
             viewport = viewport_quality_by_chunk_qp.xs(key=(name, projection, tiling, quality, user, chunk),
