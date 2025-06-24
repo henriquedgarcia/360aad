@@ -80,6 +80,7 @@ class CreateAveragedDataset(AnalysisPaths):
         session_data = []
         old_projection = None
         name = projection = None
+
         for name, projection, tiling, quality, user, chunk in viewport_quality_by_chunk_qp.index:
             if old_projection is None:
                 old_projection = projection
@@ -111,7 +112,9 @@ class CreateAveragedDataset(AnalysisPaths):
             n_tiles_seen = len(list_of_tiles)
 
             data = (name, projection, tiling, quality, user, chunk,
-                    bitrate, dectime_serial, dectime_parallel, ssim, mse, s_mse, ws_mse, viewport_mse, viewport_ssim, n_tiles_seen)
+                    bitrate, dectime_serial, dectime_parallel, ssim,
+                    mse, s_mse, ws_mse, viewport_mse, viewport_ssim,
+                    n_tiles_seen)
             session_data.append(data)
         else:
             df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
@@ -158,7 +161,7 @@ class CreateAveragedDataset(AnalysisPaths):
         chunk_tiles_seen_df = pd.DataFrame(a, columns=['tiles_seen'])
         chunk_tiles_seen_df['n_tiles_seen'] = chunk_tiles_seen_df['tiles_seen'].apply(len)
         chunk_tiles_seen_df.to_hdf('dataset/tiles_seen_by_chunk.hd5', key='tiles_seen_by_chunk', complevel=9)
-        
+
     @staticmethod
     def fuse_bitrate_dectime_quality():
         bitrate_cmp_qp_df = pd.read_pickle('dataset/bitrate_cmp_qp.pickle')
