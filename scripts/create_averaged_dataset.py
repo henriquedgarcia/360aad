@@ -68,10 +68,48 @@ class CreateAveragedDataset(AnalysisPaths):
     def __init__(self, config):
         print(f'{self.class_name} initializing...')
         self.config = config
-        self.fuse_bitrate_dectime_quality()
-        # self.group_tiles_seen()
-        # self.group_chunk_tiles_seen_df()
-        # self.group_siti_df()
+        self.create_session_dataset()
+
+    def create_session_dataset(self):
+        cols = []
+
+        chunk_data_qp: pd.DataFrame = pd.read_hdf('dataset/chunk_data_qp.hd5')
+        chunk_data_qp_levels = ('name', 'projection', 'tiling', 'tile', 'quality', 'chunk')
+        viewport_quality_by_chunk_qp: pd.DataFrame = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
+        viewport_quality_by_chunk_qp_levels = ('name', 'projection', 'tiling', 'quality', 'user', 'chunk')
+        tiles_seen_by_chunk: pd.DataFrame = pd.read_hdf('dataset/tiles_seen_by_chunk.hd5')
+        tiles_seen_by_chunk_levels = ('name', 'projection', 'tiling', 'user', 'chunk')
+
+        session_data = []
+        for name, projection, tiling, quality, user, chunk in viewport_quality_by_chunk_qp.index:
+            if tiling == '1x1': continue
+            viewport = viewport_quality_by_chunk_qp.xs(key=(name, projection, tiling, quality, user, chunk),
+                                                       level=('name', 'projection', 'tiling', 'quality', 'user', 'chunk'))
+            tiles_seen = tiles_seen_by_chunk.xs(key=(name, projection, tiling, user, chunk),
+                                                level=('name', 'projection', 'tiling', 'user', 'chunk'))
+            chunk_data = chunk_data_qp.xs(key=(name, projection, tiling, quality, chunk),
+                                          level=('name', 'projection', 'tiling', 'quality', 'chunk'))
+            list_of_tiles = tiles_seen['tiles_seen'][0]
+
+            bitrate = chunk_data.loc[list_of_tiles]['bitrate'].sum()
+            dectime_serial = chunk_data.loc[list_of_tiles]['dectime'].sum()
+            dectime_parallel = chunk_data.loc[list_of_tiles]['dectime'].max()
+            ssim = chunk_data.loc[list_of_tiles]['ssim'].mean()
+            mse = chunk_data.loc[list_of_tiles]['mse'].mean()
+            s_mse = chunk_data.loc[list_of_tiles]['s-mse'].mean()
+            ws_mse = chunk_data.loc[list_of_tiles]['ws-mse'].mean()
+            viewport_mse = viewport['mse'][0]
+            viewport_ssim = viewport['ssim'][0]
+            n_tiles_seen = len(list_of_tiles)
+
+            data = (name, projection, tiling, quality, user, chunk,
+                    bitrate, dectime_serial, dectime_parallel, ssim, mse, s_mse, ws_mse, viewport_mse, viewport_ssim, n_tiles_seen)
+            session_data.append(data)
+        df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
+                                                 'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
+                                                 'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
+        df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
+        df.to_hdf('dataset/chunk_data_qp_levels.hd5', key='df')
 
     def convert_head_movement(self):
         head_movement = pd.read_pickle('dataset/head_movement.pickle')
