@@ -1,4 +1,5 @@
 import os
+from typing import Union
 
 import pandas as pd
 
@@ -12,7 +13,7 @@ class CreateAveragedDataset(AnalysisPaths):
     ## movimento de cabeça (por frame)
         Podemos calcular a velocidade de cada usuário para cada vídeo partindo do repouso v0 = 0 rad/s
             plotar por frame e ver os momentos de maior velocidade (talvez usar um filtro passa baixa para reduzir tremedeira)
-        podemos calcular a aceleração pra descobrir momentos que ele fixa atenção (menores acelerações)
+        podemos calcular a aceleração para descobrir momentos que ele fixa atenção (menores acelerações)
         index.names = [name, projection, user, frame]
     """
 
@@ -40,7 +41,7 @@ class CreateAveragedDataset(AnalysisPaths):
         converter chunk quality para chunk (média)
         unificar todos esses.
             index.name = [name, projection, tiling, tile, quality, chunk]
-            columns = [bitrate, dectime, ssim, mse, s-mse, ws-mse] (checkar esses hifens)
+            columns = [bitrate, dectime, ssim, mse, s-mse, ws-mse] (verificar esses hifens)
     """
 
     """
@@ -70,19 +71,26 @@ class CreateAveragedDataset(AnalysisPaths):
         self.config = config
         self.create_session_dataset()
 
-    def create_session_dataset(self):
-        cols = []
-
-        chunk_data_qp: pd.DataFrame = pd.read_hdf('dataset/chunk_data_qp.hd5')
-        chunk_data_qp_levels = ('name', 'projection', 'tiling', 'tile', 'quality', 'chunk')
-        viewport_quality_by_chunk_qp: pd.DataFrame = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
-        viewport_quality_by_chunk_qp_levels = ('name', 'projection', 'tiling', 'quality', 'user', 'chunk')
-        tiles_seen_by_chunk: pd.DataFrame = pd.read_hdf('dataset/tiles_seen_by_chunk.hd5')
-        tiles_seen_by_chunk_levels = ('name', 'projection', 'tiling', 'user', 'chunk')
+    @staticmethod
+    def create_session_dataset():
+        chunk_data_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/chunk_data_qp.hd5')
+        viewport_quality_by_chunk_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
+        tiles_seen_by_chunk: Union[object, pd.DataFrame] = pd.read_hdf('dataset/tiles_seen_by_chunk.hd5')
 
         session_data = []
+        old_projection = None
+        name = projection = None
         for name, projection, tiling, quality, user, chunk in viewport_quality_by_chunk_qp.index:
-            if tiling == '1x1': continue
+            if old_projection is None:
+                old_projection = projection
+            elif old_projection != projection:
+                df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
+                                                         'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
+                                                         'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
+                df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
+                df.to_hdf(f'dataset/chunk_data_qp_{name}_{projection}.hd5', key='df')
+
+            print(f'\r{name=}, {projection=}, {tiling=}, {quality=}, {user=}, {chunk=}', end='')
             viewport = viewport_quality_by_chunk_qp.xs(key=(name, projection, tiling, quality, user, chunk),
                                                        level=('name', 'projection', 'tiling', 'quality', 'user', 'chunk'))
             tiles_seen = tiles_seen_by_chunk.xs(key=(name, projection, tiling, user, chunk),
@@ -105,17 +113,20 @@ class CreateAveragedDataset(AnalysisPaths):
             data = (name, projection, tiling, quality, user, chunk,
                     bitrate, dectime_serial, dectime_parallel, ssim, mse, s_mse, ws_mse, viewport_mse, viewport_ssim, n_tiles_seen)
             session_data.append(data)
-        df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
-                                                 'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
-                                                 'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
-        df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
-        df.to_hdf('dataset/chunk_data_qp_levels.hd5', key='df')
+        else:
+            df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
+                                                     'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
+                                                     'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
+            df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
+            df.to_hdf(f'dataset/chunk_data_qp_{name}_{projection}.hd5', key='df')
 
-    def convert_head_movement(self):
+    @staticmethod
+    def convert_head_movement():
         head_movement = pd.read_pickle('dataset/head_movement.pickle')
         head_movement.to_hdf('dataset/head_movement.hd5', key='head_movement', complevel=9)
 
-    def group_siti_df(self):
+    @staticmethod
+    def group_siti_df():
         siti_cmp_qp = pd.read_pickle('dataset/siti_cmp_qp.pickle')
         siti_erp_qp = pd.read_pickle('dataset/siti_erp_qp.pickle')
         siti_qp = pd.concat([siti_cmp_qp, siti_erp_qp], axis=0)
@@ -127,26 +138,29 @@ class CreateAveragedDataset(AnalysisPaths):
         siti_qp_by_chunk_qp = siti_qp.groupby(['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']).mean()
         siti_qp_by_chunk_qp.to_hdf('dataset/siti_qp_by_chunk_qp.hd5', key='siti_qp_by_chunk', complevel=9)
 
-    def group_chunk_tiles_seen_df(self):
+    @staticmethod
+    def group_chunk_tiles_seen_df():
         user_viewport_quality_cmp_qp = pd.read_pickle('dataset/user_viewport_quality_cmp_qp.pickle')
         user_viewport_quality_erp_qp = pd.read_pickle('dataset/user_viewport_quality_erp_qp.pickle')
         user_viewport_quality_qp_df = pd.concat([user_viewport_quality_cmp_qp, user_viewport_quality_erp_qp], axis=0)
         viewport_quality_by_chunk_qp = user_viewport_quality_qp_df.groupby(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], sort=False).mean()
         viewport_quality_by_chunk_qp.to_hdf('dataset/viewport_quality_by_chunk_qp.hd5', key='viewport_quality_by_chunk', complevel=9)
 
-    def group_tiles_seen(self):
+    @staticmethod
+    def group_tiles_seen():
         seen_tiles_cmp_df = pd.read_pickle('dataset/seen_tiles_cmp_fov110x90.pickle')
         seen_tiles_erp_df = pd.read_pickle('dataset/seen_tiles_erp_fov110x90.pickle')
         seen_tiles_df = pd.concat([seen_tiles_cmp_df, seen_tiles_erp_df], axis=0)
         seen_tiles_df['n_tiles_seen'] = seen_tiles_df['tiles_seen'].apply(len)
 
-        make_set = lambda lista_de_listas: list(set(item for sublista in lista_de_listas for item in sublista))
+        make_set = lambda lista_de_listas: list(set(item for sub_lista in lista_de_listas for item in sub_lista))
         a = seen_tiles_df['tiles_seen'].groupby(['name', 'projection', 'tiling', 'user', 'chunk'], sort=False).apply(make_set)
         chunk_tiles_seen_df = pd.DataFrame(a, columns=['tiles_seen'])
         chunk_tiles_seen_df['n_tiles_seen'] = chunk_tiles_seen_df['tiles_seen'].apply(len)
         chunk_tiles_seen_df.to_hdf('dataset/tiles_seen_by_chunk.hd5', key='tiles_seen_by_chunk', complevel=9)
-
-    def fuse_bitrate_dectime_quality(self):
+        
+    @staticmethod
+    def fuse_bitrate_dectime_quality():
         bitrate_cmp_qp_df = pd.read_pickle('dataset/bitrate_cmp_qp.pickle')
         bitrate_erp_qp_df = pd.read_pickle('dataset/bitrate_erp_qp.pickle')
         bitrate_qp_df = pd.concat([bitrate_cmp_qp_df, bitrate_erp_qp_df], axis=0)
