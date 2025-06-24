@@ -12,10 +12,10 @@ class Data(ABC):
     config: ConfigIf
     data: pd.DataFrame
 
-    def __init__(self, filename: Union[str, Path], config: ConfigIf):
-        self.config = config
+    def __init__(self, filename: Union[str, Path], config_if: ConfigIf):
+        self.config = config_if
         self.filename = filename
-        self.data: pd.DataFrame = pd.read_pickle(filename)
+        self.data: Union[pd.DataFrame, object] = pd.read_hdf(filename)
 
         self.level = list(self.data.index.names)
         self.columns = list(self.data.columns)
@@ -27,9 +27,8 @@ class Data(ABC):
         :param column:
         :return:
         """
-        levels = self.level
-        key = tuple(getattr(self.config, level) for level in levels)
-        return self.data.xs(key=key, level=levels)[column]
+        key = tuple(getattr(self.config, level) for level in self.level)
+        return self.data.xs(key=key, level=self.level)[column]
 
     def xs(self, levels):
         key = tuple(getattr(self.config, level) for level in levels)
@@ -41,57 +40,57 @@ class Data(ABC):
 
 
 class SitiData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/siti_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
+        filename = "dataset/siti_qp_by_chunk_qp.hd5" if filename is None else filename
+        super().__init__(filename, config_if)
 
 
 class TilesSeenData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/seen_tiles_fov110x90.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class DectimeData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/dectime_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class BitrateData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/bitrate_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class ChunkQualitySSIMData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/chunk_quality_ssim_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class ChunkQualityMSEData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/chunk_quality_mse_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class ChunkQualitySMSEData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/chunk_quality_s-mse_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class ChunkQualityWSMSEData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/chunk_quality_ws-mse_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class UserViewportData(Data):
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/user_viewport_quality_qp.pickle" if filename is None else filename
-        super().__init__(filename, config)
+        super().__init__(filename, config_if)
 
 
 class HeadMovementData(Data):
@@ -100,6 +99,6 @@ class HeadMovementData(Data):
     df.columns ['yaw', 'pitch', 'roll']
     """
 
-    def __init__(self, config: ConfigIf, filename: Union[str, Path] = None):
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/head_movement.pickle" if filename is None else filename
-        super().__init__(filename=filename, config=config)
+        super().__init__(filename=filename, config_if=config_if)
