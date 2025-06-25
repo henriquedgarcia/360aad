@@ -5,6 +5,7 @@ import pandas as pd
 
 from scripts.analysisbase import AnalysisPaths
 from scripts.utils.config import Config
+from scripts.utils.progressbar import ProgressBar
 
 
 class CreateAveragedDataset(AnalysisPaths):
@@ -71,27 +72,15 @@ class CreateAveragedDataset(AnalysisPaths):
         self.config = config
         self.create_session_dataset()
 
-    @staticmethod
-    def create_session_dataset():
+    def create_session_dataset(self):
         chunk_data_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/chunk_data_qp.hd5')
         viewport_quality_by_chunk_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
         tiles_seen_by_chunk: Union[object, pd.DataFrame] = pd.read_hdf('dataset/tiles_seen_by_chunk.hd5')
 
         session_data = []
-        old_projection = None
-        name = projection = None
-
+        ui = ProgressBar(total=8*2*5*5*30*60, desc='create_session_dataset')
         for name, projection, tiling, quality, user, chunk in viewport_quality_by_chunk_qp.index:
-            if old_projection is None:
-                old_projection = projection
-            elif old_projection != projection:
-                df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
-                                                         'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
-                                                         'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
-                df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
-                df.to_hdf(f'dataset/user_session_qp_{name}_{projection}.hd5', key='df')
-
-            print(f'\r{name=}, {projection=}, {tiling=}, {quality=}, {user=}, {chunk=}', end='')
+            ui.update(f'{name=}, {projection=}, {tiling=}, {quality=}, {user=}, {chunk=}')
             viewport = viewport_quality_by_chunk_qp.xs(key=(name, projection, tiling, quality, user, chunk),
                                                        level=('name', 'projection', 'tiling', 'quality', 'user', 'chunk'))
             tiles_seen = tiles_seen_by_chunk.xs(key=(name, projection, tiling, user, chunk),
@@ -116,12 +105,13 @@ class CreateAveragedDataset(AnalysisPaths):
                     mse, s_mse, ws_mse, viewport_mse, viewport_ssim,
                     n_tiles_seen)
             session_data.append(data)
-        else:
-            df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
-                                                     'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
-                                                     'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
-            df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
-            df.to_hdf(f'dataset/chunk_data_qp_{name}_{projection}.hd5', key='df')
+
+        print(f'\nSaving')
+        df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
+                                                 'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
+                                                 'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
+        df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
+        df.to_hdf(f'dataset/chunk_data_qp_{name}_{projection}.hd5', key='df')
 
     @staticmethod
     def convert_head_movement():
