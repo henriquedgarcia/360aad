@@ -71,11 +71,13 @@ class CreateAveragedDataset(AnalysisPaths):
         print(f'{self.class_name} initializing...')
         self.config = config
         self.create_session_dataset()
+        'name           projection tiling quality user chunk'
 
     def create_session_dataset(self):
         chunk_data_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/chunk_data_qp.hd5')
         viewport_quality_by_chunk_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
         tiles_seen_by_chunk: Union[object, pd.DataFrame] = pd.read_hdf('dataset/tiles_seen_by_chunk.hd5')
+        user_session_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/user_session_qp.hd5')
 
         session_data = []
         ui = ProgressBar(total=8*2*5*5*30*60, desc='create_session_dataset')
@@ -111,7 +113,7 @@ class CreateAveragedDataset(AnalysisPaths):
                                                  'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
                                                  'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
         df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
-        df.to_hdf(f'dataset/chunk_data_qp_{name}_{projection}.hd5', key='df')
+        df.to_hdf(f'dataset/user_session_qp.hd5', key='df')
 
     @staticmethod
     def convert_head_movement():
