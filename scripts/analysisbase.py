@@ -123,15 +123,6 @@ class AnalysisPaths(AnalysisProps):
 
 
 class AnalysisBase(AnalysisPaths, ABC):
-    def __init__(self, config):
-        print(f'{self.class_name} initializing...')
-        # self.rc_config()
-        self.config = config
-        self.setup()
-
-        self.make_stats()
-
-        self.plots()
 
     @staticmethod
     def rc_config():
