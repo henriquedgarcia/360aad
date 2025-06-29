@@ -3,14 +3,13 @@ from collections import defaultdict
 from contextlib import contextmanager
 from typing import Any, Generator
 
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
 from scripts.utils.config import Config
-from scripts.utils.database import (Data, DectimeData, BitrateData,
-                                    ChunkQualitySSIMData, ChunkQualityMSEData,
-                                    ChunkQualityWSMSEData, ChunkQualitySMSEData)
+from scripts.utils.database import (Data)
 
 cor = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
 
@@ -19,53 +18,95 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
     metrics_datasets: dict[str, Data]
     metric_list: list = None
 
+    def __init__(self, config):
+        print(f'{self.class_name} initializing...')
+        self.config = config
+        self.setup()
+        # self.make_stats()
+        self.make_corr()
+        # self.plots()
+
     def setup(self):
-        self.stats_defaultdict = defaultdict(list)
-        self.metrics_datasets = {'dectime': DectimeData(self),
-                                 'bitrate': BitrateData(self),
-                                 'ssim': ChunkQualitySSIMData(self),
-                                 'mse': ChunkQualityMSEData(self),
-                                 's-mse': ChunkQualitySMSEData(self),
-                                 'ws-mse': ChunkQualityWSMSEData(self)}
-        self.metric_list = list(self.metrics_datasets.keys())
+        self.chunk_data: pd.DataFrame = pd.read_hdf('dataset/chunk_data_qp.hd5')
 
     def make_stats(self):
         print(f'make_stats.')
-        if self.stats_csv.exists(): return
+        stats_csv = self.stats_workfolder / f'{self.class_name}_{self.projection}_{self.rate_control}_stats.csv'
+        if stats_csv.exists(): return
+
+        self.stats_defaultdict = defaultdict(list)
+
         for self.projection in self.projection_list:
-            for self.metric in self.metric_list:
-                for self.tiling in self.tiling_list:
-                    for self.quality in self.quality_list:
-                        chunk_data = self.get_chunk_data(level=('tiling', 'quality'))
+            for self.tiling in self.tiling_list:
+                for self.quality in self.quality_list:
+                    for column in self.chunk_data.columns:
+                        data = self.chunk_data[column].xs(key=(self.projection, self.tiling, self.quality),
+                                                          level=('projection', 'tiling', 'quality',))
 
                         self.stats_defaultdict['Projection'].append(self.projection)
-                        self.stats_defaultdict['Metric'].append(self.metric)
                         self.stats_defaultdict['Tiling'].append(self.tiling)
                         self.stats_defaultdict['Quality'].append(self.quality)
-                        self.stats_defaultdict['n_arquivos'].append(len(chunk_data))
-                        self.stats_defaultdict['Média'].append(chunk_data.mean())
-                        self.stats_defaultdict['Desvio Padrão'].append(chunk_data.std())
-                        self.stats_defaultdict['Mínimo'].append(chunk_data.quantile(0.00))
-                        self.stats_defaultdict['1º Quartil'].append(chunk_data.quantile(0.25))
-                        self.stats_defaultdict['Mediana'].append(chunk_data.quantile(0.50))
-                        self.stats_defaultdict['3º Quartil'].append(chunk_data.quantile(0.75))
-                        self.stats_defaultdict['Máximo'].append(chunk_data.quantile(1.00))
+                        self.stats_defaultdict['Metric'].append(column)
+                        self.stats_defaultdict['n_samples'].append(len(data))
+                        self.stats_defaultdict['Média'].append(data.mean())
+                        self.stats_defaultdict['Desvio Padrão'].append(data.std())
+                        self.stats_defaultdict['Mínimo'].append(data.quantile(0.00))
+                        self.stats_defaultdict['1º Quartil'].append(data.quantile(0.25))
+                        self.stats_defaultdict['Mediana'].append(data.quantile(0.50))
+                        self.stats_defaultdict['3º Quartil'].append(data.quantile(0.75))
+                        self.stats_defaultdict['Máximo'].append(data.quantile(1.00))
 
-        self.save_stats_csv()
+        stats_df = pd.DataFrame(self.stats_defaultdict)
+        stats_df.to_csv(stats_csv, index=False)
 
-    def get_chunk_data(self, level: tuple[str, ...]) -> pd.Series:
-        dataset = self.metrics_datasets[self.metric]
-        filtered = dataset.xs(level)
-        series = filtered[dataset.columns[0]]
-        return series
+    def make_corr(self):
+        print(f'make_corr.')
+        stats_csv = self.stats_workfolder / f'corr_{self.class_name}_{self.rate_control}_stats.csv'
+        # if stats_csv.exists(): return
+
+        stats_defaultdict = []
+
+        for self.projection in self.projection_list:
+            for self.tiling in self.tiling_list:
+                for self.quality in self.quality_list:
+                    print(f'{self.projection} {self.tiling} qp{self.quality}')
+
+                    for self.name in self.name_list:
+                        for self.tile in self.tile_list:
+                            data = self.chunk_data.xs(key=(self.name, self.projection, self.tiling, self.tile, self.quality),
+                                                      level=('name', 'projection', 'tiling', 'tile', 'quality'))
+
+                            corr1 = data.corr(method='pearson')
+                            corr2 = data.corr(method='kendall')
+                            corr3 = data.corr(method='spearman')
+                            if corr1.isna().any().any():
+                                corr1 = corr1.fillna(0)
+                            if corr2.isna().any().any():
+                                corr2 = corr2.fillna(0)
+                            if corr3.isna().any().any():
+                                corr3 = corr3.fillna(0)
+                            unique = [(self.projection, self.tiling, self.quality, self.name, self.tile,
+                                       corr1.index[i], corr1.columns[j], corr1.iat[i, j], corr2.iat[i, j], corr3.iat[i, j])
+                                      for i in range(len(corr1)) for j in range(i)]
+
+                            stats_defaultdict.extend(unique)
+
+        stats_df = pd.DataFrame(stats_defaultdict, columns=('projection', 'tiling', 'quality', 'name', 'tile',
+                                                            'metric1', 'metric2', 'pearson', 'kendall', 'spearman'))
+        stats_df.set_index(['projection', 'tiling', 'quality', 'name', 'tile', 'metric1', 'metric2'], inplace=True)
+        stats_df_mean = stats_df.groupby(['projection', 'tiling', 'quality', 'metric1', 'metric2']).mean()
+        stats_df_mean.to_csv(stats_csv, index=True)
 
     def plots(self):
+        self.rc_config()
+
         self.make_boxplot_quality_tiling()
-        self.make_boxplot_tiling_quality()
-        self.make_violinplot_quality_tiling()
-        self.make_violinplot_tiling_quality()
-        self.make_barplot_quality_tiling()
-        self.make_barplot_tiling_quality()
+        # self.make_boxplot_tiling_quality()
+        #
+        # self.make_violinplot_quality_tiling()
+        # self.make_violinplot_tiling_quality()
+        # self.make_barplot_quality_tiling()
+        # self.make_barplot_tiling_quality()
 
     def make_boxplot_quality_tiling(self):
         print(f'make_boxplot_quality_tiling.')
@@ -147,7 +188,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_barplot_quality_tiling(self):
         print(f'make_barplot_quality_tiling.')
-        
+
         barplot_folder = self.barplot_folder / 'quality_tiling'
 
         for self.metric in self.metric_list:
@@ -176,7 +217,7 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_barplot_tiling_quality(self):
         print(f'make_barplot_tiling_quality.')
-        
+
         barplot_folder = self.barplot_folder / 'tiling_quality'
 
         for self.metric in self.metric_list:
@@ -307,5 +348,4 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 if __name__ == '__main__':
     os.chdir('../')
 
-    config = Config()
-    ChunkAnalysisTilingQuality(config)
+    ChunkAnalysisTilingQuality(Config())
