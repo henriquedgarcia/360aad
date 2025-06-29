@@ -47,49 +47,49 @@ class SitiData(Data):
 
 class TilesSeenData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/seen_tiles_fov110x90.pickle" if filename is None else filename
+        filename = "dataset/seen_tiles_fov110x90.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
-class DectimeData(Data):
+class ChunkData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/dectime_qp.pickle" if filename is None else filename
+        filename = "dataset/dectime_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
 class BitrateData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/bitrate_qp.pickle" if filename is None else filename
+        filename = "dataset/bitrate_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
 class ChunkQualitySSIMData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_ssim_qp.pickle" if filename is None else filename
+        filename = "dataset/chunk_quality_ssim_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
 class ChunkQualityMSEData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_mse_qp.pickle" if filename is None else filename
+        filename = "dataset/chunk_quality_mse_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
 class ChunkQualitySMSEData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_s-mse_qp.pickle" if filename is None else filename
+        filename = "dataset/chunk_quality_s-mse_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
 class ChunkQualityWSMSEData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_ws-mse_qp.pickle" if filename is None else filename
+        filename = "dataset/chunk_quality_ws-mse_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
 class UserViewportData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/user_viewport_quality_qp.pickle" if filename is None else filename
+        filename = "dataset/user_viewport_quality_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
@@ -100,5 +100,5 @@ class HeadMovementData(Data):
     """
 
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/head_movement.pickle" if filename is None else filename
+        filename = "dataset/head_movement.hd5" if filename is None else filename
         super().__init__(filename=filename, config_if=config_if)
