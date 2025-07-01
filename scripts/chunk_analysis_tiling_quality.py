@@ -3,7 +3,6 @@ from collections import defaultdict
 from contextlib import contextmanager
 from typing import Any, Generator
 
-import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
@@ -28,33 +27,46 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def setup(self):
         self.chunk_data: pd.DataFrame = pd.read_hdf('dataset/chunk_data_qp.hd5')
+        self.viewport_quality_by_chunk: pd.DataFrame = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
 
     def make_stats(self):
         print(f'make_stats.')
-        stats_csv = self.stats_workfolder / f'{self.class_name}_{self.projection}_{self.rate_control}_stats.csv'
-        if stats_csv.exists(): return
+        stats_csv = self.stats_workfolder / f'{self.class_name}_{self.rate_control}_stats.csv'
+        # if stats_csv.exists(): return
 
         self.stats_defaultdict = defaultdict(list)
 
-        for self.projection in self.projection_list:
-            for self.tiling in self.tiling_list:
-                for self.quality in self.quality_list:
-                    for column in self.chunk_data.columns:
+        for self.tiling in self.tiling_list:
+            for self.quality in self.quality_list:
+                for column in self.chunk_data.columns:
+
+                    self.stats_defaultdict['Tiling'].append(self.tiling)
+                    self.stats_defaultdict['Quality'].append(self.quality)
+                    self.stats_defaultdict['Metric'].append(column)
+                    for self.projection in self.projection_list:
                         data = self.chunk_data[column].xs(key=(self.projection, self.tiling, self.quality),
                                                           level=('projection', 'tiling', 'quality',))
+                        self.stats_defaultdict[f'{self.projection} n_samples'].append(len(data))
+                        self.stats_defaultdict[f'{self.projection} Média'].append(data.mean())
+                        self.stats_defaultdict[f'{self.projection} Desvio Padrão'].append(data.std())
+                        self.stats_defaultdict[f'{self.projection} Mínimo'].append(data.quantile(0.00))
+                        self.stats_defaultdict[f'{self.projection} Mediana'].append(data.quantile(0.50))
+                        self.stats_defaultdict[f'{self.projection} Máximo'].append(data.quantile(1.00))
 
-                        self.stats_defaultdict['Projection'].append(self.projection)
-                        self.stats_defaultdict['Tiling'].append(self.tiling)
-                        self.stats_defaultdict['Quality'].append(self.quality)
-                        self.stats_defaultdict['Metric'].append(column)
-                        self.stats_defaultdict['n_samples'].append(len(data))
-                        self.stats_defaultdict['Média'].append(data.mean())
-                        self.stats_defaultdict['Desvio Padrão'].append(data.std())
-                        self.stats_defaultdict['Mínimo'].append(data.quantile(0.00))
-                        self.stats_defaultdict['1º Quartil'].append(data.quantile(0.25))
-                        self.stats_defaultdict['Mediana'].append(data.quantile(0.50))
-                        self.stats_defaultdict['3º Quartil'].append(data.quantile(0.75))
-                        self.stats_defaultdict['Máximo'].append(data.quantile(1.00))
+                for column in self.viewport_quality_by_chunk.columns:
+
+                    self.stats_defaultdict['Tiling'].append(self.tiling)
+                    self.stats_defaultdict['Quality'].append(self.quality)
+                    self.stats_defaultdict['Metric'].append(f'{column}_vp')
+                    for self.projection in self.projection_list:
+                        data = self.viewport_quality_by_chunk[column].xs(key=(self.projection, self.tiling, self.quality),
+                                                                         level=('projection', 'tiling', 'quality',))
+                        self.stats_defaultdict[f'{self.projection} n_samples'].append(len(data))
+                        self.stats_defaultdict[f'{self.projection} Média'].append(data.mean())
+                        self.stats_defaultdict[f'{self.projection} Desvio Padrão'].append(data.std())
+                        self.stats_defaultdict[f'{self.projection} Mínimo'].append(data.quantile(0.00))
+                        self.stats_defaultdict[f'{self.projection} Mediana'].append(data.quantile(0.50))
+                        self.stats_defaultdict[f'{self.projection} Máximo'].append(data.quantile(1.00))
 
         stats_df = pd.DataFrame(self.stats_defaultdict)
         stats_df.to_csv(stats_csv, index=False)
