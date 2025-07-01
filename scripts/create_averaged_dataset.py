@@ -1,6 +1,7 @@
 import os
 from typing import Union
 
+import numpy as np
 import pandas as pd
 
 from scripts.analysisbase import AnalysisPaths
@@ -70,8 +71,7 @@ class CreateAveragedDataset(AnalysisPaths):
     def __init__(self, config):
         print(f'{self.class_name} initializing...')
         self.config = config
-        self.create_session_dataset()
-        'name           projection tiling quality user chunk'
+        self.fuse_bitrate_dectime_quality()
 
     def create_session_dataset(self):
         chunk_data_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/chunk_data_qp.hd5')
@@ -80,7 +80,7 @@ class CreateAveragedDataset(AnalysisPaths):
         user_session_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/user_session_qp.hd5')
 
         session_data = []
-        ui = ProgressBar(total=8*2*5*5*30*60, desc='create_session_dataset')
+        ui = ProgressBar(total=8 * 2 * 5 * 5 * 30 * 60, desc='create_session_dataset')
         for name, projection, tiling, quality, user, chunk in viewport_quality_by_chunk_qp.index:
             ui.update(f'{name=}, {projection=}, {tiling=}, {quality=}, {user=}, {chunk=}')
             viewport = viewport_quality_by_chunk_qp.xs(key=(name, projection, tiling, quality, user, chunk),
@@ -156,24 +156,26 @@ class CreateAveragedDataset(AnalysisPaths):
 
     @staticmethod
     def fuse_bitrate_dectime_quality():
-        bitrate_cmp_qp_df = pd.read_pickle('dataset/bitrate_cmp_qp.pickle')
-        bitrate_erp_qp_df = pd.read_pickle('dataset/bitrate_erp_qp.pickle')
+        bitrate_cmp_qp_df = pd.read_pickle('dataset/raw/bitrate_cmp_qp_raw.pickle')
+        bitrate_erp_qp_df = pd.read_pickle('dataset/raw/bitrate_erp_qp_raw.pickle')
         bitrate_qp_df = pd.concat([bitrate_cmp_qp_df, bitrate_erp_qp_df], axis=0)
 
-        dectime_cmp_qp_df = pd.read_pickle('dataset/dectime_cmp_qp.pickle')
-        dectime_erp_qp_df = pd.read_pickle('dataset/dectime_erp_qp.pickle')
+        dectime_cmp_qp_df = pd.read_pickle('dataset/raw/dectime_cmp_qp_raw.pickle')
+        dectime_erp_qp_df = pd.read_pickle('dataset/raw/dectime_erp_qp_raw.pickle')
         dectime_qp_df = pd.concat([dectime_cmp_qp_df, dectime_erp_qp_df], axis=0)
+        somas = np.array([sum(lista) for lista in dectime_qp_df['dectime']])
+        tamanhos = np.array([len(lista) for lista in dectime_qp_df['dectime']])
+        dectime_qp_df['dectime'] = somas / tamanhos
 
-        chunk_quality_cmp_qp_df = pd.read_pickle('dataset/chunk_quality_cmp_qp.pickle')
+        chunk_quality_cmp_qp_df = pd.read_pickle('dataset/raw/chunk_quality_cmp_qp_raw.pickle')
         chunk_quality_cmp_qp_df = chunk_quality_cmp_qp_df.groupby(['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']).mean()
-        chunk_quality_erp_qp_df = pd.read_pickle('dataset/chunk_quality_erp_qp.pickle')
+        chunk_quality_erp_qp_df = pd.read_pickle('dataset/raw/chunk_quality_erp_qp_raw.pickle')
         chunk_quality_erp_qp_df = chunk_quality_erp_qp_df.groupby(['name', 'projection', 'tiling', 'tile', 'quality', 'chunk']).mean()
         chunk_quality_qp_df = pd.concat([chunk_quality_cmp_qp_df, chunk_quality_erp_qp_df], axis=0)
 
         chunk_data_qp_df = pd.concat([bitrate_qp_df, dectime_qp_df, chunk_quality_qp_df], axis=1)
-
         chunk_data_qp_df.to_hdf('dataset/chunk_data_qp.hd5', key='chunk_data', complevel=9)
-        chunk_data_qp_df.to_pickle('dataset/chunk_data_qp.pickle')
+        # chunk_data_qp_df.to_pickle('dataset/chunk_data_qp.pickle')
 
         # store = pd.HDFStore('dataset/chunk_data_qp.hd5')
         # store.keys()
