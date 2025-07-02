@@ -139,7 +139,7 @@ class CreateAveragedDataset(AnalysisPaths):
         user_viewport_quality_erp_qp = pd.read_pickle('dataset/user_viewport_quality_erp_qp.pickle')
         user_viewport_quality_qp_df = pd.concat([user_viewport_quality_cmp_qp, user_viewport_quality_erp_qp], axis=0)
         viewport_quality_by_chunk_qp = user_viewport_quality_qp_df.groupby(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], sort=False).mean()
-        viewport_quality_by_chunk_qp.to_hdf('dataset/viewport_quality_by_chunk_qp.hd5', key='viewport_quality_by_chunk', complevel=9)
+        viewport_quality_by_chunk_qp.to_hdf('dataset/viewport_quality_by_chunk_qp.hd5', key='viewport_quality', complevel=9)
 
     @staticmethod
     def group_tiles_seen():
