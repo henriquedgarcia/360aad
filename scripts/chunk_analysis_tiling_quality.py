@@ -22,12 +22,12 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         self.config = config
         self.setup()
         # self.make_stats()
-        self.make_corr()
-        # self.plots()
+        # self.make_corr()
+        self.plots()
 
     def setup(self):
         self.chunk_data: pd.DataFrame = pd.read_hdf('dataset/chunk_data_qp.hd5')
-        self.viewport_quality_by_chunk: pd.DataFrame = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
+        self.viewport_quality: pd.DataFrame = pd.read_hdf('dataset/viewport_quality_by_chunk_qp.hd5')
 
     def make_stats(self):
         print(f'make_stats.')
@@ -53,14 +53,14 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                         self.stats_defaultdict[f'{self.projection} Mediana'].append(data.quantile(0.50))
                         self.stats_defaultdict[f'{self.projection} Máximo'].append(data.quantile(1.00))
 
-                for column in self.viewport_quality_by_chunk.columns:
+                for column in self.viewport_quality.columns:
 
                     self.stats_defaultdict['Tiling'].append(self.tiling)
                     self.stats_defaultdict['Quality'].append(self.quality)
                     self.stats_defaultdict['Metric'].append(f'{column}_vp')
                     for self.projection in self.projection_list:
-                        data = self.viewport_quality_by_chunk[column].xs(key=(self.projection, self.tiling, self.quality),
-                                                                         level=('projection', 'tiling', 'quality',))
+                        data = self.viewport_quality[column].xs(key=(self.projection, self.tiling, self.quality),
+                                                                level=('projection', 'tiling', 'quality',))
                         self.stats_defaultdict[f'{self.projection} n_samples'].append(len(data))
                         self.stats_defaultdict[f'{self.projection} Média'].append(data.mean())
                         self.stats_defaultdict[f'{self.projection} Desvio Padrão'].append(data.std())
@@ -74,34 +74,40 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
     def make_corr(self):
         print(f'make_corr.')
         stats_csv = self.stats_workfolder / f'corr_{self.class_name}_{self.rate_control}_stats.csv'
-        # if stats_csv.exists(): return
-
         stats_defaultdict = []
 
-        for self.projection in self.projection_list:
-            for self.tiling in self.tiling_list:
-                for self.quality in self.quality_list:
-                    print(f'{self.projection} {self.tiling} qp{self.quality}')
+        # chunk_data_groupby = self.chunk_data.groupby(['name', 'projection', 'tiling', 'quality', 'chunk'])
+        # viewport_quality_groupby = self.viewport_quality.groupby(['name', 'projection', 'tiling', 'quality', 'chunk'])
 
-                    for self.name in self.name_list:
-                        for self.tile in self.tile_list:
-                            data = self.chunk_data.xs(key=(self.name, self.projection, self.tiling, self.tile, self.quality),
-                                                      level=('name', 'projection', 'tiling', 'tile', 'quality'))
+        # chunk_data = pd.DataFrame()
+        # chunks
+        # chunk_data[['bitrate', 'dectime_serial']] = chunk_data_groupby[['bitrate', 'dectime']].apply()
+        # chunk_data[['bitrate', 'dectime_serial']] = chunk_data_groupby[['bitrate', 'dectime']].sum()
+        # chunk_data[['dectime_max']] = chunk_data_groupby[['dectime']].max()
+        # chunk_data[['ssim', 'mse', 's-mse', 'ws-mse']] = chunk_data_groupby[['ssim', 'mse', 's-mse', 'ws-mse']].mean()
+        # # Viewport
+        # chunk_data[['vp_mse', 'vp_ssim']] = viewport_quality_groupby[['mse', 'ssim']].mean()
+        for self.tiling in self.tiling_list:
+            for self.quality in self.quality_list:
+                for self.name in self.name_list:
+                    for self.projection in self.projection_list:
+                        print(f'{self.tiling} qp{self.quality} {self.name} {self.projection} ')
+                        data = self.chunk_data.xs(key=(self.name, self.projection, self.tiling, self.quality),
+                                                  level=('name', 'projection', 'tiling', 'quality',))
 
-                            corr1 = data.corr(method='pearson')
-                            corr2 = data.corr(method='kendall')
-                            corr3 = data.corr(method='spearman')
-                            if corr1.isna().any().any():
-                                corr1 = corr1.fillna(0)
-                            if corr2.isna().any().any():
-                                corr2 = corr2.fillna(0)
-                            if corr3.isna().any().any():
-                                corr3 = corr3.fillna(0)
-                            unique = [(self.projection, self.tiling, self.quality, self.name, self.tile,
-                                       corr1.index[i], corr1.columns[j], corr1.iat[i, j], corr2.iat[i, j], corr3.iat[i, j])
-                                      for i in range(len(corr1)) for j in range(i)]
+                        corr1 = data.corr(method='pearson')
+                        corr2 = data.corr(method='kendall')
+                        corr3 = data.corr(method='spearman')
 
-                            stats_defaultdict.extend(unique)
+                        if corr1.isna().any().any(): corr1 = corr1.fillna(0)
+                        if corr2.isna().any().any(): corr2 = corr2.fillna(0)
+                        if corr3.isna().any().any(): corr3 = corr3.fillna(0)
+
+                        unique = [(self.projection, self.tiling, self.quality, self.name, self.tile,
+                                   corr1.index[i], corr1.columns[j], corr1.iat[i, j], corr2.iat[i, j], corr3.iat[i, j])
+                                  for i in range(len(corr1)) for j in range(i)]
+
+                        stats_defaultdict.extend(unique)
 
         stats_df = pd.DataFrame(stats_defaultdict, columns=('projection', 'tiling', 'quality', 'name', 'tile',
                                                             'metric1', 'metric2', 'pearson', 'kendall', 'spearman'))
@@ -122,32 +128,31 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
 
     def make_boxplot_quality_tiling(self):
         print(f'make_boxplot_quality_tiling.')
-        for self.metric in self.metric_list:
+        for self.metric in self.chunk_data.columns:
             boxplot_path = self.boxplot_folder / 'quality_tiling' / f'boxplot_{self.metric}.png'
+            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
+
             if boxplot_path.exists():
                 print(f'\t{boxplot_path} exists.')
                 continue
-            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
 
             for n, self.quality in enumerate(self.quality_list, 1):
+                print(f'\r\tPlot {self.metric} - qp{self.quality}', end='')
 
-                print(f'\r\tPlot qp{self.quality}', end='')
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
-
-                serie_list = [self.get_chunk_data(('tiling', 'quality'))
+                serie_list = [self.chunk_data.xs(key=(self.tiling, self.quality), level=('tiling', 'quality'))
                               for self.tiling in self.tiling_list]
-                ax.boxplot(serie_list, tick_labels=list(self.tiling_list))
+                ax.boxplot(serie_list, tick_labels=list(self.tiling_list), sym='b.')
 
                 ax.set_title(f'qp{self.quality}')
                 ax.set_xlabel(f'Tiling')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
 
                 if self.metric == 'dash_m4s':
-                    ax.ticklabel_format(axis='y', style='scientific',
-                                        scilimits=(6, 6))
+                    ax.ticklabel_format(axis='y', style='scientific', scilimits=(6, 6))
             print(f'\n\tSaving.')
             fig.savefig(boxplot_path)
             fig.clf()
