@@ -3,6 +3,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from typing import Any, Generator
 
+import matplotlib.patches as mpatches
 import pandas as pd
 from matplotlib import pyplot as plt
 
@@ -39,7 +40,6 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         for self.tiling in self.tiling_list:
             for self.quality in self.quality_list:
                 for column in self.chunk_data.columns:
-
                     self.stats_defaultdict['Tiling'].append(self.tiling)
                     self.stats_defaultdict['Quality'].append(self.quality)
                     self.stats_defaultdict['Metric'].append(column)
@@ -54,7 +54,6 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                         self.stats_defaultdict[f'{self.projection} Máximo'].append(data.quantile(1.00))
 
                 for column in self.viewport_quality.columns:
-
                     self.stats_defaultdict['Tiling'].append(self.tiling)
                     self.stats_defaultdict['Quality'].append(self.quality)
                     self.stats_defaultdict['Metric'].append(f'{column}_vp')
@@ -116,10 +115,10 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
         stats_df_mean.to_csv(stats_csv, index=True)
 
     def plots(self):
-        self.rc_config()
+        # self.rc_config()
 
-        self.make_boxplot_quality_tiling()
-        # self.make_boxplot_tiling_quality()
+        # self.make_boxplot_quality_tiling()
+        self.make_boxplot_tiling_quality()
         #
         # self.make_violinplot_quality_tiling()
         # self.make_violinplot_tiling_quality()
@@ -132,9 +131,9 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
             boxplot_path = self.boxplot_folder / 'quality_tiling' / f'boxplot_{self.metric}.png'
             boxplot_path.parent.mkdir(parents=True, exist_ok=True)
 
-            if boxplot_path.exists():
-                print(f'\t{boxplot_path} exists.')
-                continue
+            # if boxplot_path.exists():
+            #     print(f'\t{boxplot_path} exists.')
+            #     continue
 
             fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
             fig.suptitle(f'{self.metric}')
@@ -143,16 +142,75 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                 print(f'\r\tPlot {self.metric} - qp{self.quality}', end='')
 
                 ax: plt.Axes = fig.add_subplot(3, 2, n)
-                serie_list = [self.chunk_data.xs(key=(self.tiling, self.quality), level=('tiling', 'quality'))
+
+                self.projection = 'erp'
+                serie_list = [self.chunk_data[self.metric].xs(key=(self.projection, self.tiling, self.quality), level=('projection', 'tiling', 'quality'))
                               for self.tiling in self.tiling_list]
-                ax.boxplot(serie_list, tick_labels=list(self.tiling_list), sym='b.')
+                ax.boxplot(serie_list, sym='b.', positions=[0 - 0.2, 1 - 0.2, 2 - 0.2, 3 - 0.2, 4 - 0.2], widths=0.4,patch_artist=True, boxprops={"facecolor": "blue"})
+
+                self.projection = 'cmp'
+                serie_list = [self.chunk_data[self.metric].xs(key=(self.projection, self.tiling, self.quality), level=('projection', 'tiling', 'quality'))
+                              for self.tiling in self.tiling_list]
+                ax.boxplot(serie_list, sym='b.', positions=[0 + 0.2, 1 + 0.2, 2 + 0.2, 3 + 0.2, 4 + 0.2], widths=0.4, patch_artist=True, boxprops={"facecolor": "red"})
 
                 ax.set_title(f'qp{self.quality}')
                 ax.set_xlabel(f'Tiling')
                 ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax.set_xticks([0,1,2,3,4], list(self.tiling_list))
 
-                if self.metric == 'dash_m4s':
+                azul_patch = mpatches.Patch(color='blue', label='erp')
+                red_patch = mpatches.Patch(color='red', label='cmp')
+                ax.legend(handles=[azul_patch, red_patch])
+                if self.metric == 'bitrate':
                     ax.ticklabel_format(axis='y', style='scientific', scilimits=(6, 6))
+                elif 'dectime' in self.metric:
+                    ax.ticklabel_format(axis='y', style='scientific', scilimits=(-3, -3))
+            print(f'\n\tSaving.')
+            fig.savefig(boxplot_path)
+            fig.clf()
+            plt.close()
+
+    def make_boxplot_tiling_quality(self):
+        print(f'make_boxplot_tiling_quality.')
+        for self.metric in self.chunk_data.columns:
+            boxplot_path = self.boxplot_folder / 'tiling_quality' / f'boxplot_{self.metric}.png'
+            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
+
+            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
+            fig.suptitle(f'{self.metric}')
+
+            for n, self.tiling in enumerate(self.tiling_list, 1):
+                print(f'\r\tPlot {self.metric} - {self.tiling}', end='')
+
+                ax1: plt.Axes = fig.add_subplot(2, 5, n)
+                ax2: plt.Axes = fig.add_subplot(2, 5, n+5)
+
+                self.projection = 'erp'
+                positions = [0 - 0.2, 1 - 0.2, 2 - 0.2, 3 - 0.2, 4 - 0.2]
+                serie_list = [self.chunk_data[self.metric].xs(key=(self.projection, self.tiling, self.quality), level=('projection', 'tiling', 'quality')).mean()
+                              for self.quality in self.quality_list]
+                ax1.boxplot(serie_list, sym='b.', positions=positions, widths=0.4,patch_artist=True, boxprops={"facecolor": "blue"})
+                ax2.bar(positions, serie_list, color='blue', label=f'{self.tiling}')
+
+                self.projection = 'cmp'
+                positions = [0 + 0.2, 1 + 0.2, 2 + 0.2, 3 + 0.2, 4 + 0.2]
+                serie_list = [self.chunk_data[self.metric].xs(key=(self.projection, self.tiling, self.quality), level=('projection', 'tiling', 'quality')).mean()
+                              for self.quality in self.quality_list]
+                ax1.boxplot(serie_list, sym='b.', positions=positions, widths=0.4, patch_artist=True, boxprops={"facecolor": "red"})
+                ax2.bar(positions, serie_list, color='red', label=f'{self.tiling}')
+
+                ax1.set_title(f'{self.tiling}')
+                ax1.set_xlabel(f'Quality (QP)')
+                ax1.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+                ax1.set_xticks([0,1,2,3,4], list(self.quality_list))
+
+                azul_patch = mpatches.Patch(color='blue', label='erp')
+                red_patch = mpatches.Patch(color='red', label='cmp')
+                ax1.legend(handles=[azul_patch, red_patch])
+                if self.metric == 'bitrate':
+                    ax1.ticklabel_format(axis='y', style='scientific', scilimits=(6, 6))
+                elif 'dectime' in self.metric:
+                    ax1.ticklabel_format(axis='y', style='scientific', scilimits=(-3, -3))
             print(f'\n\tSaving.')
             fig.savefig(boxplot_path)
             fig.clf()
@@ -258,40 +316,6 @@ class ChunkAnalysisTilingQuality(AnalysisBase):
                         data = [self.get_chunk_data(('tiling', 'quality')).mean() for self.quality in self.quality_list]
                         ax.bar(x, data, color=cor[index], label=f'{self.tiling}')
                         ax.legend(loc='upper right')
-
-    def make_boxplot_tiling_quality(self):
-        print(f'make_boxplot_tiling_quality.')
-        for self.metric in self.metric_list:
-            # Check files
-            boxplot_path = self.boxplot_folder / 'tiling_quality' / f'boxplot_{self.metric}.png'
-            if boxplot_path.exists():
-                print(f'\t{boxplot_path} exists.')
-                continue
-
-            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-
-            fig = plt.figure(figsize=(6, 7.5), layout='tight', dpi=300)
-            fig.suptitle(f'{self.metric}')
-
-            for n, self.tiling in enumerate(self.tiling_list, 1):
-                print(f'\r\tPlot {self.tiling}', end='')
-                ax: plt.Axes = fig.add_subplot(3, 2, n)
-
-                serie_list = [self.get_chunk_data(('tiling', 'quality'))
-                              for self.quality in self.quality_list]
-                ax.boxplot(serie_list, tick_labels=list(self.quality_list))
-
-                ax.set_title(f'{self.tiling}')
-                ax.set_xlabel(f'Quality')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-
-                if self.metric == 'dash_m4s':
-                    ax.ticklabel_format(axis='y', style='scientific',
-                                        scilimits=(6, 6))
-            print(f'\n\tSaving.')
-            fig.savefig(boxplot_path)
-            fig.clf()
-            plt.close()
 
     def make_violinplot_quality_tiling(self):
         print(f'make_violinplot_quality_tiling_frame.')
