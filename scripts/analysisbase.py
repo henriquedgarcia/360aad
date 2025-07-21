@@ -137,7 +137,7 @@ class AnalysisBase(AnalysisPaths, ABC):
                     "lines": {'linewidth': 1, 'markersize': 2},
                     "errorbar": {'capsize': 4},
                     "boxplot": {'flierprops.marker': '+', 'flierprops.markersize': 1, 'flierprops.linewidth': 0.5,
-                                'boxprops.linewidth': 0.0,
+                                'boxprops.linewidth': 0.5,
                                 'capprops.linewidth': 1,
                                 'medianprops.linewidth': 0.5,
                                 'whiskerprops.linewidth': 0.5,
