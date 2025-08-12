@@ -123,7 +123,6 @@ class AnalysisPaths(AnalysisProps):
 
 
 class AnalysisBase(AnalysisPaths, ABC):
-
     @staticmethod
     def rc_config():
         rc_param = {"figure": {'figsize': (7.0, 1.2), 'dpi': 300, 'autolayout': True},
