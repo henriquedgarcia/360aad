@@ -72,12 +72,12 @@ class CreateAveragedDataset(AnalysisPaths):
     def __init__(self, config):
         print(f'{self.class_name} initializing...')
         self.config = config
-        # self.create_session_dataset()
+        self.create_session_dataset()
         # self.group_siti_df()
 
         # self.convert_head_movement()
         # self.group_chunk_tiles_seen_df()
-        self.group_tiles_seen()
+        # self.group_tiles_seen()
         # self.fuse_bitrate_dectime_quality()
 
         # chunk_data = pd.read_hdf('dataset/chunk_data.hd5')
