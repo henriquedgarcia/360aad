@@ -21,7 +21,6 @@ class SerieAnalysisTilingQualityChunkFrame(AnalysisBase):
         self.stats_defaultdict = defaultdict(list)
         self.projection = 'cmp'
         del self.dataset_structure['seen_tiles']
-        self.load_database(self.callback)
 
     def make_stats(self):
         print(f'make_stats.')
