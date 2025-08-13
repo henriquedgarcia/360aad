@@ -27,8 +27,7 @@ class Data(ABC):
         :param column:
         :return:
         """
-        key = tuple(getattr(self.config, level) for level in self.level)
-        return self.data.xs(key=key, level=self.level)[column]
+        return self.xs(levels=self.level)
 
     def xs(self, levels):
         key = tuple(getattr(self.config, level) for level in levels)
@@ -47,11 +46,11 @@ class SitiData(Data):
 
 class TilesSeenData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/seen_tiles_fov110x90.hd5" if filename is None else filename
+        filename = "dataset/tiles_seen_fov110x90.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
-class ChunkData(Data):
+class DectimeData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/dectime_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
@@ -63,31 +62,13 @@ class BitrateData(Data):
         super().__init__(filename, config_if)
 
 
-class ChunkQualitySSIMData(Data):
+class ChunkQualityData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_ssim_qp.hd5" if filename is None else filename
+        filename = "dataset/chunk_quality_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
 
 
-class ChunkQualityMSEData(Data):
-    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_mse_qp.hd5" if filename is None else filename
-        super().__init__(filename, config_if)
-
-
-class ChunkQualitySMSEData(Data):
-    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_s-mse_qp.hd5" if filename is None else filename
-        super().__init__(filename, config_if)
-
-
-class ChunkQualityWSMSEData(Data):
-    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/chunk_quality_ws-mse_qp.hd5" if filename is None else filename
-        super().__init__(filename, config_if)
-
-
-class UserViewportData(Data):
+class ViewportQualityData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/user_viewport_quality_qp.hd5" if filename is None else filename
         super().__init__(filename, config_if)
