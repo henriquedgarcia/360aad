@@ -1,50 +1,15 @@
-import json
 import os
 from abc import ABC
 from collections import defaultdict
-from typing import Union
 
-import pandas as pd
 from matplotlib import pyplot as plt
 
 from scripts.analysisbase import AnalysisBase
 from scripts.utils.config import Config
+from scripts.utils.database import BitrateData, DectimeData, ChunkQualityData, ViewportQualityData, TilesSeenData
 
 
 class Methods(AnalysisBase, ABC):
-    def make_plot_quality_tiling(self):
-        print(f'make_boxplot_quality_tiling.')
-        for self.metric in self.dataset_structure:
-            boxplot_path = self.series_plot_folder / 'quality_tiling' / f'plot_{self.metric}.pdf'
-            if boxplot_path.exists():
-                print(f'\t{boxplot_path} exists.')
-                continue
-            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-
-            fig = plt.figure(figsize=(6, 7.5), layout='tight')
-            fig.suptitle(f'{self.metric}')
-
-            for n, self.quality in enumerate(self.quality_list, 1):
-                print(f'Plot qp{self.quality}')
-
-                ax: plt.Axes = fig.add_subplot(3, 2, n)
-                for self.tiling in self.tiling_list:
-                    serie = self.get_chunk_data(('tiling', 'quality'))
-                    ax.plot(serie, label=f'{self.tiling}')
-
-                ax.set_title(f'qp{self.quality}')
-                ax.set_xlabel(f'Chunk')
-                ax.set_yscale('log')
-                ax.legend(loc='upper right')
-                ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
-
-                # if self.metric == 'bitrate':
-                #     ax.ticklabel_format(axis='y', style='scientific',
-                #                         scilimits=(6, 6))
-
-            fig.savefig(boxplot_path)
-            fig.clf()
-            plt.close()
 
     def make_plot_tiling_quality(self):
         print(f'make_boxplot_tiling_quality.')
@@ -221,68 +186,70 @@ class SerieAnalysisTilingQualityChunk(Methods):
     def __init__(self, config):
         print(f'{self.class_name} initializing...')
         self.config = config
-        self.create_session_dataset()
-        # self.setup()
+        self.setup()
+        self.plots()
         # self.make_stats()
         # self.make_corr()
-        # self.plots()
 
-    def create_session_dataset(self):
-        # Carrega os dataset
-        self.start_ui(total=8 * 2 * 5 * 5 * 30 * 60, desc='create_session_dataset')
-
-        chunk_data_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/chunk_data.hd5')
-
-        viewport_quality_by: Union[object, pd.DataFrame] = pd.read_hdf('dataset/viewport_quality.hd5')
-        viewport_quality_by = viewport_quality_by.groupby(level=('name', 'projection', 'tiling', 'quality', 'user', 'chunk')).mean()
-
-        tiles_seen_by_chunk: Union[object, pd.DataFrame] = pd.read_hdf('dataset/tiles_seen.hd5')
-        a = tiles_seen_by_chunk.apply(set)
-        tiles_seen_by_chunk = a.groupby(level=('name', 'projection', 'tiling', 'user', 'chunk')).apply(lambda x: set().union(*x))
-
-        session_data = []
-        for name, projection, tiling, quality, user, chunk in viewport_quality_by.index:
-            self.update_ui(f'{name=}, {projection=}, {tiling=}, {quality=}, {user=}, {chunk=}')
-
-            viewport = viewport_quality_by.xs(key=(name, projection, tiling, quality, user, chunk),
-                                                       level=('name', 'projection', 'tiling', 'quality', 'user', 'chunk'))
-            tiles_seen = tiles_seen_by_chunk.xs(key=(name, projection, tiling, user, chunk),
-                                                level=('name', 'projection', 'tiling', 'user', 'chunk'))
-            chunk_data = chunk_data_qp.xs(key=(name, projection, tiling, quality, chunk),
-                                          level=('name', 'projection', 'tiling', 'quality', 'chunk'))
-            list_of_tiles = tiles_seen['tiles_seen'][0]
-
-            bitrate = chunk_data.loc[list_of_tiles]['bitrate'].sum()
-            dectime_serial = chunk_data.loc[list_of_tiles]['dectime'].sum()
-            dectime_parallel = chunk_data.loc[list_of_tiles]['dectime'].max()
-            ssim = chunk_data.loc[list_of_tiles]['ssim'].mean()
-            mse = chunk_data.loc[list_of_tiles]['mse'].mean()
-            s_mse = chunk_data.loc[list_of_tiles]['s-mse'].mean()
-            ws_mse = chunk_data.loc[list_of_tiles]['ws-mse'].mean()
-            viewport_mse = viewport['mse'][0]
-            viewport_ssim = viewport['ssim'][0]
-            n_tiles_seen = len(list_of_tiles)
-            decodable_path = {}
-            for tile in list_of_tiles:
-                decodable_path.update({tile: f'decodable/{name}/{projection}/{tiling}/tile{tile}/qp{quality}/chunk{chunk}.mp4'})
-            decodable_path = json.dumps(decodable_path)
-            data = (name, projection, tiling, quality, user, chunk,
-                    bitrate, dectime_serial, dectime_parallel, ssim,
-                    mse, s_mse, ws_mse, viewport_mse, viewport_ssim,
-                    n_tiles_seen, decodable_path)
-            session_data.append(data)
-
-        print(f'\nSaving')
-        df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
-                                                 'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
-                                                 'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
-        df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
-        df.to_hdf(f'dataset/user_session_qp.hd5', key='df')
+    # def create_session_dataset(self):
+    #     # Carrega os dataset
+    #     self.start_ui(total=8 * 2 * 5 * 5 * 30 * 60, desc='create_session_dataset')
+    #
+    #     chunk_data_qp: Union[object, pd.DataFrame] = pd.read_hdf('dataset/chunk_data.hd5')
+    #
+    #     viewport_quality_by: Union[object, pd.DataFrame] = pd.read_hdf('dataset/viewport_quality.hd5')
+    #     viewport_quality_by = viewport_quality_by.groupby(level=('name', 'projection', 'tiling', 'quality', 'user', 'chunk')).mean()
+    #
+    #     tiles_seen_by_chunk: Union[object, pd.DataFrame] = pd.read_hdf('dataset/tiles_seen.hd5')
+    #     a = tiles_seen_by_chunk.apply(set)
+    #     tiles_seen_by_chunk = a.groupby(level=('name', 'projection', 'tiling', 'user', 'chunk')).apply(lambda x: set().union(*x))
+    #
+    #     session_data = []
+    #     for name, projection, tiling, quality, user, chunk in viewport_quality_by.index:
+    #         self.update_ui(f'{name=}, {projection=}, {tiling=}, {quality=}, {user=}, {chunk=}')
+    #
+    #         viewport = viewport_quality_by.xs(key=(name, projection, tiling, quality, user, chunk),
+    #                                                    level=('name', 'projection', 'tiling', 'quality', 'user', 'chunk'))
+    #         tiles_seen = tiles_seen_by_chunk.xs(key=(name, projection, tiling, user, chunk),
+    #                                             level=('name', 'projection', 'tiling', 'user', 'chunk'))
+    #         chunk_data = chunk_data_qp.xs(key=(name, projection, tiling, quality, chunk),
+    #                                       level=('name', 'projection', 'tiling', 'quality', 'chunk'))
+    #         list_of_tiles = tiles_seen['tiles_seen'][0]
+    #
+    #         bitrate = chunk_data.loc[list_of_tiles]['bitrate'].sum()
+    #         dectime_serial = chunk_data.loc[list_of_tiles]['dectime'].sum()
+    #         dectime_parallel = chunk_data.loc[list_of_tiles]['dectime'].max()
+    #         ssim = chunk_data.loc[list_of_tiles]['ssim'].mean()
+    #         mse = chunk_data.loc[list_of_tiles]['mse'].mean()
+    #         s_mse = chunk_data.loc[list_of_tiles]['s-mse'].mean()
+    #         ws_mse = chunk_data.loc[list_of_tiles]['ws-mse'].mean()
+    #         viewport_mse = viewport['mse'][0]
+    #         viewport_ssim = viewport['ssim'][0]
+    #         n_tiles_seen = len(list_of_tiles)
+    #         decodable_path = {}
+    #         for tile in list_of_tiles:
+    #             decodable_path.update({tile: f'decodable/{name}/{projection}/{tiling}/tile{tile}/qp{quality}/chunk{chunk}.mp4'})
+    #         decodable_path = json.dumps(decodable_path)
+    #         data = (name, projection, tiling, quality, user, chunk,
+    #                 bitrate, dectime_serial, dectime_parallel, ssim,
+    #                 mse, s_mse, ws_mse, viewport_mse, viewport_ssim,
+    #                 n_tiles_seen, decodable_path)
+    #         session_data.append(data)
+    #
+    #     print(f'\nSaving')
+    #     df = pd.DataFrame(session_data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
+    #                                              'bitrate', 'dectime_serial', 'dectime_parallel', 'ssim', 'mse', 's_mse',
+    #                                              'ws_mse', 'viewport_mse', 'viewport_ssim', 'n_tiles_seen'])
+    #     df.set_index(['name', 'projection', 'tiling', 'quality', 'user', 'chunk'], inplace=True)
+    #     df.to_hdf(f'dataset/user_session_qp.hd5', key='df')
 
     def setup(self):
         self.stats_defaultdict = defaultdict(list)
-        # self.load_database()
-        self.database = self.database.groupby(['tiling', 'quality', 'chunk']).mean()
+        self.bitrate_data = BitrateData(self)
+        self.dectime_data = DectimeData(self)
+        self.chunk_quality_data = ChunkQualityData(self)
+        self.viewport_quality_data = ViewportQualityData(self)
+        self.tiles_seen_data = TilesSeenData(self)
 
     def make_stats(self):
         print(f'make_stats.')
@@ -303,11 +270,66 @@ class SerieAnalysisTilingQualityChunk(Methods):
 
     def plots(self):
         self.make_plot_quality_tiling()
-        self.make_plot_tiling_quality()
+        # self.make_plot_tiling_quality()
         # self.make_boxplot_quality_tiling()
         # self.make_boxplot_tiling_quality()
         # self.make_violinplot_quality_tiling()
         # self.make_violinplot_tiling_quality()
+
+    def make_plot_quality_tiling(self):
+        print(f'make_boxplot_quality_tiling.')
+
+        for n, self.quality in enumerate(self.quality_list, 1):
+            boxplot_path = self.series_plot_folder / 'quality_tiling' / f'plot_{self.rate_control}{self.quality}.pdf'
+            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
+            if boxplot_path.exists():
+                print(f'\t{boxplot_path} exists.')
+                continue
+
+            print(f'Plot qp{self.quality}')
+
+            fig = plt.figure(figsize=(6, 7.5), layout='tight')
+            fig.suptitle(f'{self.rate_control}{self.quality}')
+
+            for self.tiling in self.tiling_list:
+                for self.name in self.name_list:
+                    for self.user in list(self.tiles_seen_data.data.loc[self.name].index.unique('user')):
+                        for self.projection in self.projection_list:
+                            chunk_serie = defaultdict(list)
+                            chunk_serie['dectime'] = []
+                            for self.chunk in self.chunk_list:
+                                tile_list = list(self.tiles_seen_data.xs(('name', 'projection', 'tiling', 'user', 'chunk'))['tiles_seen'].iloc[0])
+                                metric_mean = []
+                                for self.tile in tile_list:
+                                    chunk_quality=self.chunk_quality_data.xs(['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'])
+                                    bitrate=self.bitrate_data.xs(['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'])
+                                    dectime=self.dectime_data.xs(['name', 'projection', 'tiling', 'tile', 'quality', 'chunk'])
+
+                                    chunk_serie['metric'].append('chunk_quality')
+
+                                    metric_mean.append()
+
+                self.tiles_seen_data.xs(('quality', 'tiling'))
+
+            # bitrate
+            ax: plt.Axes = fig.add_subplot(3, 2, n)
+
+            serie = self.get_chunk_data(('tiling', 'quality'))
+            ax.plot(serie, label=f'{self.tiling}')
+
+            ax.set_title(f'qp{self.quality}')
+            ax.set_xlabel(f'Chunk')
+            ax.set_yscale('log')
+            ax.legend(loc='upper right')
+            ax.set_ylabel(self.dataset_structure[self.metric]['quantity'])
+
+            # if self.metric == 'bitrate':
+            #     ax.ticklabel_format(axis='y', style='scientific',
+            #                         scilimits=(6, 6))
+
+        fig.savefig(boxplot_path)
+        fig.clf()
+        plt.close()
 
 
 if __name__ == '__main__':
