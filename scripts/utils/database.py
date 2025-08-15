@@ -74,12 +74,21 @@ class ViewportQualityData(Data):
         super().__init__(filename, config_if)
 
 
+class SessionData(Data):
+    filename = "dataset/user_session_qp.hd5"
+
+    def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
+        self.filename = self.filename if filename is None else filename
+        super().__init__(self.filename, config_if)
+
+
 class HeadMovementData(Data):
     """
     df.index.names ['name', 'projection', 'user', 'frame']
     df.columns ['yaw', 'pitch', 'roll']
     """
+    filename = "dataset/head_movement.hd5"
 
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
-        filename = "dataset/head_movement.hd5" if filename is None else filename
-        super().__init__(filename=filename, config_if=config_if)
+        self.filename = self.filename if filename is None else filename
+        super().__init__(filename=self.filename, config_if=config_if)
