@@ -23,7 +23,7 @@ class Config:
 
     fov = "110x90"
 
-    chunk_list = list(range(1, 61))
+    chunk_list = list(range(0, 60))
     quality_list = [16, 22, 28, 34, 40]
     tiling_list = ["1x1", "3x2", "6x4", "9x6", "12x8"]
     projection_list = {'cmp': '3240x2160',
