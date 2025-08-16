@@ -263,6 +263,7 @@ class SerieAnalysisTilingQualityChunk(Methods):
         self.chunk_quality_data = ChunkQualityData(self)
         self.viewport_quality_data = ViewportQualityData(self)
         self.tiles_seen_data = TilesSeenData(self)
+        self.make_session_data()
 
     def make_stats(self):
         print(f'make_stats.')
@@ -282,8 +283,7 @@ class SerieAnalysisTilingQualityChunk(Methods):
                     self.stats_defaultdict['Máximo'].append(serie.quantile(1.00))
 
     def plots(self):
-        self.make_session_data()
-
+        pass
         # self.make_plot_tiling_quality()
         # self.make_boxplot_quality_tiling()
         # self.make_boxplot_tiling_quality()
@@ -313,6 +313,7 @@ class SerieAnalysisTilingQualityChunk(Methods):
                                     print(f'\t{filename} exists.')
                                     continue
                                 filename.parent.mkdir(parents=True, exist_ok=True)
+
                                 self.start_ui(60, 'make_session')
 
                                 data = []
