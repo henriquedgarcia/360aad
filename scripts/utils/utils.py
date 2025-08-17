@@ -2,8 +2,10 @@ import json
 import pickle
 from collections import defaultdict
 from collections.abc import Sequence
+from contextlib import contextmanager
 from functools import reduce
 from pathlib import Path
+from time import time
 from typing import Callable, Any, Union
 
 import numpy as np
@@ -309,3 +311,29 @@ def ea2xyz(ea: np.ndarray) -> np.ndarray:
     xyz[1] = -np.sin(ea[0])
     xyz[2] = np.cos(ea[0]) * np.cos(ea[1])
     return xyz
+
+
+@contextmanager
+def task(self, verbose=True):
+    if verbose:
+        print(f'\r==== {self.__class__.__name__} {self.ctx} ====', end='')
+    try:
+        yield
+    except AbortError as e:
+        msg = e.args[0]
+        if msg and verbose:
+            print_error(f'\t{e.args[0]}')
+    finally:
+        pass
+
+
+@contextmanager
+def timer(ident=0, verbose=True):
+    start_time = time()
+    ident = '\t' * ident
+
+    try:
+        yield start_time
+    finally:
+        if verbose:
+            print(f"{ident}time={time() - start_time}.")
