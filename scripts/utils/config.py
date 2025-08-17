@@ -341,7 +341,7 @@ class Lists:
         return self.config.name_list
 
     @property
-    def projection_list(self):
+    def projection_list(self) -> dict[str, str]:
         return self.config.projection_list
 
     @property
