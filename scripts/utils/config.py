@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cached_property
 from math import prod
 from typing import Union
 
@@ -376,15 +377,9 @@ class ConfigIf(Factors, Lists):
     config = Config()
     _dataset_structure: dict = None
 
-    @property
+    @cached_property
     def dataset_structure(self):
-        if self._dataset_structure is None:
-            self._dataset_structure = self.config.dataset_structure
-        return self._dataset_structure
-
-    @dataset_structure.setter
-    def dataset_structure(self, value):
-        self._dataset_structure = value
+        return self.config.dataset_structure
 
     @property
     def video_shape(self):
@@ -408,7 +403,7 @@ class ConfigIf(Factors, Lists):
 
     @property
     def n_frames(self):
-        return 1800
+        return self.config.duration * self.config.fps
 
     @property
     def fps(self):
@@ -429,7 +424,7 @@ class ConfigIf(Factors, Lists):
     @property
     def group(self):
         if self.config.group is None and self.name is not None:
-            self.config.group = self.name_list[self.name]["group"]
+            return self.name_list[self.name]["group"]
         return self.config.group
 
     @group.setter
