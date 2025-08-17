@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Union
 
 import pandas as pd
+from pandas import DataFrame
 
 from scripts.utils.config import ConfigIf
 
@@ -20,7 +21,7 @@ class Data(ABC):
         self.level = list(self.data.index.names)
         self.columns = list(self.data.columns)
 
-    def __getitem__(self, column) -> Union[int, float]:
+    def __getitem__(self, column) -> Union[DataFrame, object]:
         """
         if str, search colum, full index
         if tuple, search index using cross-section
