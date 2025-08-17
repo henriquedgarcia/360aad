@@ -48,6 +48,7 @@ class TilesSeenData(Data):
     def __init__(self, config_if: ConfigIf, filename: Union[str, Path] = None):
         filename = "dataset/tiles_seen_fov110x90.hd5" if filename is None else filename
         super().__init__(filename, config_if)
+        self.data['tiles_seen'] = self.data['tiles_seen'].apply(list)
 
 
 class DectimeData(Data):
