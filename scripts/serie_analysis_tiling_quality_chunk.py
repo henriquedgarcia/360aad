@@ -255,6 +255,9 @@ class SerieAnalysisTilingQualityChunk(Methods):
     chunk_quality_data: ChunkQualityData
     viewport_quality_data: ViewportQualityData
     tiles_seen_data: TilesSeenData
+    user_list: list
+    session_data: SessionData
+    tiles_seen: Union[list, tuple]
 
     def setup(self):
         self.stats_defaultdict = defaultdict(list)
@@ -263,6 +266,11 @@ class SerieAnalysisTilingQualityChunk(Methods):
         self.chunk_quality_data = ChunkQualityData(self)
         self.viewport_quality_data = ViewportQualityData(self)
         self.tiles_seen_data = TilesSeenData(self)
+        try:
+            self.session_data = SessionData(self)
+        except FileNotFoundError:
+            self.make_session_data()
+            self.session_data = SessionData(self)
 
     def make_stats(self):
         print(f'make_stats.')
@@ -282,84 +290,82 @@ class SerieAnalysisTilingQualityChunk(Methods):
                     self.stats_defaultdict['Máximo'].append(serie.quantile(1.00))
 
     def plots(self):
-        self.make_session_data()
-
+        self.make_plot_quality_tiling()
         # self.make_plot_tiling_quality()
         # self.make_boxplot_quality_tiling()
         # self.make_boxplot_tiling_quality()
         # self.make_violinplot_quality_tiling()
         # self.make_violinplot_tiling_quality()
 
-    user_list: list
-    session_data: SessionData
-    tiles_seen: Union[list, tuple]
-
     def make_session_data(self):
-        try:
-            self.session_data = SessionData(self)
-            return
-        except FileNotFoundError:
-            pass
+        user_data_path = lambda: Path(f'dataset/user_session/{self.name}/{self.projection}/{self.tiling}/{self.rate_control}{self.quality}/user{self.user}_qp.hd5')
+        chunk_path = lambda: Path(f'decodable/{self.name}/{self.projection}/{self.tiling}/tile{self.tile}/qp{self.quality}/chunk{self.chunk}.mp4')
+        user_session_path = Path(f'dataset/user_session_qp.hd5')
 
         def make_session_by_user():
+            def get_user_chunk_data():
+                self.update_ui(f'{self}')
+                bitrate_data = self.bitrate_data.xs(['name', 'projection', 'tiling', 'quality', 'chunk', ])
+                dectime_data = self.dectime_data.xs(['name', 'projection', 'tiling', 'quality', 'chunk', ])
+                chunk_quality_data = self.chunk_quality_data.xs(['name', 'projection', 'tiling', 'quality', 'chunk'])
+                viewport_quality_data = self.viewport_quality_data.xs(['name', 'projection', 'tiling', 'quality', 'chunk', 'user'])
+                self.tiles_seen = self.tiles_seen_data.xs(('name', 'projection', 'tiling', 'user', 'chunk')).iloc[0, 0]
+
+                bitrate_data_sum = bitrate_data['bitrate'].loc[self.tiles_seen].sum()
+                dectime_data_sum = dectime_data['dectime'].loc[self.tiles_seen].sum()
+                dectime_data_max = dectime_data['dectime'].loc[self.tiles_seen].max()
+                chunk_quality_mean = chunk_quality_data.loc[self.tiles_seen].mean()
+                ssim_mean = chunk_quality_mean['ssim']
+                mse_mean = chunk_quality_mean['mse']
+                smse_mean = chunk_quality_mean['s-mse']
+                wsmse_mean = chunk_quality_mean['ws-mse']
+                viewport_ssim = viewport_quality_data['ssim'][0]
+                viewport_mse = viewport_quality_data['mse'][0]
+                ntiles = len(self.tiles_seen)
+
+                decodable_path = get_chunks_seen_path()
+                user_chunk_data = (self.name, self.projection, self.tiling, self.quality, self.user, self.chunk,
+                                   bitrate_data_sum, dectime_data_sum, dectime_data_max,
+                                   ssim_mean, mse_mean, smse_mean, wsmse_mean,
+                                   viewport_ssim, viewport_mse,
+                                   ntiles, decodable_path)
+                return user_chunk_data
+
+            def make_user_data():
+                self.start_ui(60, 'make_session')
+                data = []
+                for self.chunk in self.chunk_list:
+                    user_chunk_data = get_user_chunk_data()
+                    data.append(user_chunk_data)
+
+                df = pd.DataFrame(data, columns=['user', 'projection', 'tiling', 'name', 'quality', 'chunk',
+                                                 'bitrate_sum', 'dectime_sum', 'dectime_max',
+                                                 'ssim_mean', 'mse_mean', 'smse_mean', 'wsmse_mean',
+                                                 'viewport_ssim', 'viewport_mse',
+                                                 'ntiles', 'decodable_path'])
+                col_index: Union[list, tuple] = ['user', 'projection', 'tiling', 'name', 'quality', 'chunk']
+                df.set_index(col_index, inplace=True)
+                user_data_path().parent.mkdir(parents=True, exist_ok=True)
+                df.to_hdf(user_data_path(), key='user_session_qp', complevel=9)
+
             for self.name in self.name_list:
                 self.user_list = list(self.tiles_seen_data.xs(('name',)).index.unique('user'))
                 for self.projection in self.projection_list:
                     for self.tiling in self.tiling_list:
                         for self.quality in self.quality_list:
                             for self.user in self.user_list:
-                                filename = Path(f'dataset/user_session/{self.name}/{self.projection}/{self.tiling}/{self.rate_control}{self.quality}//user{self.user}_qp.hd5')
-                                if filename.exists():
-                                    print(f'\t{filename} exists.')
-                                    continue
-                                filename.parent.mkdir(parents=True, exist_ok=True)
-                                self.start_ui(60, 'make_session')
+                                if user_data_path().exists():
+                                    print(f'\t{user_data_path()} exists.')
+                                else:
+                                    make_user_data()
 
-                                data = []
-                                for self.chunk in self.chunk_list:
-                                    self.update_ui(f'{self}')
-
-                                    bitrate_data = self.bitrate_data.xs(['name', 'projection', 'tiling', 'quality', 'chunk', ])
-                                    dectime_data = self.dectime_data.xs(['name', 'projection', 'tiling', 'quality', 'chunk', ])
-                                    chunk_quality_data = self.chunk_quality_data.xs(['name', 'projection', 'tiling', 'quality', 'chunk'])
-                                    viewport_quality_data = self.viewport_quality_data.xs(['name', 'projection', 'tiling', 'quality', 'name', 'chunk', 'user', ])
-                                    self.tiles_seen = list(self.tiles_seen_data.xs(('name', 'projection', 'tiling', 'user', 'chunk')).iloc[0, 0])
-
-                                    bitrate_data_sum = bitrate_data.loc[pd.IndexSlice[self.tiles_seen]].sum()['bitrate']
-                                    dectime_data_sum = dectime_data.loc[pd.IndexSlice[self.tiles_seen]].sum()['dectime']
-                                    dectime_data_max = dectime_data.loc[pd.IndexSlice[self.tiles_seen]].max()['dectime']
-                                    chunk_quality_mean = chunk_quality_data.loc[pd.IndexSlice[self.tiles_seen]].mean()
-                                    ssim_mean = chunk_quality_mean['ssim']
-                                    mse_mean = chunk_quality_mean['mse']
-                                    smse_mean = chunk_quality_mean['s-mse']
-                                    wsmse_mean = chunk_quality_mean['ws-mse']
-                                    viewport_ssim = viewport_quality_data['ssim'][0]
-                                    viewport_mse = viewport_quality_data['mse'][0]
-                                    ntiles = len(self.tiles_seen)
-                                    decodable_path = {}
-                                    for tile in self.tiles_seen:
-                                        decodable_path.update({tile: f'decodable/{self.name}/{self.projection}/{self.tiling}/tile{self.tile}/qp{self.quality}/chunk{self.chunk}.mp4'})
-                                    # decodable_path = json.dumps(decodable_path)
-
-                                    data.append((self.name, self.projection, self.tiling, self.quality, self.user, self.chunk,
-                                                 bitrate_data_sum, dectime_data_sum, dectime_data_max,
-                                                 ssim_mean, mse_mean, smse_mean, wsmse_mean,
-                                                 viewport_ssim, viewport_mse,
-                                                 ntiles, decodable_path))
-                                df = pd.DataFrame(data, columns=['user', 'projection', 'tiling', 'name', 'quality', 'chunk',
-                                                                 'bitrate_sum', 'dectime_sum', 'dectime_max',
-                                                                 'ssim_mean', 'mse_mean', 'smse_mean', 'wsmse_mean',
-                                                                 'viewport_ssim', 'viewport_mse',
-                                                                 'ntiles', 'decodable_path'])
-                                col_index: Union[list, tuple] = ['user', 'projection', 'tiling', 'name', 'quality', 'chunk']
-                                df.set_index(col_index, inplace=True)
-                                df.to_hdf(filename, key='user_session_qp', complevel=9)
+        def get_chunks_seen_path() -> dict[int, str]:
+            decodable_path = {}
+            for tile in self.tiles_seen:
+                decodable_path.update({tile: str(chunk_path())})
+            return decodable_path
 
         def merge_session_by_user():
-            filename = Path(f'dataset/user_session_qp.hd5')
-            if filename.exists():
-                print(f'user_session_qp exists.')
-                return
             session_data = pd.DataFrame()
             self.start_ui(8 * 2 * 5 * 5 * 30, 'make_session')
             for self.name in self.name_list:
@@ -369,24 +375,24 @@ class SerieAnalysisTilingQualityChunk(Methods):
                         for self.quality in self.quality_list:
                             for self.user in self.user_list:
                                 self.update_ui(f'{self}')
-                                filename = Path(f'dataset/user_session/{self.name}/{self.projection}/{self.tiling}/{self.rate_control}{self.quality}//user{self.user}_qp.hd5')
-                                df = pd.read_hdf(filename)
+                                df = pd.read_hdf(user_data_path())
                                 session_data = pd.concat([session_data, df])
-            session_data.to_hdf(f'dataset/user_session_qp.hd5', key='df', complevel=9)
+            session_data.to_hdf(user_session_path, key='session_data', complevel=9)
 
         make_session_by_user()
         merge_session_by_user()
         self.session_data = SessionData(self)
 
     def make_plot_quality_tiling(self):
+        boxplot_path = lambda: self.series_plot_folder / 'quality_tiling' / f'plot_{self.rate_control}{self.quality}.pdf'
+
         print(f'make_boxplot_quality_tiling.')
         self.session_data.data = self.session_data.group_by(['projection', 'tiling', 'quality', 'chunk'], 'mean')
 
         for self.quality in self.quality_list:
-            boxplot_path = self.series_plot_folder / 'quality_tiling' / f'plot_{self.rate_control}{self.quality}.pdf'
-            boxplot_path.parent.mkdir(parents=True, exist_ok=True)
-            if boxplot_path.exists():
-                print(f'\t{boxplot_path} exists.')
+            boxplot_path().parent.mkdir(parents=True, exist_ok=True)
+            if boxplot_path().exists():
+                print(f'\t{boxplot_path()} exists.')
                 return
 
             print(f'Plot qp{self.quality}')
