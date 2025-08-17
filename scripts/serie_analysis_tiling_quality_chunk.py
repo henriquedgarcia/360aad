@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 from scripts.analysisbase import AnalysisBase
 from scripts.utils.config import Config
 from scripts.utils.database import BitrateData, DectimeData, ChunkQualityData, ViewportQualityData, TilesSeenData, SessionData
+from scripts.utils.utils import task
 
 
 class Methods(AnalysisBase, ABC):
@@ -338,12 +339,12 @@ class SerieAnalysisTilingQualityChunk(Methods):
                     user_chunk_data = get_user_chunk_data()
                     data.append(user_chunk_data)
 
-                df = pd.DataFrame(data, columns=['user', 'projection', 'tiling', 'name', 'quality', 'chunk',
+                df = pd.DataFrame(data, columns=['name', 'projection', 'tiling', 'quality', 'user', 'chunk',
                                                  'bitrate_sum', 'dectime_sum', 'dectime_max',
                                                  'ssim_mean', 'mse_mean', 'smse_mean', 'wsmse_mean',
                                                  'viewport_ssim', 'viewport_mse',
                                                  'ntiles', 'decodable_path'])
-                col_index: Union[list, tuple] = ['user', 'projection', 'tiling', 'name', 'quality', 'chunk']
+                col_index: Union[list, tuple] = ['name', 'projection', 'tiling', 'quality', 'user', 'chunk']
                 df.set_index(col_index, inplace=True)
                 user_data_path().parent.mkdir(parents=True, exist_ok=True)
                 df.to_hdf(user_data_path(), key='user_session_qp', complevel=9)
@@ -384,21 +385,17 @@ class SerieAnalysisTilingQualityChunk(Methods):
         self.session_data = SessionData(self)
 
     def make_plot_quality_tiling(self):
-        boxplot_path = lambda: self.series_plot_folder / 'quality_tiling' / f'plot_{self.rate_control}{self.quality}.pdf'
-
         print(f'make_boxplot_quality_tiling.')
         self.session_data.data = self.session_data.group_by(['projection', 'tiling', 'quality', 'chunk'], 'mean')
 
-        for self.quality in self.quality_list:
-            boxplot_path().parent.mkdir(parents=True, exist_ok=True)
-            if boxplot_path().exists():
-                print(f'\t{boxplot_path()} exists.')
-                return
+        for self.quality in [28]:
+            boxplot_path = lambda: self.series_plot_folder / 'quality_tiling' / f'plot_{self.metric}_{self.rate_control}{self.quality}.pdf'
+            with task():
+                assert not boxplot_path().exists(), f'\t{boxplot_path()} exists.'
 
-            print(f'Plot qp{self.quality}')
-            fig = plt.figure(figsize=(6, 7.5), layout='tight')
-            fig.suptitle(f'{self.rate_control}{self.quality}')
-            for idx_proj, self.projection in enumerate(self.projection_list):
+                print(f'Plot qp{self.quality}')
+                fig = plt.figure(figsize=(6, 7.5), layout='tight')
+                fig.suptitle(f'{self.rate_control}{self.quality}')
                 for self.tiling in self.tiling_list:
                     sessions = {'bitrate_sum': fig.add_subplot(2, 8, 1 + 8 * idx_proj),
                                 'dectime_sum': fig.add_subplot(2, 8, 2 + 8 * idx_proj),
@@ -409,7 +406,11 @@ class SerieAnalysisTilingQualityChunk(Methods):
                                 'wsmse_mean': fig.add_subplot(2, 8, 7 + 8 * idx_proj),
                                 'tiles_seen': fig.add_subplot(2, 8, 8 + 8 * idx_proj)}
                     for metric, ax in sessions.items():
-                        pass
+                        for idx_proj, self.projection in enumerate(self.projection_list):
+                            self.session_data.xs('quality', 'tiling', 'projection')
+                            ax.plot
+                         pass
+                boxplot_path().parent.mkdir(parents=True, exist_ok=True)
 
     # bitrate
     # ax: plt.Axes = fig.add_subplot(3, 2, n)
