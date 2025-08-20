@@ -386,6 +386,9 @@ class SerieAnalysisTilingQualityChunk(Methods):
 
     def make_plot_quality_tiling(self):
         print(f'make_boxplot_quality_tiling.')
+        self.quality = 28
+        self.tiling = '12x8'
+
         self.session_data.data = self.session_data.group_by(['projection', 'tiling', 'quality', 'chunk'], 'mean')
 
         for self.quality in [28]:
